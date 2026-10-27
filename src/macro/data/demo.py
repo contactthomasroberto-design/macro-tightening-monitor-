@@ -471,9 +471,7 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
     eurusd_m = np.exp(usd_eur) * np.exp(-0.03 * (diff_us_ea - diff_us_ea.iloc[0]).to_numpy())
     out["EURUSD"] = _daily_price(M(np.r_[0, np.diff(np.log(eurusd_m))]), gen, float(eurusd_m[0]), 0.005)
     diff_us_jp = M(us["y10Y"] - jp["y10Y"])
-    usdjpy_m = 140 * np.exp(
-        0.06 * (diff_us_jp - diff_us_jp.mean()).to_numpy() + _ar1(n, 0.985, 0.015, gen)
-    )
+    usdjpy_m = 140 * np.exp(0.06 * (diff_us_jp - diff_us_jp.mean()).to_numpy() + _ar1(n, 0.985, 0.015, gen))
     out["USDJPY"] = _daily_price(M(np.r_[0, np.diff(np.log(usdjpy_m))]), gen, float(usdjpy_m[0]), 0.005)
     broad = 100 * np.exp(
         0.5 * np.log(usdjpy_m / usdjpy_m[0]) * 0.3 - 0.6 * np.log(eurusd_m / eurusd_m[0]) + 0.02 * stress

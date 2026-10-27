@@ -35,8 +35,9 @@ def available_at(s: pd.Series, freq: str, lag_days: int) -> pd.Series:
     return pd.Series(period_end(pd.DatetimeIndex(s.index), freq) + pd.Timedelta(days=lag_days), index=s.index)
 
 
-def truncate_as_of(s: pd.Series, as_of, series_id: str | None = None, freq: str | None = None,
-                   lag_days: int | None = None) -> pd.Series:
+def truncate_as_of(
+    s: pd.Series, as_of, series_id: str | None = None, freq: str | None = None, lag_days: int | None = None
+) -> pd.Series:
     """Keep only observations published on or before `as_of`."""
     if series_id is not None:
         spec = catalogue().get(series_id)

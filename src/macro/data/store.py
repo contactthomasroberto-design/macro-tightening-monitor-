@@ -82,15 +82,17 @@ class Store:
         """Write tidy rows (date, value, vintage_date). Latest-vintage rows replace the previous snapshot."""
         fetched_at = fetched_at or _now()
         vint = df["vintage_date"].map(lambda v: "" if pd.isna(v) else pd.Timestamp(v).strftime("%Y-%m-%d"))
-        rows = list(zip(
-            [series_id] * len(df),
-            df["date"].dt.strftime("%Y-%m-%d"),
-            df["value"].astype(float),
-            vint,
-            [source] * len(df),
-            [fetched_at] * len(df),
-            strict=True,
-        ))
+        rows = list(
+            zip(
+                [series_id] * len(df),
+                df["date"].dt.strftime("%Y-%m-%d"),
+                df["value"].astype(float),
+                vint,
+                [source] * len(df),
+                [fetched_at] * len(df),
+                strict=True,
+            )
+        )
         with self._conn() as c:
             if (vint == "").any():
                 c.execute("DELETE FROM observations WHERE series_id=? AND vintage_date=''", (series_id,))
@@ -130,7 +132,9 @@ class Store:
 
     def source_of(self, series_id: str) -> str | None:
         with self._conn() as c:
-            r = c.execute("SELECT source FROM observations WHERE series_id=? LIMIT 1", (series_id,)).fetchone()
+            r = c.execute(
+                "SELECT source FROM observations WHERE series_id=? LIMIT 1", (series_id,)
+            ).fetchone()
         return r[0] if r else None
 
     def vintages(self, series_id: str) -> list[str]:
@@ -143,7 +147,9 @@ class Store:
 
     def fetch_log(self, limit: int = 500) -> pd.DataFrame:
         with self._conn() as c:
-            return pd.read_sql_query("SELECT * FROM fetch_log ORDER BY fetched_at DESC LIMIT ?", c, params=(limit,))
+            return pd.read_sql_query(
+                "SELECT * FROM fetch_log ORDER BY fetched_at DESC LIMIT ?", c, params=(limit,)
+            )
 
     def last_failure(self, series_id: str) -> tuple[str, str] | None:
         with self._conn() as c:

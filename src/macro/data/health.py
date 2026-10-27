@@ -49,12 +49,25 @@ def health_table(st: Store, today: dt.date | None = None) -> pd.DataFrame:
             status = "warning"
         else:
             status = "good"
-        rows.append({
-            "id": spec.id, "status": status, "region": spec.region, "category": spec.category, "freq": spec.freq,
-            "source": spec.source, "first_obs": s.index.min().date() if not s.empty else None, "last_obs": last_obs,
-            "age_days": age, "max_age_days": limit, "n_obs": len(s), "verify_flag": spec.verify,
-            "last_fetch": st.last_fetched(spec.id), "last_error": fail[1] if fail else "", "terms": spec.terms,
-        })
+        rows.append(
+            {
+                "id": spec.id,
+                "status": status,
+                "region": spec.region,
+                "category": spec.category,
+                "freq": spec.freq,
+                "source": spec.source,
+                "first_obs": s.index.min().date() if not s.empty else None,
+                "last_obs": last_obs,
+                "age_days": age,
+                "max_age_days": limit,
+                "n_obs": len(s),
+                "verify_flag": spec.verify,
+                "last_fetch": st.last_fetched(spec.id),
+                "last_error": fail[1] if fail else "",
+                "terms": spec.terms,
+            }
+        )
     return pd.DataFrame(rows)
 
 

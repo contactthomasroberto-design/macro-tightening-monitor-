@@ -48,7 +48,7 @@ RESEARCH_FILES: dict[str, dict] = {
         "url": "https://www.newyorkfed.org/medialibrary/media/research/data_indicators/ACMTermPremium.xls",
         "kind": "excel",
     },
-    "CIE": {"url": None, "kind": "manual"},   # Fed Board CIE: download page, no stable file URL known
+    "CIE": {"url": None, "kind": "manual"},  # Fed Board CIE: download page, no stable file URL known
     "FCIG": {"url": None, "kind": "manual"},  # Fed Board FCI-G: download page, no stable file URL known
     "SPF": {
         "url": "https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/historical-data/meangrowth.xlsx",
@@ -93,18 +93,23 @@ def fetch_alfred_all_vintages(spec: SeriesSpec) -> pd.DataFrame:
     if not key:
         raise SourceError("ALFRED needs FRED_API_KEY")
     params = {
-        "series_id": spec.source_id, "api_key": key, "file_type": "json",
-        "realtime_start": "1776-07-04", "realtime_end": "9999-12-31",
+        "series_id": spec.source_id,
+        "api_key": key,
+        "file_type": "json",
+        "realtime_start": "1776-07-04",
+        "realtime_end": "9999-12-31",
     }
     obs = get(FRED_API, params).json().get("observations", [])
     df = pd.DataFrame(obs)
     if df.empty:
         raise SourceError("no ALFRED vintages")
-    out = pd.DataFrame({
-        "date": pd.to_datetime(df["date"]),
-        "value": pd.to_numeric(df["value"], errors="coerce"),
-        "vintage_date": pd.to_datetime(df["realtime_start"]),
-    })
+    out = pd.DataFrame(
+        {
+            "date": pd.to_datetime(df["date"]),
+            "value": pd.to_numeric(df["value"], errors="coerce"),
+            "vintage_date": pd.to_datetime(df["realtime_start"]),
+        }
+    )
     return out.dropna(subset=["value"]).sort_values(["vintage_date", "date"]).reset_index(drop=True)
 
 
@@ -218,7 +223,9 @@ def _parse_spf(content: bytes, column: str) -> pd.DataFrame:
     if var not in xl:
         raise SourceError(f"SPF sheet {var} not found (sheets: {list(xl)[:10]})")
     df = xl[var]
-    dates = pd.PeriodIndex.from_fields(year=df["YEAR"].astype(int), quarter=df["QUARTER"].astype(int), freq="Q").to_timestamp()
+    dates = pd.PeriodIndex.from_fields(
+        year=df["YEAR"].astype(int), quarter=df["QUARTER"].astype(int), freq="Q"
+    ).to_timestamp()
     if var == "CPI10":
         return _tidy(dates, df["CPI10"])
     cols = [f"{var}{k}" for k in range(3, 7)]

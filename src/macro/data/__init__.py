@@ -44,13 +44,15 @@ def store() -> Store:
 
 
 def _attach(s: pd.Series, source: str, fetched_at, stale: bool, vintage: str | None) -> pd.Series:
-    s.attrs.update({
-        "source": source,
-        "fetched_at": str(fetched_at) if fetched_at else None,
-        "stale": stale,
-        "vintage": vintage or LATEST_VINTAGE_LABEL,
-        "mode": "demo" if is_demo() else "live",
-    })
+    s.attrs.update(
+        {
+            "source": source,
+            "fetched_at": str(fetched_at) if fetched_at else None,
+            "stale": stale,
+            "vintage": vintage or LATEST_VINTAGE_LABEL,
+            "mode": "demo" if is_demo() else "live",
+        }
+    )
     return s
 
 
@@ -96,7 +98,9 @@ def get_series(series_id: str, vintage: str | None = None, as_of=None, refresh: 
     elif vintage is not None:
         s = st.read(series_id, vintage=vintage)
         if s.empty:
-            raise DataUnavailable(f"no cached ALFRED vintage {vintage} for {series_id}; run update_data.py --vintages")
+            raise DataUnavailable(
+                f"no cached ALFRED vintage {vintage} for {series_id}; run update_data.py --vintages"
+            )
         s = _attach(s, f"{spec.source} (ALFRED)", st.last_fetched(series_id), False, vintage)
     else:
         stale = False
@@ -139,8 +143,15 @@ def source_label(*ids: str) -> str:
     srcs = []
     for i in ids:
         spec = cat.get(i)
-        name = {"fred": "FRED", "ecb": "ECB Data Portal", "yahoo": "Yahoo Finance", "cftc": "CFTC TFF",
-                "nyfed_files": "NY Fed", "fed_board_files": "Federal Reserve Board", "philly": "Philadelphia Fed"}[spec.source]
+        name = {
+            "fred": "FRED",
+            "ecb": "ECB Data Portal",
+            "yahoo": "Yahoo Finance",
+            "cftc": "CFTC TFF",
+            "nyfed_files": "NY Fed",
+            "fed_board_files": "Federal Reserve Board",
+            "philly": "Philadelphia Fed",
+        }[spec.source]
         srcs.append(f"{name} ({i})")
     lab = "; ".join(dict.fromkeys(srcs))
     return ("SYNTHETIC — " + lab) if is_demo() else lab
