@@ -17,4 +17,8 @@ def collect() -> dict[str, float]:
     out["infl_US_passthrough"] = float(b["energy_passthrough"].value)
     out["infl_US_comb_rmse_h12"] = float(b["oos"]["scores"][12].loc["COMB", "rmse"])
     out["infl_US_prob_exceed"] = float(b["prob_exceed"]["p"])
+    p = pipeline.policy_bundle("fed")
+    rf = p["rf_full"].value
+    out["policy_fed_rf_b"] = float(rf.loc["b (inflation)", "estimate"])
+    out["policy_fed_rf_rho"] = float(rf.loc["rho", "estimate"])
     return out

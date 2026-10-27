@@ -43,6 +43,9 @@ def main() -> int:
                 vintage_label=b["vintage_label"],
             )
             print(f"    archived {n} inflation forecasts -> {archive.archive_path()}")
+    for bank in pipeline.BANKS:
+        _step(f"policy {bank}", lambda b=bank: pipeline.policy_bundle(b, force=args.force))
+    _step("policy cross-bank", lambda: pipeline.cross_bank_bundle(force=args.force))
     return 0
 
 

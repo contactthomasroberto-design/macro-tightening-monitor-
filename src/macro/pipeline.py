@@ -10,6 +10,7 @@ import pandas as pd
 
 from macro import inflation as inf
 from macro import panels
+from macro import policy as pol
 from macro.config import assumptions, catalogue
 from macro.data import get_series, try_series
 from macro.data.vintages import LATEST_VINTAGE_LABEL
@@ -103,6 +104,82 @@ def inflation_bundle(region: str = "US", force: bool = False) -> dict:
         return stamp(out, ids, out["as_of"])
 
     return load_or_compute(f"inflation:{region}", compute, force=force)
+
+
+BANKS = ("fed", "ecb", "boj")
+BANK_REGION = {"fed": "US", "ecb": "EA", "boj": "JP"}
+
+
+def policy_bundle(bank: str = "fed", force: bool = False) -> dict:
+    """Heavy, parameter-free parts of the policy module (rule prescriptions are cheap and are
+    recomputed in the page with the user's parameters)."""
+
+    def compute() -> dict:
+        pp = panels.policy_panel(bank)
+        q = pp["quarterly"]
+        rstar_pub = {}
+        for sid in pp["ids"]["rstar"]:
+            s = try_series(sid)
+            if s is not None and not s.dropna().empty:
+                rstar_pub[sid] = {
+                    "value": float(s.dropna().iloc[-1]),
+                    "date": s.dropna().index[-1],
+                    "series": s,
+                }
+        out = {
+            "bank": bank,
+            "panel": pp,
+            "rstar_published": rstar_pub,
+            "rf_full": pol.reaction_function(q),
+            "rf_pre2008": pol.reaction_function(q, end="2007-12-31"),
+            "rf_post2008": pol.reaction_function(q, start="2008-01-01"),
+            "rf_rolling": pol.rolling_reaction(q),
+        }
+        last = pp["monthly"].dropna(subset=["i", "pi"]).iloc[-1]
+        out["current"] = {
+            "date": pp["monthly"].dropna(subset=["i", "pi"]).index[-1],
+            "i": float(last["i"]),
+            "pi": float(last["pi"]),
+            "y": float(pp["monthly"]["y"].dropna().iloc[-1]) if pp["monthly"]["y"].notna().any() else 0.0,
+            "u": float(last["u"]) if "u" in last and last["u"] == last["u"] else None,
+            "ustar": float(pp["monthly"]["ustar"].dropna().iloc[-1])
+            if "ustar" in pp["monthly"] and pp["monthly"]["ustar"].notna().any()
+            else None,
+            "y2": float(pp["y2"].dropna().iloc[-1]) if pp["y2"] is not None else None,
+        }
+        out["as_of"] = out["current"]["date"]
+        ids = [pp["ids"][k] for k in ("rate", "infl", "unemp", "ustar", "gdp", "pot", "y2") if k in pp["ids"]]
+        return stamp(out, ids + pp["ids"]["rstar"], out["as_of"])
+
+    return load_or_compute(f"policy:{bank}", compute, force=force)
+
+
+def cross_bank_bundle(force: bool = False) -> dict:
+    def compute() -> dict:
+        rates = pd.DataFrame({b: panels.monthly(panels.POLICY_IDS[b]["rate"]) for b in BANKS}).dropna()
+        sync = pol.synchronisation(rates)
+        us2 = get_series("DGS2")
+        ea2 = try_series("EA_YC_2Y")
+        fx = {}
+        if ea2 is not None:
+            diff = (ea2 - us2.reindex(ea2.index)).dropna()
+            fx["EURUSD"] = {
+                "beta": pol.fx_differential_beta(get_series("EURUSD"), diff),
+                "diff": diff,
+                "label": "EA 2Y AAA minus US 2Y",
+            }
+        us10, jp10 = get_series("DGS10"), try_series("JP_10Y")
+        if jp10 is not None:
+            d = (panels.monthly("DGS10") - jp10).dropna()
+            dd = d.resample("D").interpolate().reindex(us10.index).ffill().dropna()
+            fx["USDJPY"] = {
+                "beta": pol.fx_differential_beta(get_series("USDJPY"), dd),
+                "diff": dd,
+                "label": "US 10Y minus JGB 10Y (monthly, interpolated)",
+            }
+        return {"rates": rates, "sync": sync, "fx": fx, "as_of": rates.index[-1]}
+
+    return load_or_compute("policy:cross_bank", compute, force=force)
 
 
 def as_of_str(ts) -> str:

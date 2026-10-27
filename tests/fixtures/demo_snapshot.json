@@ -3,5 +3,7 @@
   "infl_US_headline_last": 3.382875582783207,
   "infl_US_passthrough": 0.016538301107366808,
   "infl_US_persistence_rho": 0.809998447771805,
-  "infl_US_prob_exceed": 0.41839532709822036
+  "infl_US_prob_exceed": 0.41839532709822036,
+  "policy_fed_rf_b": 2.2281447500450433,
+  "policy_fed_rf_rho": 0.9013475430718294
 }

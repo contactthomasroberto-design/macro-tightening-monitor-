@@ -3,7 +3,7 @@
 from macro.config import ROOT
 from macro.versions import MODEL_VERSIONS
 
-IMPLEMENTED = ["inflation"]  # extended milestone by milestone
+IMPLEMENTED = ["inflation", "policy"]  # extended milestone by milestone
 
 
 def test_every_version_in_changelog():
