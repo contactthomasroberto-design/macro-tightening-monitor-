@@ -612,6 +612,8 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
     out["FCIG_1Y"] = fcig.dropna()
     spf_cpi = 0.5 * np.nan_to_num(head_yoy, nan=3) + 0.5 * us["pie"] + gen.normal(0, 0.15, n)
     out["SPF_CPI_1Y"] = q(spf_cpi)
+    gq = 400 * np.log(out["GDPC1"]).diff()
+    out["SPF_RGDP_CQ"] = (0.5 * gq + 0.5 * gq.shift(1).fillna(2.0) + gen.normal(0, 0.8, len(gq))).fillna(2.0)
     out["SPF_CPI10"] = q(us["pie"] + 0.05 + gen.normal(0, 0.05, n))
     out["SPF_RGDP_1Y"] = q(2.3 + 0.25 * us["gap"] - 0.3 * stress + gen.normal(0, 0.2, n))
 

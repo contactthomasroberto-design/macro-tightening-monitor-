@@ -139,19 +139,18 @@ def as_of_label(*series: pd.Series | None) -> str:
 
 
 def source_label(*ids: str) -> str:
-    cat = catalogue()
-    srcs = []
-    for i in ids:
-        spec = cat.get(i)
-        name = {
-            "fred": "FRED",
-            "ecb": "ECB Data Portal",
-            "yahoo": "Yahoo Finance",
-            "cftc": "CFTC TFF",
-            "nyfed_files": "NY Fed",
-            "fed_board_files": "Federal Reserve Board",
-            "philly": "Philadelphia Fed",
-        }[spec.source]
-        srcs.append(f"{name} ({i})")
-    lab = "; ".join(dict.fromkeys(srcs))
+    """Provider-grouped source line, e.g. 'FRED (DGS2, DGS10); ECB Data Portal (EA_DFR)'."""
+    names = {
+        "fred": "FRED",
+        "ecb": "ECB Data Portal",
+        "yahoo": "Yahoo Finance",
+        "cftc": "CFTC TFF",
+        "nyfed_files": "NY Fed",
+        "fed_board_files": "Federal Reserve Board",
+        "philly": "Philadelphia Fed",
+    }
+    groups: dict[str, list[str]] = {}
+    for i in dict.fromkeys(ids):
+        groups.setdefault(names[catalogue().get(i).source], []).append(i)
+    lab = "; ".join(f"{k} ({', '.join(v)})" for k, v in groups.items())
     return ("SYNTHETIC — " + lab) if is_demo() else lab

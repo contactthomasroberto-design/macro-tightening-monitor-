@@ -228,6 +228,8 @@ def _parse_spf(content: bytes, column: str) -> pd.DataFrame:
     ).to_timestamp()
     if var == "CPI10":
         return _tidy(dates, df["CPI10"])
+    if len(parts) > 1 and parts[1] == "cq":  # current-quarter forecast, e.g. RGDP2
+        return _tidy(dates, df[f"{var}2"])
     cols = [f"{var}{k}" for k in range(3, 7)]
     g = df[cols].apply(pd.to_numeric, errors="coerce")
     four_q = 100 * (np.prod(1 + g / 100, axis=1) ** (1 / 4) - 1)

@@ -99,6 +99,7 @@ Release lag = days between the end of the reference period and first publication
 | `FCIG_1Y` | US | M | fed_board_files | `FCIG:FCI-G (one-year lookback)` | percentage points of GDP growth | 30 | yes | Fed Board FCI-G one-year lookback | Fed Board research series; experimental |
 | `SPF_CPI_1Y` | US | Q | philly | `SPF:CPI:4q-ahead` | percent | 45 | yes | Philadelphia Fed SPF mean CPI inflation forecast | Philadelphia Fed; cite source |
 | `SPF_RGDP_1Y` | US | Q | philly | `SPF:RGDP:4q-ahead` | percent | 45 | yes | Philadelphia Fed SPF mean real GDP growth forecast | Philadelphia Fed; cite source |
+| `SPF_RGDP_CQ` | US | Q | philly | `SPF:RGDP:cq` | percent annualised q/q | 0 | yes | Philadelphia Fed SPF mean real GDP growth forecast for the survey quarter (RGDP2; survey released mid-quarter — availability treated as quarter end) | Philadelphia Fed; cite source |
 | `SPF_CPI10` | US | Q | philly | `SPF:CPI10` | percent | 45 | yes | Philadelphia Fed SPF 10-year CPI inflation expectation | Philadelphia Fed; cite source |
 | `TFF_UST10_LEV` | US | W | cftc | `TFF:10-YEAR U.S. TREASURY NOTES:lev_money` | contracts net | 3 | yes | Leveraged-fund net position | CFTC public data |
 | `TFF_UST10_AM` | US | W | cftc | `TFF:10-YEAR U.S. TREASURY NOTES:asset_mgr` | contracts net | 3 | yes | Asset-manager net position | CFTC public data |
