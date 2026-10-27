@@ -25,3 +25,6 @@ looking at results. Each dashboard page states how many specifications were trie
 | 2026-10-27 | fincond | H6: rate variables carry negative and equities/house prices positive growth sensitivities (FCI-G signs). | 2 lookbacks (1y, 3y); ridge penalty from a fixed 8-value grid by CV | Demo: house-price and Baa signs differ from the prior in at least one lookback — reported as such, equivalences flagged when unstable. | kept |
 | 2026-10-27 | data | Replace ICE BBB yield by Moody's Baa in the FCI (history length). | — | Decision before estimation. | kept |
 | 2026-10-27 | curves | H7: bear flatteners are over-represented during Fed hiking phases (rate up over 6 months) relative to other periods. | 1 (21-day window, 5bp threshold fixed a priori) | Demo only. | kept |
+| 2026-10-27 | growth | H8: the DFM nowcast beats an AR(1) just before the advance release (RMSE, DM at 10%). | 1 factor structure (Global/Soft/Nominal/Labor, AR(2) factors) fixed a priori | Demo only. | kept |
+| 2026-10-27 | growth | H9: NFCI lowers the 5% conditional quantile of future growth more than the median (ABG asymmetry). | 2 horizons (1Q, 4Q) | Demo only. | kept |
+| 2026-10-27 | recession | H10: adding credit spread, unemployment change and NFCI to the term-spread probit improves out-of-sample AUC and Brier. | 3 (spread probit, extended probit, L2 logit) | Demo only. | kept |
