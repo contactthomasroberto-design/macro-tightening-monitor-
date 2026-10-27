@@ -123,3 +123,26 @@ def sidebar_controls() -> dict:
         "rules": rules,
         "rstar_step": float(a["rstar"]["grid_step"]),
     }
+
+
+def scenario_controls() -> dict[str, float]:
+    """Sidebar sliders for scenario probabilities (defaults from config/scenarios.yaml),
+    re-normalised to sum to 1."""
+    from macro.config import scenarios
+
+    sc = scenarios().scenarios
+    with st.sidebar.expander("Scenario probabilities", expanded=False):
+        raw = {
+            k: st.slider(
+                v.label, 0.0, 1.0, float(st.session_state.get(f"p_{k}", v.probability)), 0.05, key=f"p_{k}"
+            )
+            for k, v in sc.items()
+        }
+        tot = sum(raw.values())
+        if tot <= 0:
+            st.warning("All probabilities are zero: defaults used.")
+            return {k: v.probability for k, v in sc.items()}
+        w = {k: v / tot for k, v in raw.items()}
+        if abs(tot - 1) > 1e-9:
+            st.caption(f"Re-normalised (inputs summed to {tot:.2f}).")
+    return w

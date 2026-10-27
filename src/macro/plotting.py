@@ -54,7 +54,7 @@ def color(i: int) -> str:
 def fan_colors(base: str = ENTITY["fed"], n: int = 4) -> list[str]:
     """One hue, lightness steps from the outer (lightest) to the inner (darkest) band."""
     r, g, b = (int(base[i : i + 2], 16) for i in (1, 3, 5))
-    alphas = [0.12 + 0.12 * k for k in range(n)]
+    alphas = np.linspace(0.12, 0.75, n) if n > 1 else [0.3]
     return [f"rgba({r},{g},{b},{a:.2f})" for a in alphas]
 
 
@@ -261,7 +261,8 @@ def fan_chart(
                 fill="tonexty",
                 fillcolor=fills[k],
                 line={"width": 0},
-                name=f"{int(round((hi - lo) * 100))}% band",
+                name="bands: 10% steps up to 90%" if k == 0 else f"{int(round((hi - lo) * 100))}% band",
+                showlegend=k == 0,
             )
         )
     central = quantiles["mode"] if "mode" in quantiles else quantiles[0.5]
@@ -269,8 +270,8 @@ def fan_chart(
         go.Scatter(
             x=central.index,
             y=central.values,
-            name="central (mode)",
-            line={"width": LINE_WIDTH, "color": base_color},
+            name="central projection (mode)",
+            line={"width": LINE_WIDTH + 0.5, "color": "#1f2328"},
         )
     )
     fig.update_yaxes(title_text=yaxis)
