@@ -4,6 +4,7 @@ from components import footer, header, scenario_controls, show_status, sidebar_c
 from macro.config import stale_assumptions
 from macro.data import as_of_label, try_series
 from macro.pipeline import build_views
+from macro.views import format_value
 
 header(
     "Macro Tightening Monitor",
@@ -39,13 +40,7 @@ for col, bank in zip(cols, ["FED", "ECB", "BOJ"], strict=True):
     with col:
         st.markdown(f"### {bank}")
         for _, r in sc[sc["bank"] == bank].iterrows():
-            val = r["value"]
-            if r["unit"] == "count":
-                txt = f"{int(val)}"
-            elif r["unit"] == "prob.":
-                txt = f"{100 * val:.0f}%"
-            else:
-                txt = f"{val:+.2f} {r['unit']}"
+            txt = format_value(r["value"], r["unit"])
             st.markdown(
                 status_chip(
                     r["status"], f"{r['metric']}: **{txt}**" + (f" — {r['note']}" if r["note"] else "")
