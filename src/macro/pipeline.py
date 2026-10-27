@@ -6,8 +6,10 @@ the PDFs and the archive show the same numbers.
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
+from macro import fincond as fc
 from macro import inflation as inf
 from macro import panels
 from macro import policy as pol
@@ -180,6 +182,63 @@ def cross_bank_bundle(force: bool = False) -> dict:
         return {"rates": rates, "sync": sync, "fx": fx, "as_of": rates.index[-1]}
 
     return load_or_compute("policy:cross_bank", compute, force=force)
+
+
+def fincond_bundle(force: bool = False) -> dict:
+    def compute() -> dict:
+        pn = panels.fincond_panel()
+        lv, gdp = pn["levels_q"], pn["gdp_q"]
+        f1 = fc.fci_lite(lv, gdp, lookback=4)
+        f3 = fc.fci_lite(lv, gdp, lookback=12)
+        a = assumptions()["fincond"]
+        gap_now = float(pn["output_gap_q"].dropna().iloc[-1])
+        g = fc.gap_to_neutral(float(f1.value.iloc[-1]), gap_now, int(a["output_gap_closure_quarters"]))
+        eq = fc.equivalences(g["gap"], f1.extra["beta_draws"], float(a["fci_multiplier_uncertainty"]))
+        # projected FCI under simple paths (scenario engine paths are added on the Scenarios page)
+        last_q = lv.dropna().index[-1]
+        fut = pd.date_range(last_q + pd.offsets.QuarterBegin(1), periods=8, freq="QS")
+        y2 = float(panels.monthly("DGS2").dropna().iloc[-1])
+        pr = float(lv["policy_rate"].dropna().iloc[-1])
+        y10 = float(lv["y10"].dropna().iloc[-1])
+        eqty = float(lv["equity"].dropna().iloc[-1])
+        ramp = np.linspace(0, 1, 4).tolist() + [1.0] * 4
+        paths = {
+            "Unchanged rates and prices": {},
+            "Policy rate moves to the 2Y-yield proxy": {
+                "policy_rate": pd.Series([pr + (y2 - pr) * w for w in ramp], index=fut)
+            },
+            "10Y yield +50bp": {"y10": pd.Series([y10 + 0.5 * w for w in ramp], index=fut)},
+            "Equities -10%": {"equity": pd.Series([eqty * (1 - 0.10 * w) for w in ramp], index=fut)},
+        }
+        proj = pd.DataFrame({k: fc.project_fci(lv, f1.extra["betas"]["beta"], v) for k, v in paths.items()})
+        stat = fc.statistical_fci(pn["stat_panel"])
+        indices = {
+            "FCI-lite 1y (this project)": f1.value,
+            "FCI-lite 3y (this project)": f3.value,
+            "Chicago Fed NFCI": pn["nfci"],
+            "Statistical factor (this project)": stat,
+        }
+        if pn["fcig"] is not None:
+            indices["Fed Board FCI-G 1y (published)"] = pn["fcig"]
+        comp = fc.index_comparison(indices)
+        q_idx = pd.concat({k: v.resample("QS").mean() for k, v in indices.items()}, axis=1)
+        out = {
+            "panel": pn,
+            "fci_1y": f1,
+            "fci_3y": f3,
+            "gap": g,
+            "equivalences": eq,
+            "projection": proj,
+            "statistical": stat,
+            "comparison": comp,
+            "indices_q": q_idx,
+            "as_of": lv.dropna().index[-1],
+            "fcig_available": pn["fcig"] is not None,
+        }
+        ids = [*panels.FCI_IDS.values(), "GDPC1", "GDPPOT", "NFCI", "BAA10Y", "VIXCLS", "T10Y3M", "DGS2"]
+        return stamp(out, ids, out["as_of"])
+
+    return load_or_compute("fincond:US", compute, force=force)
 
 
 def as_of_str(ts) -> str:

@@ -21,4 +21,7 @@ def collect() -> dict[str, float]:
     rf = p["rf_full"].value
     out["policy_fed_rf_b"] = float(rf.loc["b (inflation)", "estimate"])
     out["policy_fed_rf_rho"] = float(rf.loc["rho", "estimate"])
+    f = pipeline.fincond_bundle()
+    out["fincond_fci1y_last"] = float(f["fci_1y"].value.iloc[-1])
+    out["fincond_gap"] = float(f["gap"]["gap"])
     return out
