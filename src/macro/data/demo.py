@@ -644,8 +644,8 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
     jpy_carry = diff_us_jp.reindex(tues, method="ffill").to_numpy()
     out["TFF_JPY_LEV"] = W(-25000 * (jpy_carry - np.nanmean(jpy_carry)) - 20000 + _ar1(nt, 0.93, 15000, gen))
 
-    for k, s in out.items():
-        s.name = k
+    for sid, s in out.items():
+        s.name = sid
         s.index.name = "date"
     missing = set(catalogue().ids) - set(out)
     if missing:

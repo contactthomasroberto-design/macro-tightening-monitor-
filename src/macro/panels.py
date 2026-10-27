@@ -6,6 +6,8 @@ I/O, which keeps them testable on simulated data with planted parameters.
 
 from __future__ import annotations
 
+from typing import Any, Literal, overload
+
 import numpy as np
 import pandas as pd
 
@@ -43,6 +45,14 @@ INFLATION_IDS = {
 }
 
 EXPECTATION_IDS = ["MICH", "SPF_CPI_1Y", "SPF_CPI10", "T10YIE", "T5YIFR", "EXPINF10YR"]
+
+
+@overload
+def monthly(series_id: str, how: str = ..., optional: Literal[False] = ...) -> pd.Series: ...
+
+
+@overload
+def monthly(series_id: str, how: str = ..., optional: bool = ...) -> pd.Series | None: ...
 
 
 def monthly(series_id: str, how: str = "mean", optional: bool = False) -> pd.Series | None:
@@ -106,7 +116,7 @@ def unemployment_gap(region: str, panel: pd.DataFrame) -> pd.Series:
     return panel["unemp"] - panel["unemp"].rolling(120, min_periods=36).mean()
 
 
-POLICY_IDS = {
+POLICY_IDS: dict[str, dict[str, Any]] = {
     "fed": {
         "rate": "DFF",
         "infl": "PCEPILFE",

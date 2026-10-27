@@ -293,6 +293,7 @@ def fit_skewt(q: pd.Series) -> dict:
         )
         if best is None or r.fun < best.fun:
             best = r
+    assert best is not None
     a, b, loc, sc = np.exp(best.x[0]), np.exp(best.x[1]), best.x[2], np.exp(best.x[3])
     return {
         "a": a,

@@ -85,7 +85,7 @@ def fan_quantiles(modes: pd.Series, sigmas: pd.Series, means: pd.Series | None =
         mm = float(means[t]) - mode if means is not None else 0.0
         g = gamma_from_skew(sig, mm) if sig > 0 else 0.0
         s1, s2 = scales(sig, g) if sig > 0 else (1e-9, 1e-9)
-        r = {"mode": mode, "mean": tpn_mean(mode, s1, s2), "gamma": g, "s1": s1, "s2": s2}
+        r: dict = {"mode": mode, "mean": tpn_mean(mode, s1, s2), "gamma": g, "s1": s1, "s2": s2}
         for p in BAND_PROBS:
             lo, hi = tpn_ppf([0.5 - p / 2, 0.5 + p / 2], mode, s1, s2)
             r[round(0.5 - p / 2, 2)] = float(lo)

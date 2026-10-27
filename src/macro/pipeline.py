@@ -6,6 +6,8 @@ the PDFs and the archive show the same numbers.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -644,7 +646,7 @@ def scenario_results(sb: dict, weights: dict[str, float]) -> dict:
     sims, fut, init = sb["sims"], sb["future"], sb["init"]
     tot = sum(weights.values())
     w = {k: v / tot for k, v in weights.items()}
-    out = {"weights": w}
+    out: dict[str, Any] = {"weights": w}
     qs = [0.05, 0.16, 0.5, 0.84, 0.95]
     for var in ("i", "pi", "u", "y10"):
         vals, ww = scn.mixture(sims, w, var)
@@ -678,7 +680,7 @@ def scenario_results(sb: dict, weights: dict[str, float]) -> dict:
     out["reverse"] = scn.reverse_stress(sims, w, sb["priced_12m"])
     # fans: mode = modal scenario's deterministic path; mean = probability-weighted deterministic paths;
     # sigma = dispersion of the modal scenario's Monte Carlo paths (bootstrap of historical errors)
-    modal = max(w, key=w.get)
+    modal = max(w, key=lambda k: w[k])
     out["modal"] = modal
     fan = {}
     for var in ("i", "pi", "growth"):

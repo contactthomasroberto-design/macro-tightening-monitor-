@@ -82,6 +82,7 @@ def _cv_alpha(
         m = float(np.mean(err)) if err else np.inf
         if best is None or m < best[0]:
             best = (m, a)
+    assert best is not None
     return best[1]
 
 

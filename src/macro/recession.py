@@ -194,12 +194,12 @@ def current_probability(
             draws.append(float(_predict(_probit(Y[i], X[i]), x_now)[0]))
         except (np.linalg.LinAlgError, ValueError):
             continue
-    draws = np.array(draws)
+    arr = np.array(draws)
     return {
         "p": p,
-        "lo": float(np.quantile(draws, 0.05)),
-        "hi": float(np.quantile(draws, 0.95)),
-        "n_boot": len(draws),
+        "lo": float(np.quantile(arr, 0.05)),
+        "hi": float(np.quantile(arr, 0.95)),
+        "n_boot": len(arr),
         "date": df[cols].dropna().index[-1],
     }
 

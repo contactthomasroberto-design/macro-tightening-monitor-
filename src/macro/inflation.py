@@ -92,6 +92,7 @@ def fit_ar_bic(y: pd.Series, max_p: int = 12) -> tuple[int, OLSResult]:
         bic = T * np.log(resid @ resid / T) + (p + 1) * np.log(T)
         if best is None or bic < best[0]:
             best = (bic, p)
+    assert best is not None
     p = best[1]
     res = ols_hac(base["y"], base[[f"L{j}" for j in range(1, p + 1)]])
     return p, res
