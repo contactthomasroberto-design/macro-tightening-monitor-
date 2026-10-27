@@ -24,4 +24,7 @@ def collect() -> dict[str, float]:
     f = pipeline.fincond_bundle()
     out["fincond_fci1y_last"] = float(f["fci_1y"].value.iloc[-1])
     out["fincond_gap"] = float(f["gap"]["gap"])
+    c = pipeline.curves_bundle()
+    out["curves_2s10s_last"] = float(c["spreads"]["2s10s"].iloc[-1])
+    out["curves_duration_share"] = float(c["duration"].value)
     return out

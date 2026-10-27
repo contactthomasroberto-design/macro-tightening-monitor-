@@ -47,6 +47,7 @@ def main() -> int:
         _step(f"policy {bank}", lambda b=bank: pipeline.policy_bundle(b, force=args.force))
     _step("policy cross-bank", lambda: pipeline.cross_bank_bundle(force=args.force))
     _step("financial conditions", lambda: pipeline.fincond_bundle(force=args.force))
+    _step("curves", lambda: pipeline.curves_bundle(force=args.force))
     return 0
 
 

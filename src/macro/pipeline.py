@@ -9,6 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from macro import curves as cv
 from macro import fincond as fc
 from macro import inflation as inf
 from macro import panels
@@ -239,6 +240,98 @@ def fincond_bundle(force: bool = False) -> dict:
         return stamp(out, ids, out["as_of"])
 
     return load_or_compute("fincond:US", compute, force=force)
+
+
+def curves_bundle(force: bool = False) -> dict:
+    def compute() -> dict:
+        y = pd.DataFrame(
+            {
+                "3m": get_series("DGS3MO"),
+                "2y": get_series("DGS2"),
+                "5y": get_series("DGS5"),
+                "10y": get_series("DGS10"),
+                "30y": get_series("DGS30"),
+            }
+        ).dropna()
+        spreads = cv.us_spreads(y)
+        tp = {
+            k: s
+            for k, s in (
+                ("Kim-Wright (Fed Board)", try_series("THREEFYTP10")),
+                ("ACM (NY Fed)", try_series("ACMTP10")),
+            )
+            if s is not None
+        }
+        dec = cv.ten_year_decompositions(get_series("DGS10"), get_series("DFII10"), get_series("T10YIE"), tp)
+        reg = cv.classify_regime(get_series("DGS2"), get_series("DGS10"))
+        hiking = get_series("DFEDTARU").diff(126) > 0  # policy rate higher than ~6 months earlier
+        freq = cv.regime_frequencies(reg, hiking)
+        de = panels.monthly("DE_10Y")
+        sov = (
+            pd.DataFrame(
+                {
+                    "OAT-Bund": panels.monthly("FR_10Y") - de,
+                    "BTP-Bund": panels.monthly("IT_10Y") - de,
+                    "Bonos-Bund": panels.monthly("ES_10Y") - de,
+                }
+            ).dropna()
+            * 100
+        )
+        stress = cv.sovereign_stress(sov)
+        ea = pd.DataFrame(
+            {
+                "AAA 2Y": panels.monthly("EA_YC_2Y", optional=True),
+                "AAA 10Y": panels.monthly("EA_YC_10Y", optional=True),
+                "Bund 10Y": de,
+            }
+        )
+        y10 = pd.DataFrame(
+            {
+                "US": panels.monthly("DGS10"),
+                "DE": de,
+                "JP": panels.monthly("JP_10Y"),
+                "FR": panels.monthly("FR_10Y"),
+                "IT": panels.monthly("IT_10Y"),
+            }
+        ).dropna()
+        dur = cv.duration_factor(y10)
+        jp = panels.monthly("JP_10Y")
+        out = {
+            "yields": y,
+            "spreads": spreads,
+            "decomp": dec,
+            "regimes": reg,
+            "regime_freq": freq,
+            "sovereign": sov,
+            "stress": stress,
+            "ea_curve": ea,
+            "y10": y10,
+            "duration": dur,
+            "jgb": jp,
+            "jgb_reference": assumptions()["market_pricing"].get("jgb_10y_reference"),
+            "as_of": y.index[-1],
+        }
+        ids = [
+            "DGS3MO",
+            "DGS2",
+            "DGS5",
+            "DGS10",
+            "DGS30",
+            "DFII10",
+            "T10YIE",
+            "THREEFYTP10",
+            "ACMTP10",
+            "DE_10Y",
+            "FR_10Y",
+            "IT_10Y",
+            "ES_10Y",
+            "JP_10Y",
+            "EA_YC_2Y",
+            "EA_YC_10Y",
+        ]
+        return stamp(out, ids, out["as_of"])
+
+    return load_or_compute("curves:all", compute, force=force)
 
 
 def as_of_str(ts) -> str:
