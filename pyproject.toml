@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macro-tightening-monitor"
+version = "0.1.0"
+description = "Open, reproducible macro research stack on the Fed / ECB / BoJ tightening cycle. Educational research, not investment advice."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "statsmodels>=0.14",
+  "scikit-learn>=1.4",
+  "plotly>=5.20",
+  "streamlit>=1.35",
+  "requests>=2.31",
+  "PyYAML>=6.0",
+  "pydantic>=2.6",
+  "fpdf2>=2.7",
+  "kaleido>=0.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov", "hypothesis>=6", "ruff>=0.4", "mypy>=1.8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not live' -q"
+markers = [
+  "live: hits real data sources over the network (skipped by default; run with -m live)",
+  "slow: long-running estimation tests",
+]
+filterwarnings = [
+  "ignore::DeprecationWarning",
+  "ignore::FutureWarning",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "app", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM"]
+ignore = ["E501", "N803", "N806", "B008"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+check_untyped_defs = false
+disallow_untyped_defs = false
+warn_unused_ignores = false
+files = ["src/macro"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["macro", "components"]
