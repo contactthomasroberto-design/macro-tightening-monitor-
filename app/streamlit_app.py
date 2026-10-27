@@ -19,7 +19,19 @@ PAGES_DIR = Path(__file__).parent / "pages"
 # (file, title, icon) — order is the navigation order. Pages are added milestone by milestone.
 PAGES = [
     ("overview.py", "Overview", "🧭"),
+    ("calendar.py", "Calendar and news", "🗓️"),
+    ("inflation.py", "Inflation", "🔥"),
+    ("policy.py", "Policy", "🏛️"),
+    ("fincond.py", "Financial conditions", "🌡️"),
+    ("curves.py", "Curves and term premium", "📈"),
+    ("growth.py", "Growth and recession risk", "🏭"),
+    ("transmission.py", "Transmission", "🔗"),
+    ("positioning.py", "Positioning", "🧲"),
+    ("scenarios.py", "Scenarios and fans", "🌪️"),
+    ("regimes.py", "Regime and views", "🧭"),
+    ("track_record.py", "Track record", "🎯"),
     ("data_health.py", "Data health", "🩺"),
+    ("model_cards.py", "Model cards", "📇"),
 ]
 
 
