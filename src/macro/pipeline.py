@@ -10,19 +10,22 @@ import numpy as np
 import pandas as pd
 
 from macro import curves as cv
+from macro import fans, panels
 from macro import fincond as fc
 from macro import growth as gr
 from macro import inflation as inf
-from macro import panels
 from macro import policy as pol
 from macro import positioning as pos
 from macro import recession as rc
+from macro import regimes as rg
+from macro import scenarios as scn
 from macro import transmission as tr
+from macro import views as vw
 from macro.config import assumptions, catalogue
 from macro.data import get_series, try_series
 from macro.data.vintages import LATEST_VINTAGE_LABEL
 from macro.results import load_or_compute
-from macro.utils import Result
+from macro.utils import Result, ols_hac
 
 INFL_TARGET_SERIES = {"US": "CPIAUCSL", "EA": "EA_HICP", "JP": "JP_CPI"}
 BANK_OF = {"US": "fed", "EA": "ecb", "JP": "boj"}
@@ -527,5 +530,450 @@ def positioning_bundle(force: bool = False) -> dict:
     return load_or_compute("positioning:all", compute, force=force)
 
 
+def scenario_bundle(force: bool = False, n_per: int = 10_000) -> dict:
+    """Quarterly US engine, Monte Carlo per scenario (mixed later with the user's probabilities)."""
+    from macro.config import scenarios as load_scenarios
+
+    def compute() -> dict:
+        a = assumptions()
+        pce = panels.monthly("PCEPILFE")
+        q = pd.DataFrame(
+            {
+                "pi": (100 * (pce / pce.shift(12) - 1)).resample("QS").mean(),
+                "u": panels.monthly("UNRATE").resample("QS").mean(),
+                "ustar": panels.monthly("NROU").resample("QS").mean(),
+                "oil4": (100 * np.log(panels.monthly("DCOILBRENTEU").resample("QS").mean())).diff(4),
+            }
+        )
+        coefs, resid_pi, n_pc, pc_tab = scn.estimate_phillips(q)
+        pb = policy_bundle("fed")
+        rf = pb["rf_full"]
+        t = rf.value["estimate"]
+        qi = pb["panel"]["quarterly"]["i"]
+        resid_i = (qi - rf.extra["fitted"]).dropna().to_numpy()
+        du = q["u"].diff().loc["1990":]
+        ar = ols_hac(du, du.shift(1).to_frame("lag"))
+        resid_du = ar.resid.clip(*ar.resid.quantile([0.025, 0.975])).to_numpy()
+        lo, hi = a["rstar"]["user_range"]
+        cb = a["central_banks"]["fed"]
+        init_q = q.dropna(subset=["pi", "u"]).iloc[-1]
+        tp = try_series("ACMTP10") if try_series("ACMTP10") is not None else try_series("THREEFYTP10")
+        p = scn.EngineParams(
+            c=coefs["c"],
+            rho=coefs["rho"],
+            kappa=coefs["kappa"],
+            theta=coefs["theta"],
+            resid_pi=resid_pi,
+            rf_rho=float(t["rho"]),
+            rf_a=float(t["a"]),
+            rf_b=float(t["b (inflation)"]),
+            rf_c=float(t["c (output gap)"]) if t["c (output gap)"] == t["c (output gap)"] else 0.0,
+            resid_i=resid_i,
+            resid_du=resid_du,
+            okun=float(a["rules"]["unemployment_gap"]["okun"]),
+            ustar=float(q["ustar"].dropna().iloc[-1]),
+            rstar=float((lo + hi) / 2),
+            pi_star=float(cb["inflation_target"]),
+            max_step_q=2 * float(cb["max_step_bp"]) / 100,
+            n_obs=n_pc,
+        )
+        init = {
+            "pi": float(init_q["pi"]),
+            "u": float(init_q["u"]),
+            "i": float(pb["current"]["i"]),
+            "oil4_base": float(q["oil4"].dropna().iloc[-1]),
+            "tp": float(tp.dropna().iloc[-1]) if tp is not None else 0.0,
+        }
+        sc = load_scenarios()
+        scen = {k: v.model_dump() for k, v in sc.scenarios.items()}
+        sims = scn.run_monte_carlo(p, init, scen, n_per=n_per, quarters=sc.horizon_quarters, seed=1)
+        last_q = init_q.name
+        fut = pd.date_range(last_q + pd.offsets.QuarterBegin(1), periods=sc.horizon_quarters, freq="QS")
+        # market-mapping betas: quarterly changes of 2Y / 10Y on changes in the policy rate
+        qq = (
+            pd.DataFrame(
+                {
+                    "i": qi,
+                    "y2": panels.monthly("DGS2").resample("QS").mean(),
+                    "y10": panels.monthly("DGS10").resample("QS").mean(),
+                }
+            )
+            .diff()
+            .dropna()
+        )
+        b2 = ols_beta(qq["y2"], qq["i"])
+        b10 = ols_beta(qq["y10"], qq["i"])
+        pot = get_series("GDPPOT")
+        g_star = float(100 * np.log(pot).diff(4).dropna().iloc[-1])
+        y2_now = float(panels.monthly("DGS2").dropna().iloc[-1])
+        priced, priced_src = pol.priced_rate_proxy(
+            y2_now, init["i"], a["market_pricing"].get("fed_terminal_rate")
+        )
+        out = {
+            "params": p,
+            "init": init,
+            "scenarios": scen,
+            "base_weights": {k: v.probability for k, v in sc.scenarios.items()},
+            "sims": sims,
+            "future": fut,
+            "phillips": pc_tab,
+            "phillips_n": n_pc,
+            "history": q,
+            "policy_hist": qi,
+            "beta2": b2,
+            "beta10": b10,
+            "g_star": g_star,
+            "priced_12m": priced,
+            "priced_src": priced_src,
+            "as_of": last_q,
+            "rf_table": rf.value,
+        }
+        ids = ["PCEPILFE", "UNRATE", "NROU", "DCOILBRENTEU", "DFF", "DGS2", "DGS10", "GDPPOT", "ACMTP10"]
+        return stamp(out, ids, last_q)
+
+    return load_or_compute("scenarios:US", compute, force=force)
+
+
+def ols_beta(y: pd.Series, x: pd.Series) -> tuple[float, float]:
+    r = ols_hac(y, x.to_frame("x"))
+    return float(r.params["x"]), float(r.bse["x"])
+
+
+def scenario_results(sb: dict, weights: dict[str, float]) -> dict:
+    """Mix the per-scenario Monte Carlo with `weights` (cheap; called by the page on every edit)."""
+    sims, fut, init = sb["sims"], sb["future"], sb["init"]
+    tot = sum(weights.values())
+    w = {k: v / tot for k, v in weights.items()}
+    out = {"weights": w}
+    qs = [0.05, 0.16, 0.5, 0.84, 0.95]
+    for var in ("i", "pi", "u", "y10"):
+        vals, ww = scn.mixture(sims, w, var)
+        out[f"q_{var}"] = pd.DataFrame(scn.weighted_quantile(vals, ww, qs).T, index=fut, columns=qs)
+        out[f"mean_{var}"] = pd.Series(np.average(vals, axis=0, weights=ww), index=fut)
+    vals_i, ww = scn.mixture(sims, w, "i")
+    vals_u, _ = scn.mixture(sims, w, "u")
+    out["moves"] = scn.moves_probabilities(vals_i, ww, init["i"])
+    out["recession_prob"] = scn.recession_probability(vals_u, ww, init["u"])
+    rows = []
+    for k, s in sims.items():
+        rows.append(
+            {
+                "scenario": sb["scenarios"][k]["label"],
+                "probability": w[k],
+                "policy rate 4Q (median)": float(np.median(s["mc"]["i"][:, 3])),
+                "policy rate 8Q (median)": float(np.median(s["mc"]["i"][:, -1])),
+                "core PCE 4Q (median)": float(np.median(s["mc"]["pi"][:, 3])),
+                "P(Sahm-type trigger)": float(scn.sahm_trigger(s["mc"]["u"], init["u"]).mean()),
+            }
+        )
+    tab = pd.DataFrame(rows).set_index("scenario")
+    tab.loc["Probability-weighted"] = [
+        1.0,
+        float(np.sum(tab["probability"] * tab["policy rate 4Q (median)"])),
+        float(np.sum(tab["probability"] * tab["policy rate 8Q (median)"])),
+        float(np.sum(tab["probability"] * tab["core PCE 4Q (median)"])),
+        out["recession_prob"],
+    ]
+    out["table"] = tab
+    out["reverse"] = scn.reverse_stress(sims, w, sb["priced_12m"])
+    # fans: mode = modal scenario's deterministic path; mean = probability-weighted deterministic paths;
+    # sigma = dispersion of the modal scenario's Monte Carlo paths (bootstrap of historical errors)
+    modal = max(w, key=w.get)
+    out["modal"] = modal
+    fan = {}
+    for var in ("i", "pi", "growth"):
+        if var == "growth":
+            det = {
+                k: sb["g_star"] - sb["params"].okun * 4 * np.diff(np.r_[init["u"], s["det"]["u"][0]])
+                for k, s in sims.items()
+            }
+            mc_modal = sb["g_star"] - sb["params"].okun * 4 * np.diff(
+                np.c_[np.full(len(sims[modal]["mc"]["u"]), init["u"]), sims[modal]["mc"]["u"]], axis=1
+            )
+        else:
+            det = {k: s["det"][var][0] for k, s in sims.items()}
+            mc_modal = sims[modal]["mc"][var]
+        mode = pd.Series(det[modal], index=fut)
+        mean = pd.Series(sum(w[k] * det[k] for k in det), index=fut)
+        sig = pd.Series(mc_modal.std(0), index=fut)
+        fan[var] = fans.fan_quantiles(mode, sig, mean)
+    out["fans"] = fan
+    # market mapping of the weighted change in the expected policy rate at 4 quarters
+    d_pol = np.array([out["mean_i"].iloc[3] - init["i"], 0.25, 0.5, -0.5])
+    from macro.transmission import real_yield_betas  # noqa: F401  (betas from the transmission bundle)
+
+    tb = transmission_bundle()
+    rb = tb["real_betas"]
+    spx = rb[(rb["asset"] == "S&P 500") & (rb["regime"] == "all")].iloc[0]
+    out["mapping"] = scn.market_mapping(
+        d_pol, sb["beta2"], sb["beta10"], (float(spx["b_real"]), float(spx["se_real"]))
+    )
+    return out
+
+
+def regime_bundle(force: bool = False) -> dict:
+    def compute() -> dict:
+        gdp = get_series("GDPC1")
+        pot = get_series("GDPPOT")
+        g4 = 100 * np.log(gdp).diff(4)
+        trend = 100 * np.log(pot.reindex(gdp.index)).diff(4)
+        pce = panels.monthly("PCEPILFE")
+        core = (100 * (pce / pce.shift(12) - 1)).resample("QS").mean()
+        tgt = float(assumptions()["central_banks"]["fed"]["inflation_target"])
+        hist = rg.two_by_two(g4, trend, core, tgt)
+        cpi_core = panels.monthly("CPILFESL")
+        x = 100 * ((cpi_core / cpi_core.shift(3)) ** 4 - 1)
+        ms = rg.markov_inflation(x.loc["1990":])
+        return {"history": hist, "markov": ms, "target": tgt, "as_of": hist.index[-1]}
+
+    return load_or_compute("regimes:US", compute, force=force)
+
+
 def as_of_str(ts) -> str:
     return pd.Timestamp(ts).strftime("%Y-%m") if ts is not None else "n/a"
+
+
+def _chg(series_id: str, days: int, kind: str) -> float:
+    s = try_series(series_id)
+    if s is None or len(s.dropna()) <= days:
+        return np.nan
+    s = s.dropna()
+    return (
+        float(100 * (s.iloc[-1] - s.iloc[-1 - days]))
+        if kind == "bp"
+        else float(100 * np.log(s.iloc[-1] / s.iloc[-1 - days]))
+    )
+
+
+def build_views(weights: dict[str, float] | None = None) -> dict:
+    """Scorecard per central bank, commentary, weekly changes, priced vs model, market confirmation,
+    and the structured view. Reads the cached bundles; cheap enough to run on every page load."""
+    from macro.config import calendar
+
+    a = assumptions()
+    lo, hi = a["rstar"]["user_range"]
+    mid = (lo + hi) / 2
+    sb = scenario_bundle()
+    w = weights or sb["base_weights"]
+    sr = scenario_results(sb, w)
+    fcb, cvb, gb, posb = fincond_bundle(), curves_bundle(), growth_bundle(), positioning_bundle()
+    rows, comments = [], {}
+    for bank in BANKS:
+        pb = policy_bundle(bank)
+        cur = pb["current"]
+        tgt = float(a["central_banks"][bank]["inflation_target"])
+        r93 = a["rules"]["taylor1993"]
+        presc = pol.taylor(cur["pi"], cur["y"], mid, tgt, r93["a_pi"], r93["a_gap"])
+        infl_gap = cur["pi"] - tgt
+        pgap = presc - cur["i"]
+
+        def add(metric, value, unit, status, note="", _bank=bank):
+            rows.append({"bank": _bank.upper(), **vw.scorecard_row(metric, value, unit, status, note)})
+
+        add(
+            f"Inflation vs target ({pb['panel']['ids']['infl_label']})",
+            infl_gap,
+            "pp",
+            vw.status_from(abs(infl_gap), (0.5, 1.0, 2.0)),
+        )
+        add(
+            f"Policy gap (Taylor at r*={mid:.2f} minus actual)",
+            pgap,
+            "pp",
+            vw.status_from(abs(pgap), (0.5, 1.0, 2.0)),
+            "positive = rule above actual (behind the curve on this metric)",
+        )
+        if bank == "fed":
+            g = fcb["gap"]["gap"]
+            add(
+                "Financial-conditions gap (FCI-lite)",
+                g,
+                "pp of growth",
+                vw.status_from(abs(g), (0.25, 0.5, 1.0)),
+            )
+            sp = cvb["spreads"].iloc[-1]
+            reg = cvb["regimes"]["regime"].iloc[-1]
+            add(
+                "Curve 3m10y / regime",
+                float(sp["3m10y"]),
+                "bp",
+                "serious" if sp["3m10y"] < 0 else "good",
+                reg,
+            )
+            rp = gb["recession"].value
+            add("Recession probability, 12m (probit)", rp, "prob.", vw.status_from(rp, (0.2, 0.35, 0.5)))
+            gq = float(gb["gar"][4].extra["quantiles"][0.05])
+            add(
+                "Growth-at-Risk 5%, 4Q ahead",
+                gq,
+                "% ann.",
+                vw.status_from(gq, (0.0, -1.0, -2.0), higher_is_worse=False),
+            )
+            n_crowd = int((posb["table"]["flag"] != "").sum()) if posb["adjusted"] else 0
+            add(
+                "Crowded positions (CFTC TFF)",
+                n_crowd,
+                "count",
+                "good" if n_crowd == 0 else "warning" if n_crowd <= 2 else "serious",
+            )
+        if bank == "ecb":
+            lat = cvb["stress"]["latest"]
+            flags = int((lat["level flag"] | lat["speed flag"]).sum())
+            add(
+                "Sovereign stress flags (OAT/BTP/Bonos-Bund)",
+                flags,
+                "count",
+                "good" if flags == 0 else "serious",
+            )
+            ea = gb.get("ea_recession") or {}
+            if "current" in ea:
+                pe = ea["current"]["p"]
+                add(
+                    "Recession probability, 12m (EA probit)",
+                    pe,
+                    "prob.",
+                    vw.status_from(pe, (0.2, 0.35, 0.5)),
+                )
+        if bank == "boj":
+            jp = cvb["jgb"].dropna()
+            add("JGB 10Y, 12-month change", float(100 * (jp.iloc[-1] - jp.iloc[-13])), "bp", "good")
+        stance = "below" if pgap > 0 else "above"  # pgap = rule - actual
+        comments[bank] = (
+            f"{bank.upper()}: {pb['panel']['ids']['infl_label']} inflation is {cur['pi']:.1f}% "
+            f"({infl_gap:+.1f} pp vs target); the policy rate ({cur['i']:.2f}%) is {abs(pgap):.2f} pp {stance} a Taylor (1993) "
+            f"prescription with r* at the middle of the {lo:.2f}-{hi:.2f}% range."
+        )
+    score = pd.DataFrame(rows)
+    # what changed over the last 5 business days
+    changes = pd.DataFrame(
+        [
+            {"indicator": "US 2Y yield", "change": _chg("DGS2", 5, "bp"), "unit": "bp"},
+            {"indicator": "US 10Y yield", "change": _chg("DGS10", 5, "bp"), "unit": "bp"},
+            {"indicator": "10Y breakeven", "change": _chg("T10YIE", 5, "bp"), "unit": "bp"},
+            {"indicator": "Euro area 2Y (AAA)", "change": _chg("EA_YC_2Y", 5, "bp"), "unit": "bp"},
+            {"indicator": "Broad dollar", "change": _chg("DTWEXBGS", 5, "pct"), "unit": "%"},
+            {"indicator": "EURUSD", "change": _chg("EURUSD", 5, "pct"), "unit": "%"},
+            {"indicator": "USDJPY", "change": _chg("USDJPY", 5, "pct"), "unit": "%"},
+            {"indicator": "S&P 500", "change": _chg("SPX", 5, "pct"), "unit": "%"},
+            {"indicator": "Baa-10Y credit spread", "change": _chg("BAA10Y", 5, "bp"), "unit": "bp"},
+        ]
+    ).set_index("indicator")
+    wk = gb["weekly"]
+    nowcast_change = (
+        float(wk["change"].iloc[-1]) if "change" in wk and wk["change"].notna().iloc[-1] else np.nan
+    )
+    # priced vs model (Fed)
+    init = sb["init"]
+    q_i = sr["q_i"]
+    pvm = [
+        {
+            "bank": "FED",
+            "item": "Policy rate in 4 quarters",
+            "priced": sb["priced_12m"],
+            "model (median)": q_i.iloc[3][0.5],
+            "model 68% low": q_i.iloc[3][0.16],
+            "model 68% high": q_i.iloc[3][0.84],
+            "priced source": sb["priced_src"],
+        }
+    ]
+    model_2y = float(sr["mean_i"].mean())
+    pvm.append(
+        {
+            "bank": "FED",
+            "item": "2Y yield (avg expected policy over 8Q)",
+            "priced": float(panels.monthly("DGS2").dropna().iloc[-1]),
+            "model (median)": model_2y,
+            "model 68% low": float(sr["q_i"][0.16].mean()),
+            "model 68% high": float(sr["q_i"][0.84].mean()),
+            "priced source": "FRED DGS2",
+        }
+    )
+    pvm.append(
+        {
+            "bank": "FED",
+            "item": "10Y yield (engine, next quarter)",
+            "priced": float(panels.monthly("DGS10").dropna().iloc[-1]),
+            "model (median)": float(sr["q_y10"].iloc[0][0.5]),
+            "model 68% low": float(sr["q_y10"].iloc[0][0.16]),
+            "model 68% high": float(sr["q_y10"].iloc[0][0.84]),
+            "priced source": "FRED DGS10",
+        }
+    )
+    for bank in ("ecb", "boj"):
+        pb = policy_bundle(bank)
+        rf = pb["rf_full"].value
+        if rf is None:
+            continue
+        t = rf["estimate"]
+        c_gap = t["c (output gap)"] if t["c (output gap)"] == t["c (output gap)"] else 0.0
+        target_rate = t["a"] + t["b (inflation)"] * pb["current"]["pi"] + c_gap * pb["current"]["y"]
+        priced = pb["current"]["y2"]
+        pvm.append(
+            {
+                "bank": bank.upper(),
+                "item": "Policy rate (reaction-function long-run target)",
+                "priced": priced if priced is not None else np.nan,
+                "model (median)": target_rate,
+                "model 68% low": np.nan,
+                "model 68% high": np.nan,
+                "priced source": "2Y AAA yield proxy" if priced is not None else "not available",
+            }
+        )
+    pvm = pd.DataFrame(pvm)
+    # market confirmation of the model's policy direction
+    d4 = float(sr["mean_i"].iloc[3] - init["i"])
+    view = "tightening" if d4 > 0.125 else "easing" if d4 < -0.125 else "on hold"
+    moves = {
+        "2Y yield": _chg("DGS2", 20, "bp"),
+        "10Y breakeven": _chg("T10YIE", 20, "bp"),
+        "Broad dollar": _chg("DTWEXBGS", 20, "pct"),
+        "Credit spread": _chg("BAA10Y", 20, "bp"),
+        "S&P 500": _chg("SPX", 20, "pct"),
+    }
+    conf = vw.market_confirmation(moves, view) if view != "on hold" else pd.DataFrame()
+    cal = [e for e in calendar().events if e.date >= pd.Timestamp(gb["as_of"]).date()][:4]
+    catalysts = [f"{e.date}: {e.label}{'' if e.verified else ' (date unverified)'}" for e in cal]
+    nc = gb["nowcast"]
+    evidence = [
+        comments["fed"],
+        f"GDP nowcast for {nc['target']}: {nc['point']:.1f}% annualised (68% band {nc['lo68']:.1f} to {nc['hi68']:.1f}).",
+        f"Financial-conditions gap {fcb['gap']['gap']:+.2f} pp of growth (FCI-lite; positive = more tightening needed to close the output gap).",
+        f"12-month recession probability {100 * gb['recession'].value:.0f}% (probit, {gb['recession'].extra['episodes']} episodes in sample).",
+    ]
+    view_txt = {
+        "tightening": "The models imply further Fed tightening over the next four quarters",
+        "easing": "The models imply Fed easing over the next four quarters",
+        "on hold": "The models imply a broadly unchanged Fed policy rate over the next four quarters",
+    }[view]
+    vt = vw.view_template(
+        view=f"{view_txt} (probability-weighted mean change {d4:+.2f} pp).",
+        evidence=evidence,
+        priced=f"Priced policy rate in 12 months: {sb['priced_12m']:.2f}% ({sb['priced_src']}); model median {q_i.iloc[3][0.5]:.2f}%.",
+        change_view=[
+            "Core inflation momentum (3m annualised) falling below target for two consecutive prints.",
+            "A Sahm-type rise in unemployment.",
+            "A sharp tightening of financial conditions (FCI-lite up 0.5 pp).",
+        ],
+        risks=[
+            f"{sb['scenarios'][k]['label']} ({100 * v:.0f}%)"
+            for k, v in sorted(sr["weights"].items(), key=lambda x: -x[1])
+        ],
+        catalysts=catalysts,
+        implications=[
+            f"A +25bp shift in the expected policy path is consistent with about {25 * sb['beta2'][0]:.0f}bp on the 2Y "
+            f"and {25 * sb['beta10'][0]:.0f}bp on the 10Y (estimated sensitivities).",
+            "Equity sensitivity to real yields is reported on the Transmission page with bands.",
+        ],
+    )
+    return {
+        "scorecard": score,
+        "comments": comments,
+        "changes": changes,
+        "nowcast_change": nowcast_change,
+        "priced_vs_model": pvm,
+        "view": view,
+        "confirmation": conf,
+        "template": vt,
+        "scenario": sr,
+        "as_of": gb["as_of"],
+    }

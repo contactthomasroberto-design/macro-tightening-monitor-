@@ -36,4 +36,9 @@ def collect() -> dict[str, float]:
     out["transmission_sb_corr_high_infl"] = float(t["stock_bond"].loc["core > 3%", "corr"])
     p2 = pipeline.positioning_bundle()
     out["positioning_es_lev_pct"] = float(p2["table"].set_index("id").loc["TFF_ES_LEV", "percentile (3y)"])
+    sb = pipeline.scenario_bundle()
+    sr = pipeline.scenario_results(sb, sb["base_weights"])
+    out["scenario_policy_4q_median"] = float(sr["q_i"].iloc[3][0.5])
+    out["scenario_recession_prob"] = float(sr["recession_prob"])
+    out["fan_policy_gamma_q1"] = float(sr["fans"]["i"]["gamma"].iloc[0])
     return out

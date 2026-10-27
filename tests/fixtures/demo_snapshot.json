@@ -1,6 +1,7 @@
 {
   "curves_2s10s_last": 50.719903165751255,
   "curves_duration_share": 0.6506727596485918,
+  "fan_policy_gamma_q1": 0.612044925888518,
   "fincond_fci1y_last": 0.24618614882132095,
   "fincond_gap": 0.964889111680277,
   "gar4_q05": -0.38767582238163606,
@@ -15,5 +16,7 @@
   "policy_fed_rf_rho": 0.8991031748708683,
   "positioning_es_lev_pct": 96.12903225806451,
   "recession_prob": 0.2289287637731542,
+  "scenario_policy_4q_median": 3.0,
+  "scenario_recession_prob": 0.8277100000000001,
   "transmission_sb_corr_high_infl": 0.4026629252764217
 }
