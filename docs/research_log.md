@@ -28,3 +28,6 @@ looking at results. Each dashboard page states how many specifications were trie
 | 2026-10-27 | growth | H8: the DFM nowcast beats an AR(1) just before the advance release (RMSE, DM at 10%). | 1 factor structure (Global/Soft/Nominal/Labor, AR(2) factors) fixed a priori | Demo only. | kept |
 | 2026-10-27 | growth | H9: NFCI lowers the 5% conditional quantile of future growth more than the median (ABG asymmetry). | 2 horizons (1Q, 4Q) | Demo only. | kept |
 | 2026-10-27 | recession | H10: adding credit spread, unemployment change and NFCI to the term-spread probit improves out-of-sample AUC and Brier. | 3 (spread probit, extended probit, L2 logit) | Demo only. | kept |
+| 2026-10-27 | transmission | H11: the stock-bond correlation is positive when core inflation exceeds 3% and negative/zero below 2%. | 1 (3 buckets fixed a priori) | Demo only (planted by the simulator, so not evidence). | kept |
+| 2026-10-27 | transmission | H12: semiconductors and AI leaders have larger (more negative) real-yield betas than the S&P 500. | 1 per asset + 3 regimes | Demo only. | kept |
+| 2026-10-27 | positioning | No hypothesis tested: descriptive monitor. | — | — | kept |
