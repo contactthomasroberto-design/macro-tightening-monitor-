@@ -15,7 +15,9 @@ from macro import growth as gr
 from macro import inflation as inf
 from macro import panels
 from macro import policy as pol
+from macro import positioning as pos
 from macro import recession as rc
+from macro import transmission as tr
 from macro.config import assumptions, catalogue
 from macro.data import get_series, try_series
 from macro.data.vintages import LATEST_VINTAGE_LABEL
@@ -403,6 +405,126 @@ def growth_bundle(force: bool = False, eval_start: str = "2008Q1") -> dict:
         return stamp(out, ids, today)
 
     return load_or_compute("growth:US", compute, force=force)
+
+
+AI_BASKET = ["NVDA", "MSFT", "GOOGL", "AMZN", "META"]
+
+
+def ai_basket() -> pd.Series | None:
+    """Equal-weight index of available AI-leader stocks (daily rebalanced: mean of log returns)."""
+    rets = {t: np.log(s).diff() for t in AI_BASKET if (s := try_series(t)) is not None}
+    if not rets:
+        return None
+    r = pd.DataFrame(rets).mean(axis=1, skipna=True).dropna()
+    return 100 * np.exp(r.cumsum())
+
+
+def transmission_bundle(force: bool = False) -> dict:
+    def compute() -> dict:
+        spx = get_series("SPX")
+        eq_m = 100 * np.log(spx.resample("MS").last()).diff()
+        d10_m = get_series("DGS10").resample("MS").last().diff()
+        core = panels.monthly("CPILFESL")
+        core_yoy = 100 * (core / core.shift(12) - 1)
+        sb = tr.stock_bond_by_regime(eq_m, d10_m, core_yoy)
+        sb_roll = tr.rolling_stock_bond(eq_m, d10_m)
+        events = tr.policy_events(get_series("DFEDTARU"))
+        prices = {
+            "2Y yield": get_series("DGS2"),
+            "10Y yield": get_series("DGS10"),
+            "S&P 500": spx,
+            "Euro Stoxx 50": get_series("SX5E"),
+            "Semiconductors (SOX)": get_series("SOX"),
+            "Broad dollar": get_series("DTWEXBGS"),
+        }
+        kinds = {k: ("yield" if "yield" in k else "price") for k in prices}
+        es = {t: tr.event_study(prices, kinds, events.index[events["type"] == t]) for t in ("hike", "cut")}
+        # weekly returns and real-yield / breakeven changes
+        w = lambda s: s.resample("W-FRI").last()  # noqa: E731
+        assets = {"S&P 500": spx, "Semiconductors (SOX)": get_series("SOX")}
+        ai = ai_basket()
+        if ai is not None:
+            assets["AI leaders (equal weight)"] = ai
+        ret_w = pd.DataFrame({k: 100 * np.log(w(v)).diff() for k, v in assets.items()})
+        d_real = w(get_series("DFII10")).diff()
+        d_be = w(get_series("T10YIE")).diff()
+        regime = pd.cut(
+            core_yoy, [-np.inf, 2, 3, np.inf], labels=["core < 2%", "core 2-3%", "core > 3%"]
+        ).astype(str)
+        regime = regime.where(core_yoy.notna())
+        betas = tr.real_yield_betas(ret_w, d_real, d_be, regime)
+        roll = {k: tr.rolling_real_beta(ret_w[k], d_real, d_be) for k in ret_w}
+        d2 = get_series("DGS2").diff()
+        surprise = d2.reindex(events.index)
+        lp = tr.local_projections_surprise(
+            {
+                "10Y yield": (get_series("DGS10"), "yield"),
+                "S&P 500": (spx, "price"),
+                "Broad dollar": (get_series("DTWEXBGS"), "price"),
+            },
+            surprise,
+        )
+        us2 = panels.monthly("DGS2")
+        fx = {}
+        if (ea2 := panels.monthly("EA_YC_2Y", optional=True)) is not None:
+            fx["EURUSD"] = tr.fx_differential_model(
+                panels.monthly("EURUSD", how="last"), (ea2 - us2).dropna(), "EURUSD"
+            )
+            fx["EURUSD"].extra["diff_label"] = "EA 2Y AAA minus US 2Y (pp)"
+        if (jp10 := panels.monthly("JP_10Y", optional=True)) is not None:
+            fx["USDJPY"] = tr.fx_differential_model(
+                panels.monthly("USDJPY", how="last"), (panels.monthly("DGS10") - jp10).dropna(), "USDJPY"
+            )
+            fx["USDJPY"].extra["diff_label"] = "US 10Y minus JGB 10Y (pp)"
+        out = {
+            "stock_bond": sb,
+            "stock_bond_rolling": sb_roll,
+            "events": events,
+            "event_study": es,
+            "real_betas": betas,
+            "rolling_betas": roll,
+            "lp": lp,
+            "fx": fx,
+            "as_of": spx.index[-1],
+            "n_events": events["type"].value_counts().to_dict(),
+        }
+        ids = [
+            "SPX",
+            "SX5E",
+            "SOX",
+            "DGS2",
+            "DGS10",
+            "DFII10",
+            "T10YIE",
+            "DTWEXBGS",
+            "DFEDTARU",
+            "CPILFESL",
+            "EURUSD",
+            "USDJPY",
+            "EA_YC_2Y",
+            "JP_10Y",
+            *AI_BASKET,
+        ]
+        return stamp(out, ids, out["as_of"])
+
+    return load_or_compute("transmission:all", compute, force=force)
+
+
+def positioning_bundle(force: bool = False) -> dict:
+    def compute() -> dict:
+        ids = list(pos.LABELS)
+        prices = {k: get_series(k) for k in ("SPX", "EURUSD", "USDJPY")}
+        adj = {}
+        for sid in ids:
+            s = try_series(sid)
+            if s is not None:
+                adj[sid] = pos.adjust(s, sid, prices)
+        tab, pct = pos.positioning_table(adj)
+        lag = catalogue().get(ids[0]).release_lag_days
+        last = max(s.index[-1] for s in adj.values()) if adj else None
+        return {"adjusted": adj, "table": tab, "percentiles": pct, "as_of": last, "lag_days": lag}
+
+    return load_or_compute("positioning:all", compute, force=force)
 
 
 def as_of_str(ts) -> str:

@@ -32,4 +32,8 @@ def collect() -> dict[str, float]:
     out["growth_rt_rmse_prerelease"] = float(g["realtime"]["scores"].loc["pre-release", "rmse DFM"])
     out["gar4_q05"] = float(g["gar"][4].extra["quantiles"][0.05])
     out["recession_prob"] = float(g["recession"].value)
+    t = pipeline.transmission_bundle()
+    out["transmission_sb_corr_high_infl"] = float(t["stock_bond"].loc["core > 3%", "corr"])
+    p2 = pipeline.positioning_bundle()
+    out["positioning_es_lev_pct"] = float(p2["table"].set_index("id").loc["TFF_ES_LEV", "percentile (3y)"])
     return out
