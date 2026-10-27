@@ -977,3 +977,28 @@ def build_views(weights: dict[str, float] | None = None) -> dict:
         "scenario": sr,
         "as_of": gb["as_of"],
     }
+
+
+ARCHIVE_VARIABLES = {
+    "US headline inflation yoy": ("CPIAUCSL", "yoy"),
+    "EA headline inflation yoy": ("EA_HICP", "yoy"),
+    "JP headline inflation yoy": ("JP_CPI", "yoy"),
+    "US real GDP growth q/q annualised": ("GDPC1", "qoq_ann"),
+}
+
+
+def archive_outcomes() -> dict[str, pd.Series]:
+    """Realised values (latest vintage) for every archived variable, indexed by target date."""
+    out = {}
+    for var, (sid, kind) in ARCHIVE_VARIABLES.items():
+        s = try_series(sid)
+        if s is None:
+            continue
+        out[var] = 100 * (s / s.shift(12) - 1) if kind == "yoy" else 400 * np.log(s).diff()
+    return out
+
+
+def track_record() -> tuple[pd.DataFrame, pd.DataFrame]:
+    from macro import archive
+
+    return archive.track_record(archive.read(), archive_outcomes())

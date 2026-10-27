@@ -12,7 +12,7 @@ import time
 
 import _bootstrap  # noqa: F401
 from macro import archive, pipeline
-from macro.utils import run_metadata
+from macro.utils import is_demo, run_metadata
 
 
 def _step(name, fn):
@@ -20,6 +20,40 @@ def _step(name, fn):
     out = fn()
     print(f"  {name:28s} {time.time() - t0:6.1f}s")
     return out
+
+
+def backfill_demo_archive(b: dict, region: str, last_n: int = 24) -> int:
+    """DEMO ONLY: seed the demo archive with pseudo out-of-sample forecasts from the last `last_n`
+    origins so the Track record page has evaluation points. Never used in live mode: the live
+    archive only contains forecasts actually made by scheduled runs."""
+    import pandas as pd
+
+    assert is_demo()
+    f = b["oos"]["forecasts"]
+    f = f[f["model"].isin(["COMB", "RW"]) & f["origin"].isin(sorted(f["origin"].unique())[-last_n:])].dropna(
+        subset=["point", "sigma"]
+    )
+    n = 0
+    for origin, g in f.groupby("origin"):
+        fc = pd.DataFrame(
+            {
+                "model": g["model"],
+                "target_date": g["origin"] + g["h"].map(lambda h: pd.DateOffset(months=int(h))),
+                "h": g["h"],
+                "point": g["point"],
+                "sigma": g["sigma"],
+            }
+        )
+        n += archive.record(
+            fc,
+            module="inflation",
+            variable=f"{region} headline inflation yoy",
+            region=region,
+            data_as_of=origin,
+            vintage_label="demo backfill (pseudo out-of-sample)",
+            run_date=origin.date(),
+        )
+    return n
 
 
 def main() -> int:
@@ -33,6 +67,9 @@ def main() -> int:
 
     for region in ("US", "EA", "JP"):
         b = _step(f"inflation {region}", lambda r=region: pipeline.inflation_bundle(r, force=args.force))
+        if "oos" in b and is_demo() and not args.no_archive:
+            n = backfill_demo_archive(b, region)
+            print(f"    demo only: backfilled {n} pseudo out-of-sample forecasts into the demo archive")
         if "forecasts" in b and not args.no_archive:
             n = archive.record(
                 b["forecasts"],

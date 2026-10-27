@@ -27,6 +27,15 @@ def status_from(value: float, thresholds: tuple[float, float, float], higher_is_
     return "critical"
 
 
+def format_value(value, unit: str) -> str:
+    """Display format for scorecard values: counts as integers, probabilities in %, others signed."""
+    if unit == "count":
+        return f"{int(value)}"
+    if unit == "prob.":
+        return f"{100 * value:.0f}%"
+    return f"{value:+.2f} {unit}"
+
+
 def scorecard_row(metric: str, value, unit: str, status: str, note: str = "") -> dict:
     return {"metric": metric, "value": value, "unit": unit, "status": status, "note": note}
 
