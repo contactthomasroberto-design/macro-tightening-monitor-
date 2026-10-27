@@ -125,6 +125,15 @@ pipeline, reports) · `app/` (dashboard) · `scripts/` · `archive/forecasts.csv
 Unpublishable inputs (OIS-implied paths) go in `config/assumptions.yaml` with source and date; the
 dashboard flags entries older than 30 days.
 
+### Online dashboard (Streamlit Community Cloud, no install)
+
+1. Sign in at https://share.streamlit.io with GitHub (works from a phone browser).
+2. **Create app** → *Deploy a public app from GitHub* → repository
+   `contactthomasroberto-design/macro-tightening-monitor-`, branch `main`, main file `app/streamlit_app.py`.
+3. **Advanced settings** → Python **3.13**. Secrets (optional, for real data):
+   `MACRO_MODE = "live"` and `FRED_API_KEY = "..."`. Without secrets the app runs in demo mode (synthetic data).
+4. **Deploy**. The first page load computes every model (several minutes); later loads use the cache.
+
 ## 10. Governance
 
 Model cards ([`docs/model_cards/`](docs/model_cards/)), a model changelog with a monthly code-freeze
