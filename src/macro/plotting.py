@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -57,9 +58,16 @@ def fan_colors(base: str = ENTITY["fed"], n: int = 4) -> list[str]:
     return [f"rgba({r},{g},{b},{a:.2f})" for a in alphas]
 
 
+def _default_line_mode(fig: go.Figure) -> None:
+    for tr in fig.data:
+        if tr.type == "scatter" and tr.mode is None:
+            tr.mode = "lines"
+
+
 def base_layout(
     fig: go.Figure, title: str, source: str, as_of: str | None, theme: str = "light", height: int = 420
 ) -> go.Figure:
+    _default_line_mode(fig)
     t = THEMES[theme]
     footer = f"Source: {source}. As of {as_of or 'n/a'}."
     fig.update_layout(
@@ -98,8 +106,7 @@ def stamp_synthetic(fig: go.Figure) -> go.Figure:
         x=0.5,
         y=0.5,
         showarrow=False,
-        font={"size": 18, "color": "rgba(208,59,59,0.35)"},
-        textangle=-12,
+        font={"size": 13, "color": "rgba(208,59,59,0.35)"},
     )
     return fig
 
@@ -176,11 +183,19 @@ def band_chart(
     fill = fan_colors(base_color, 2)[1]
     fig = go.Figure()
     fig.add_trace(
-        go.Scatter(x=upper.index, y=upper.values, line={"width": 0}, showlegend=False, hoverinfo="skip")
+        go.Scatter(
+            x=upper.index, y=upper.values, mode="lines", line={"width": 0}, showlegend=False, hoverinfo="skip"
+        )
     )
     fig.add_trace(
         go.Scatter(
-            x=lower.index, y=lower.values, fill="tonexty", fillcolor=fill, line={"width": 0}, name=band_name
+            x=lower.index,
+            y=lower.values,
+            mode="lines",
+            fill="tonexty",
+            fillcolor=fill,
+            line={"width": 0},
+            name=band_name,
         )
     )
     fig.add_trace(
@@ -294,3 +309,83 @@ def status_badge(level: str) -> str:
 
 def footer_text() -> str:
     return DISCLAIMER
+
+
+def small_multiples(
+    df: pd.DataFrame,
+    title: str,
+    source: str,
+    as_of: str | None,
+    ncols: int = 3,
+    hline: float | None = None,
+    rec: pd.Series | None = None,
+    theme: str = "light",
+    yaxis: str = "",
+    colors: Sequence[str] | None = None,
+) -> go.Figure:
+    """One panel per column (no dual axes); shared x axis, independent y axes."""
+    from plotly.subplots import make_subplots
+
+    n = df.shape[1]
+    nrows = int(np.ceil(n / ncols))
+    fig = make_subplots(
+        rows=nrows,
+        cols=ncols,
+        subplot_titles=[str(c) for c in df.columns],
+        shared_xaxes=True,
+        vertical_spacing=0.12,
+        horizontal_spacing=0.06,
+    )
+    for k, c in enumerate(df.columns):
+        r, cc = k // ncols + 1, k % ncols + 1
+        s = df[c].dropna()
+        fig.add_trace(
+            go.Scatter(
+                x=s.index,
+                y=s.values,
+                name=str(c),
+                mode="lines",
+                showlegend=False,
+                line={"width": LINE_WIDTH, "color": (colors[k] if colors else color(0))},
+            ),
+            row=r,
+            col=cc,
+        )
+        if hline is not None:
+            fig.add_hline(
+                y=hline, line_width=1, line_dash="dash", line_color=THEMES[theme]["muted"], row=r, col=cc
+            )
+        add_recession_shading(fig, rec, theme, row=r, col=cc)
+    fig.update_yaxes(title_text=yaxis, col=1)
+    base_layout(fig, title, source, as_of, theme, height=260 * nrows + 120)
+    fig.update_layout(showlegend=False)
+    return fig
+
+
+def histogram(
+    values,
+    title: str,
+    source: str,
+    as_of: str | None,
+    bins: int = 10,
+    theme: str = "light",
+    xrange: tuple[float, float] | None = (0, 1),
+    expected: float | None = None,
+) -> go.Figure:
+    v = np.asarray(values, float)
+    v = v[~np.isnan(v)]
+    fig = go.Figure(
+        go.Histogram(
+            x=v,
+            xbins={"start": xrange[0], "end": xrange[1], "size": (xrange[1] - xrange[0]) / bins}
+            if xrange
+            else None,
+            marker_color=color(0),
+            name="count",
+        )
+    )
+    if expected is not None:
+        fig.add_hline(
+            y=expected, line_dash="dash", line_color=THEMES[theme]["muted"], annotation_text="uniform"
+        )
+    return base_layout(fig, title, source, as_of, theme, height=340)
