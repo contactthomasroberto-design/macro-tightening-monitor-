@@ -10,6 +10,7 @@ click==8.5.0
 cloudpickle==3.1.2
 coverage==7.17.0
 defusedxml==0.7.1
+et_xmlfile==2.0.0
 fonttools==4.67.0
 formulaic==1.2.2
 fpdf2==2.8.9
@@ -21,8 +22,8 @@ interface_meta==2.0.1
 itsdangerous==2.2.0
 Jinja2==3.1.6
 joblib==1.6.0
-jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
+jsonschema==4.26.0
 kaleido==1.5.0
 librt==0.16.0
 logistro==2.0.1
@@ -31,6 +32,7 @@ mypy==2.4.0
 mypy_extensions==1.1.0
 narwhals==2.28.0
 numpy==2.5.4
+openpyxl==3.1.5
 packaging==26.3
 pandas==3.1.0
 pathspec==1.1.1
@@ -45,8 +47,8 @@ pydantic==2.14.1
 pydantic_core==2.50.1
 pydeck==0.9.3
 Pygments==2.21.0
-pytest==9.1.1
 pytest-cov==7.1.0
+pytest==9.1.1
 python-dateutil==3.0.0
 python-multipart==0.0.32
 PyYAML==6.0.3
@@ -71,3 +73,4 @@ uvicorn==0.54.0
 watchdog==6.0.0
 websockets==17.3
 wrapt==2.5.2rc1
+xlrd==2.0.2

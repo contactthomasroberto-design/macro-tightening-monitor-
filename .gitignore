@@ -9,14 +9,14 @@ __pycache__/
 .hypothesis/
 .coverage
 # data caches and raw third-party downloads (never committed, see BRIEF §2.12)
-data/
+/data/
 *.sqlite
 *.sqlite3
 *.db
-raw/
+/raw/
 # generated outputs (reports are built as CI artifacts)
 docs/reports/*.pdf
 docs/figures/*.png
 docs/figures/*.pdf
-out/
+/out/
 .env
