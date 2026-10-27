@@ -76,10 +76,10 @@ def base_layout(
         plot_bgcolor=t["bg"],
         font={"color": t["fg"], "size": 12},
         height=height,
-        margin={"l": 60, "r": 20, "t": 60, "b": 80},
+        margin={"l": 60, "r": 20, "t": 90, "b": 80},
         hovermode="x unified",
-        showlegend=len(fig.data) >= 2 or None,
-        legend={"orientation": "h", "y": -0.18, "x": 0},
+        showlegend=len([tr for tr in fig.data if tr.showlegend is not False]) >= 2 or None,
+        legend={"orientation": "h", "y": 1.0, "yanchor": "bottom", "x": 0, "xanchor": "left"},
     )
     fig.update_xaxes(gridcolor=t["grid"], zeroline=False, showline=False)
     fig.update_yaxes(gridcolor=t["grid"], zerolinecolor=t["grid"], showline=False)
@@ -88,7 +88,9 @@ def base_layout(
         xref="paper",
         yref="paper",
         x=0,
-        y=-0.32,
+        y=0,
+        yanchor="top",
+        yshift=-52,
         showarrow=False,
         xanchor="left",
         font={"size": 10, "color": t["muted"]},
@@ -261,14 +263,16 @@ def fan_chart(
         )
     )
     fig.update_yaxes(title_text=yaxis)
-    base_layout(fig, title, source, as_of, theme, height=460)
+    base_layout(fig, title, source, as_of, theme, height=480)
+    fig.update_layout(margin={"b": 90})
     fig.add_annotation(
         text=f"Conditioning: {conditioning}",
         xref="paper",
         yref="paper",
         x=0,
-        y=1.0,
-        yanchor="bottom",
+        y=0,
+        yanchor="top",
+        yshift=-56,
         showarrow=False,
         xanchor="left",
         font={"size": 10, "color": THEMES[theme]["muted"]},

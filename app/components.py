@@ -71,3 +71,55 @@ def result_meta(res) -> None:
     st.caption(" · ".join(bits))
     for n in res.notes:
         st.caption(f"ℹ️ {n}")
+
+
+def sidebar_controls() -> dict:
+    """Global controls (BRIEF §7): date range, r* range, rule parameters. Values persist across pages
+    through session_state keys."""
+    import copy
+
+    from macro.config import assumptions
+
+    a = assumptions()
+    sb = st.sidebar
+    sb.header("Controls")
+    start_year = sb.slider(
+        "Charts start in", 1990, 2025, st.session_state.get("start_year", 2000), key="start_year"
+    )
+    lo, hi = a["rstar"]["user_range"]
+    rstar = sb.slider(
+        "r* range (real, %)",
+        -1.0,
+        3.0,
+        st.session_state.get("rstar_range", (float(lo), float(hi))),
+        step=0.25,
+        key="rstar_range",
+    )
+    rules = copy.deepcopy(a["rules"])
+    with sb.expander("Rule parameters"):
+        rules["taylor1993"]["a_pi"] = st.number_input(
+            "Taylor: inflation coefficient", 1.0, 3.0, float(rules["taylor1993"]["a_pi"]), 0.1, key="t93_api"
+        )
+        rules["taylor1993"]["a_gap"] = st.number_input(
+            "Taylor: output-gap coefficient",
+            0.0,
+            2.0,
+            float(rules["taylor1993"]["a_gap"]),
+            0.1,
+            key="t93_agap",
+        )
+        rules["inertial"]["rho"] = st.number_input(
+            "Inertial rule: smoothing ρ", 0.0, 0.99, float(rules["inertial"]["rho"]), 0.05, key="inr_rho"
+        )
+        rules["inertial"]["a_pi"] = rules["taylor1993"]["a_pi"]
+        rules["inertial"]["a_gap"] = rules["taylor1993"]["a_gap"]
+        rules["unemployment_gap"]["okun"] = st.number_input(
+            "Okun coefficient", 1.0, 3.0, float(rules["unemployment_gap"]["okun"]), 0.1, key="okun"
+        )
+    sb.caption("Defaults from config/assumptions.yaml.")
+    return {
+        "start": f"{start_year}-01-01",
+        "rstar_range": tuple(rstar),
+        "rules": rules,
+        "rstar_step": float(a["rstar"]["grid_step"]),
+    }
