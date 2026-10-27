@@ -11,9 +11,11 @@ import pandas as pd
 
 from macro import curves as cv
 from macro import fincond as fc
+from macro import growth as gr
 from macro import inflation as inf
 from macro import panels
 from macro import policy as pol
+from macro import recession as rc
 from macro.config import assumptions, catalogue
 from macro.data import get_series, try_series
 from macro.data.vintages import LATEST_VINTAGE_LABEL
@@ -332,6 +334,75 @@ def curves_bundle(force: bool = False) -> dict:
         return stamp(out, ids, out["as_of"])
 
     return load_or_compute("curves:all", compute, force=force)
+
+
+def growth_bundle(force: bool = False, eval_start: str = "2008Q1") -> dict:
+    """Nowcast (DFM + news), real-time evaluation, Growth-at-Risk, recession probabilities."""
+    from macro.data.health import reference_today
+
+    def compute() -> dict:
+        today = pd.Timestamp(reference_today())
+        raw = panels.growth_raw()
+
+        def vfn(d):
+            return panels.growth_vintage(raw, d)
+
+        M, Q = vfn(today)
+        res = gr.fit_dfm(M, Q)
+        target = Q[gr.GDP_ID].dropna().index.max() + 1
+        now = gr.nowcast(res, M, Q, target)
+        weekly = gr.weekly_history(res, vfn, today, weeks=12)
+        gdp_g = 400 * np.log(raw[gr.GDP_ID]).diff()
+        gdp_g.index = pd.PeriodIndex(gdp_g.index, freq="Q")
+        last_pub = Q[gr.GDP_ID].dropna().index.max()
+        quarters = pd.period_range(eval_start, last_pub, freq="Q")
+        spf = try_series("SPF_RGDP_CQ")
+        if spf is not None:
+            spf.index = pd.PeriodIndex(spf.index, freq="Q")
+        ev_rt = gr.realtime_evaluation(vfn, gdp_g, quarters, spf_cq=spf)
+        nfci_q = panels.monthly("NFCI").resample("QS").mean()
+        gdp_q = raw[gr.GDP_ID]
+        gar = {h: gr.growth_at_risk(gdp_q, nfci_q, h) for h in (1, 4)}
+        gar_bt = {h: gr.gar_backtest(gdp_q, nfci_q, h) for h in (1, 4)}
+        rdf, rec = panels.recession_panel("US")
+        rmod = rc.recession_model(rdf, rec)
+        sahm = rc.sahm(panels.monthly("UNRATE"))
+        ea = None
+        try:
+            edf, erec = panels.recession_panel("EA")
+            cols = ["spread_2y10y", "d6_unemp"]
+            if edf[["y", *cols]].dropna()["y"].sum() >= 2:
+                ea = {
+                    "current": rc.current_probability(edf, cols),
+                    "episodes": rc.episodes(erec),
+                    "n": len(edf[["y", *cols]].dropna()),
+                    "cols": cols,
+                }
+        except Exception as exc:  # optional block: report, do not fail the bundle
+            ea = {"error": str(exc)}
+        out = {
+            "dfm": {
+                "params": res.params,
+                "llf": float(res.llf),
+                "nobs": int(res.nobs),
+                "factors": gr.factor_structure(),
+            },
+            "nowcast": now,
+            "weekly": weekly,
+            "realtime": ev_rt,
+            "gar": gar,
+            "gar_backtest": gar_bt,
+            "recession": rmod,
+            "sahm": sahm,
+            "ea_recession": ea,
+            "as_of": today,
+            "gdp_growth": gdp_g,
+            "vintage_label": LATEST_VINTAGE_LABEL,
+        }
+        ids = [*gr.GROWTH_SPEC, gr.GDP_ID, "NFCI", "T10Y3M", "BAA10Y", "UNRATE", "USREC", "SPF_RGDP_CQ"]
+        return stamp(out, ids, today)
+
+    return load_or_compute("growth:US", compute, force=force)
 
 
 def as_of_str(ts) -> str:

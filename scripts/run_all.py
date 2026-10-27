@@ -48,6 +48,16 @@ def main() -> int:
     _step("policy cross-bank", lambda: pipeline.cross_bank_bundle(force=args.force))
     _step("financial conditions", lambda: pipeline.fincond_bundle(force=args.force))
     _step("curves", lambda: pipeline.curves_bundle(force=args.force))
+    g = _step("growth and recession", lambda: pipeline.growth_bundle(force=args.force))
+    if not args.no_archive:
+        import pandas as pd
+
+        nc = g["nowcast"]
+        fc = pd.DataFrame([{"model": "DFM nowcast", "target_date": nc["target"].to_timestamp(), "h": 0,
+                            "point": nc["point"], "sigma": nc["se"]}])
+        n = archive.record(fc, module="growth", variable="US real GDP growth q/q annualised", region="US",
+                           data_as_of=g["as_of"], vintage_label=g["vintage_label"])
+        print(f"    archived {n} GDP nowcast -> {archive.archive_path()}")
     return 0
 
 

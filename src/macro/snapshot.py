@@ -27,4 +27,9 @@ def collect() -> dict[str, float]:
     c = pipeline.curves_bundle()
     out["curves_2s10s_last"] = float(c["spreads"]["2s10s"].iloc[-1])
     out["curves_duration_share"] = float(c["duration"].value)
+    g = pipeline.growth_bundle()
+    out["growth_nowcast"] = float(g["nowcast"]["point"])
+    out["growth_rt_rmse_prerelease"] = float(g["realtime"]["scores"].loc["pre-release", "rmse DFM"])
+    out["gar4_q05"] = float(g["gar"][4].extra["quantiles"][0.05])
+    out["recession_prob"] = float(g["recession"].value)
     return out
