@@ -1,0 +1,84 @@
+# Inputs that cannot be sourced for free, plus model parameters.
+#
+# Market-pricing entries (OIS-implied paths, consensus paths) carry value, source and as_of.
+# The dashboard flags any entry with as_of older than `staleness_days` or with value: null.
+# NOTHING here is a forecast by this project. Fill the null entries yourself from a source
+# you can cite (e.g. CME FedWatch, ECB/BoJ OIS from a broker note), with the date.
+
+staleness_days: 30
+
+central_banks:
+  fed:
+    name: Federal Reserve
+    inflation_target: 2.0          # FOMC longer-run goal, PCE inflation (Statement on Longer-Run Goals)
+    target_measure: PCEPI
+    policy_series: DFF
+    step_bp: 25                    # conventional move size
+    max_step_bp: 75                # largest single move allowed in the scenario engine
+  ecb:
+    name: European Central Bank
+    inflation_target: 2.0          # symmetric 2% HICP medium-term target (2021 strategy review)
+    target_measure: EA_HICP
+    policy_series: EA_DFR
+    step_bp: 25
+    max_step_bp: 75
+  boj:
+    name: Bank of Japan
+    inflation_target: 2.0          # 2% CPI price-stability target (Jan 2013 joint statement)
+    target_measure: JP_CPI
+    policy_series: JP_POLICY
+    step_bp: 25
+    max_step_bp: 50
+
+# Policy-rule parameters (editable in the dashboard sidebar).
+rules:
+  taylor1993: {a_pi: 1.5, a_gap: 0.5}              # Taylor (1993)
+  balanced_approach: {a_pi: 1.5, a_gap: 1.0}       # Yellen (2012) "balanced approach"
+  unemployment_gap: {a_pi: 1.5, okun: 2.0}         # gap_y ~= -okun * (u - u*)
+  first_difference: {a_pi: 0.5, a_gap: 0.5}        # Orphanides (2003)-style change rule
+  inertial: {rho: 0.85, a_pi: 1.5, a_gap: 0.5}     # smoothed Taylor rule
+
+# r* range used for sensitivity when published HLW/LW estimates are unavailable
+# or as user range around them (real rate, percent).
+rstar:
+  user_range: [0.0, 1.5]
+  grid_step: 0.25
+
+# Market pricing — to be filled from a citable source. Null = not provided.
+market_pricing:
+  fed_terminal_rate:
+    value: null
+    unit: percent
+    horizon: "12 months"
+    source: null
+    as_of: null
+    note: "OIS-implied rate in 12 months (e.g. from CME FedWatch); used for priced-vs-model."
+  ecb_terminal_rate:
+    value: null
+    unit: percent
+    horizon: "12 months"
+    source: null
+    as_of: null
+    note: "ESTR OIS-implied deposit rate in 12 months."
+  boj_terminal_rate:
+    value: null
+    unit: percent
+    horizon: "12 months"
+    source: null
+    as_of: null
+    note: "TONA OIS-implied policy rate in 12 months."
+  jgb_10y_reference:
+    value: null
+    unit: percent
+    source: null
+    as_of: null
+    note: "Any BoJ yield-curve reference level, if one is in force. Null if none."
+
+# Financial-conditions gap (PIMCO-style "how much tightening is left"); explicit and editable.
+fincond:
+  output_gap_closure_quarters: 8      # horizon over which the FCI impulse should close the gap
+  fci_multiplier_uncertainty: 0.3     # +/- relative uncertainty on growth sensitivities used in equivalences
+
+# Probability statement thresholds.
+inflation:
+  exceed_margin_pp: 0.5               # P(inflation > target + margin in 12 months)

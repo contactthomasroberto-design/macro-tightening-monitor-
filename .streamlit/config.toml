@@ -1,0 +1,15 @@
+[theme]
+# Light is the default; Streamlit's settings menu offers the dark theme (colors in macro.plotting).
+base = "light"
+primaryColor = "#2a78d6"
+font = "sans serif"
+
+[server]
+headless = true
+runOnSave = false
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"

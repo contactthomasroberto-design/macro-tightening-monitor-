@@ -1,0 +1,45 @@
+# Four macro scenarios for the quarterly engine (scenarios.py). Subjective inputs: they are
+# narratives with editable probabilities, not forecasts. Probabilities must sum to 1
+# (validated at load time; the dashboard re-normalises sidebar edits).
+#
+# All paths are over 8 quarters and expressed relative to the latest observed value:
+#   oil_shock_pct     cumulative % change in local-currency oil price by quarter
+#   unemp_change_pp   change in the unemployment rate vs latest, by quarter (pp)
+#   infl_shock_pp     extra (non-energy) inflation impulse by quarter, annualised pp
+#   tp_change_bp      change in the 10Y term premium vs latest, by quarter (bp)
+
+horizon_quarters: 8
+
+scenarios:
+  disinflation:
+    label: Soft landing / disinflation
+    probability: 0.40
+    narrative: Core inflation keeps converging to target, labour market cools gradually.
+    oil_shock_pct:   [0, 0, 0, 0, 0, 0, 0, 0]
+    unemp_change_pp: [0.0, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2]
+    infl_shock_pp:   [-0.2, -0.2, -0.2, -0.1, -0.1, 0.0, 0.0, 0.0]
+    tp_change_bp:    [0, 0, -5, -5, -10, -10, -10, -10]
+  sticky:
+    label: Sticky inflation / stagflation-lite
+    probability: 0.25
+    narrative: Services inflation stays elevated, growth slows, expectations drift up.
+    oil_shock_pct:   [0, 0, 0, 0, 0, 0, 0, 0]
+    unemp_change_pp: [0.0, 0.1, 0.2, 0.3, 0.4, 0.4, 0.4, 0.4]
+    infl_shock_pp:   [0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1]
+    tp_change_bp:    [5, 10, 15, 20, 25, 25, 25, 25]
+  energy_shock:
+    label: Energy supply shock
+    probability: 0.15
+    narrative: Oil rises sharply on supply disruption, headline jumps, growth hit.
+    oil_shock_pct:   [25, 35, 30, 20, 10, 5, 0, 0]
+    unemp_change_pp: [0.0, 0.2, 0.3, 0.4, 0.5, 0.5, 0.4, 0.3]
+    infl_shock_pp:   [0.1, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0]
+    tp_change_bp:    [10, 15, 15, 10, 5, 0, 0, 0]
+  hard_landing:
+    label: Hard landing
+    probability: 0.20
+    narrative: Lagged tightening bites, credit tightens, unemployment rises fast.
+    oil_shock_pct:   [-10, -20, -20, -15, -10, -10, -5, -5]
+    unemp_change_pp: [0.2, 0.6, 1.0, 1.4, 1.6, 1.7, 1.7, 1.6]
+    infl_shock_pp:   [-0.2, -0.4, -0.5, -0.5, -0.4, -0.3, -0.2, -0.1]
+    tp_change_bp:    [-10, -20, -25, -25, -20, -15, -10, -10]
