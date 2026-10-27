@@ -31,3 +31,6 @@ looking at results. Each dashboard page states how many specifications were trie
 | 2026-10-27 | transmission | H11: the stock-bond correlation is positive when core inflation exceeds 3% and negative/zero below 2%. | 1 (3 buckets fixed a priori) | Demo only (planted by the simulator, so not evidence). | kept |
 | 2026-10-27 | transmission | H12: semiconductors and AI leaders have larger (more negative) real-yield betas than the S&P 500. | 1 per asset + 3 regimes | Demo only. | kept |
 | 2026-10-27 | positioning | No hypothesis tested: descriptive monitor. | — | — | kept |
+| 2026-10-27 | scenarios | Design choice (no hypothesis): fan variance from Monte Carlo dispersion until the archive holds enough own forecast errors. | 1 | — | kept; revisit when archive N ≥ 40 |
+| 2026-10-27 | scenarios | Unemployment noise: AR(1)-residual bootstrap winsorised at 2.5/97.5% (first version used raw quarterly changes incl. 2020, which dominated the recession probability). | 2 | First version rejected before publication. | second kept |
+| 2026-10-27 | regimes | H13: the Markov-switching high-inflation regime coincides with the 2x2 'overheating/stagflation' quarters more than 70% of the time. | 1 | Demo only. | kept |
