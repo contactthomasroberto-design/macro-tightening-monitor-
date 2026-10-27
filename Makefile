@@ -1,7 +1,7 @@
 PY ?= python
 export PYTHONHASHSEED := 0
 
-.PHONY: install demo live test test-live lint typecheck weekly monthly figures app evaluate clean
+.PHONY: install demo demo-reports live test test-live lint typecheck weekly monthly figures app evaluate clean
 
 install:
 	$(PY) -m pip install -r requirements.txt
@@ -11,6 +11,11 @@ install:
 demo:
 	MACRO_MODE=demo $(PY) scripts/update_data.py
 	MACRO_MODE=demo $(PY) scripts/run_all.py
+
+## Demo PDFs (SYNTHETIC watermark on every page; for checking the layout only)
+demo-reports:
+	MACRO_MODE=demo $(PY) scripts/weekly_monitor.py --allow-demo
+	MACRO_MODE=demo $(PY) scripts/monthly_view.py --allow-demo
 
 ## Live refresh: real data sources (FRED_API_KEY optional, enables ALFRED vintages)
 live:

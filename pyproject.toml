@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-cov", "hypothesis>=6", "ruff>=0.4", "mypy>=1.8"]
+dev = ["pytest>=8", "pytest-cov", "hypothesis>=6", "ruff>=0.4", "mypy>=1.8", "pypdf>=4"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

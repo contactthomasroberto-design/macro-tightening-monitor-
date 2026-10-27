@@ -1,0 +1,64 @@
+name: refresh
+# Weekly live refresh: data, models, forecast archive, reports (as workflow artifacts).
+# Secrets: FRED_API_KEY (optional; enables ALFRED vintages). Never echoed.
+on:
+  schedule:
+    - cron: "17 7 * * 1"   # Mondays 07:17 UTC
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MACRO_MODE: live
+      PYTHONHASHSEED: "0"
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e . --no-deps
+      - name: Live smoke test (non-blocking; report uploaded)
+        continue-on-error: true
+        run: python -m pytest -m live -q -p no:cacheprovider tests/test_live_smoke.py
+      - name: Update data
+        run: |
+          if [ -n "$FRED_API_KEY" ]; then python scripts/update_data.py --vintages; else python scripts/update_data.py; fi
+      - name: Run models and append the forecast archive
+        run: python scripts/run_all.py
+      - name: Evaluate the archive (track record)
+        run: python scripts/evaluate_archive.py
+      - name: Weekly monitor
+        run: python scripts/weekly_monitor.py
+      - name: Monthly view (first Monday of the month, or manual runs)
+        run: |
+          if [ "$(date +%d)" -le 7 ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then python scripts/monthly_view.py; fi
+      - name: LinkedIn figures
+        run: python scripts/export_figures.py
+      - name: Upload reports and figures
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ github.run_id }}
+          path: |
+            out/live
+            data/live_smoke.csv
+          if-no-files-found: warn
+      - name: Commit the forecast archive
+        run: |
+          git config user.name "macro-monitor-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add archive/forecasts.csv
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(archive): weekly forecast archive update"
+            git push
+          fi
