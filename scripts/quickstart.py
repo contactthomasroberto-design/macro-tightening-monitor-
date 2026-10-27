@@ -1,6 +1,11 @@
 """One-shot setup from a plain Python prompt (no terminal, no git needed).
 
-From the Python prompt (>>>), paste:
+Private repository: download the ZIP from GitHub in the browser (branch claude/ecstatic-cannon-fztm87,
+Code -> Download ZIP), unzip it, then at the Python prompt (>>>):
+
+    p = r"C:/path/to/unzipped/folder/scripts/quickstart.py"; exec(open(p).read(), {"__file__": p, "__name__": "__main__"})
+
+Public repository: from the Python prompt (>>>), paste:
 
     import urllib.request; exec(urllib.request.urlopen("https://raw.githubusercontent.com/contactthomasroberto-design/macro-tightening-monitor-/claude/ecstatic-cannon-fztm87/scripts/quickstart.py").read())
 
@@ -22,7 +27,11 @@ from pathlib import Path
 BRANCH = "claude/ecstatic-cannon-fztm87"
 ZIP_URL = f"https://github.com/contactthomasroberto-design/macro-tightening-monitor-/archive/refs/heads/{BRANCH}.zip"
 HOME = Path.home() / "Documents" if (Path.home() / "Documents").exists() else Path.home()
-TARGET = Path(os.environ.get("MTM_DIR", HOME / "macro-tightening-monitor"))
+_here = Path(globals().get("__file__", "")).resolve()
+if globals().get("__file__") and (_here.parents[1] / "app" / "streamlit_app.py").exists():
+    TARGET = _here.parents[1]  # run from an unzipped copy of the project: use it in place
+else:
+    TARGET = Path(os.environ.get("MTM_DIR", HOME / "macro-tightening-monitor"))
 PACKAGES = [
     "pandas",
     "numpy",
