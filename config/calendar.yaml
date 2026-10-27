@@ -1,0 +1,26 @@
+# Event calendar: central-bank decisions and major data releases.
+# Each event needs `source` (official calendar URL) and `retrieved` (date you checked it).
+# Events with verified: false were entered WITHOUT retrieving the official page (this repo was
+# scaffolded from an environment with no access to those sites). The calendar page shows them
+# with an "unverified" flag until someone checks the source and sets verified: true + retrieved.
+#
+# The growth/inflation nowcasts use `category` to know which release a news item belongs to.
+
+sources:
+  fomc: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
+  ecb: https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html
+  boj: https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm
+  bls: https://www.bls.gov/schedule/news_release/
+  bea: https://www.bea.gov/news/schedule
+  eurostat: https://ec.europa.eu/eurostat/news/release-calendar
+
+events:
+  - {date: 2026-10-28, bank: fed, kind: policy_decision, label: FOMC decision, category: policy, source: fomc, retrieved: null, verified: false}
+  - {date: 2026-10-29, bank: ecb, kind: policy_decision, label: ECB monetary policy meeting, category: policy, source: ecb, retrieved: null, verified: false}
+  - {date: 2026-10-30, bank: boj, kind: policy_decision, label: BoJ monetary policy meeting (day 2), category: policy, source: boj, retrieved: null, verified: false}
+  - {date: 2026-12-09, bank: fed, kind: policy_decision, label: FOMC decision, category: policy, source: fomc, retrieved: null, verified: false}
+  - {date: 2026-12-17, bank: ecb, kind: policy_decision, label: ECB monetary policy meeting, category: policy, source: ecb, retrieved: null, verified: false}
+  - {date: 2026-12-18, bank: boj, kind: policy_decision, label: BoJ monetary policy meeting (day 2), category: policy, source: boj, retrieved: null, verified: false}
+  # Data releases (CPI, employment, GDP, HICP flash) — add from the BLS / BEA / Eurostat
+  # calendars above, e.g.:
+  # - {date: YYYY-MM-DD, region: US, kind: data_release, label: CPI, category: prices, source: bls, retrieved: YYYY-MM-DD, verified: true}
