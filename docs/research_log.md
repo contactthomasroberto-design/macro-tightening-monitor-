@@ -17,3 +17,6 @@ looking at results. Each dashboard page states how many specifications were trie
 
 | Date | Module | Hypothesis (written before test) | Specifications tried | Result | Kept? |
 |---|---|---|---|---|---|
+| 2026-10-27 | inflation | H1: a forecast combination beats the random walk at h = 12 for US headline yoy (RMSE, DM at 10%). Written before running the evaluation. | 6: RW, AR(BIC), Phillips curve, mixed-frequency (daily oil), elastic net, equal-weight combination | Demo data only so far (synthetic, not informative). Live evaluation pending network access. | all kept for comparison |
+| 2026-10-27 | inflation | H2: cumulative energy pass-through is stable across pre/post-2020 samples. | 1 (lags 0-6 fixed a priori) | Demo only. | kept |
+| 2026-10-27 | inflation | H3: long-run expectations become more sensitive to realised inflation after 2021 (de-anchoring). | 1 (60-month window fixed a priori) | Demo only. | kept |
