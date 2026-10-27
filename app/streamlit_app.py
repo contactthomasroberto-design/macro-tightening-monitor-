@@ -14,7 +14,7 @@ for p in (ROOT / "src", ROOT / "app"):
 
 st.set_page_config(page_title="Macro Tightening Monitor", page_icon="📉", layout="wide")
 
-PAGES_DIR = Path(__file__).parent / "pages"
+PAGES_DIR = Path(__file__).parent / "views"
 
 # (file, title, icon) — order is the navigation order. Pages are added milestone by milestone.
 PAGES = [
