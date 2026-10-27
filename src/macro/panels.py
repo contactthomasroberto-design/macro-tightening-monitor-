@@ -104,3 +104,57 @@ def unemployment_gap(region: str, panel: pd.DataFrame) -> pd.Series:
     if region == "US" and "nrou" in panel:
         return panel["unemp"] - panel["nrou"].ffill()
     return panel["unemp"] - panel["unemp"].rolling(120, min_periods=36).mean()
+
+
+POLICY_IDS = {
+    "fed": {
+        "rate": "DFF",
+        "infl": "PCEPILFE",
+        "infl_label": "core PCE",
+        "unemp": "UNRATE",
+        "ustar": "NROU",
+        "gdp": "GDPC1",
+        "pot": "GDPPOT",
+        "y2": "DGS2",
+        "rstar": ["HLW_RSTAR_US", "LW_RSTAR_US"],
+    },
+    "ecb": {
+        "rate": "EA_DFR",
+        "infl": "EA_HICP_CORE",
+        "infl_label": "HICP excl. energy and food",
+        "unemp": "EA_UNRATE",
+        "y2": "EA_YC_2Y",
+        "rstar": ["HLW_RSTAR_EA"],
+    },
+    "boj": {"rate": "JP_POLICY", "infl": "JP_CPI", "infl_label": "CPI all items", "rstar": []},
+}
+
+
+def policy_panel(bank: str) -> dict:
+    """Quarterly and monthly inputs for the policy module.
+
+    Output gap: US = 100 log(GDPC1/GDPPOT) (CBO potential); EA = Okun proxy -2 (u - u_trend) with a
+    backward-looking 10-year mean as u_trend; JP = 0 (no gap series in the free catalogue; stated).
+    """
+    ids = POLICY_IDS[bank]
+    rate_m = monthly(ids["rate"])
+    pi_m = 100 * (monthly(ids["infl"]) / monthly(ids["infl"]).shift(12) - 1)
+    m = pd.DataFrame({"i": rate_m, "pi": pi_m})
+    if "unemp" in ids:
+        m["u"] = monthly(ids["unemp"])
+    if bank == "fed":
+        m["ustar"] = monthly(ids["ustar"])
+        gdp, pot = get_series(ids["gdp"]), get_series(ids["pot"])
+        yq = 100 * np.log(gdp / pot.reindex(gdp.index))
+        m["y"] = yq.resample("MS").ffill().reindex(m.index).ffill(limit=2)
+        gap_note = "output gap = 100 log(real GDP / CBO potential GDP)"
+    elif "u" in m:
+        m["ustar"] = m["u"].rolling(120, min_periods=36).mean()
+        m["y"] = -2.0 * (m["u"] - m["ustar"])
+        gap_note = "output gap proxied by Okun's law, -2 x (u - backward 10-year mean of u)"
+    else:
+        m["y"] = 0.0
+        gap_note = "no output-gap series available: gap set to 0 (inflation-only rule)"
+    q = m.resample("QS").mean()
+    y2 = monthly(ids["y2"]) if "y2" in ids else None
+    return {"monthly": m, "quarterly": q, "y2": y2, "gap_note": gap_note, "ids": ids}
