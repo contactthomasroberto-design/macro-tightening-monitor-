@@ -43,8 +43,10 @@ jobs:
       - name: Monthly view (first Monday of the month, or manual runs)
         run: |
           if [ "$(date +%d)" -le 7 ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then python scripts/monthly_view.py; fi
-      - name: LinkedIn figures
+      - name: LinkedIn figures (also copied to docs/figures for the README)
         run: python scripts/export_figures.py
+      - name: README executive summary
+        run: python scripts/update_readme.py
       - name: Upload reports and figures
         uses: actions/upload-artifact@v4
         with:
@@ -53,12 +55,12 @@ jobs:
             out/live
             data/live_smoke.csv
           if-no-files-found: warn
-      - name: Commit the forecast archive
+      - name: Commit the forecast archive, README summary and figures
         run: |
           git config user.name "macro-monitor-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add archive/forecasts.csv
+          git add archive/forecasts.csv README.md docs/figures
           if ! git diff --cached --quiet; then
-            git commit -m "chore(archive): weekly forecast archive update"
+            git commit -m "chore(archive): weekly forecast archive, README summary and figures"
             git push
           fi

@@ -21,6 +21,7 @@ demo-reports:
 live:
 	MACRO_MODE=live $(PY) scripts/update_data.py
 	MACRO_MODE=live $(PY) scripts/run_all.py
+	MACRO_MODE=live $(PY) scripts/update_readme.py
 
 test:
 	MACRO_MODE=demo $(PY) -m pytest

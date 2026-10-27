@@ -21,5 +21,7 @@ jobs:
           pip install -e . --no-deps
       - name: Lint
         run: make lint
+      - name: Type check (lenient)
+        run: make typecheck
       - name: Tests (demo data, live tests skipped)
         run: make test

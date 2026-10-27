@@ -16,7 +16,5 @@ __pycache__/
 /raw/
 # generated outputs (reports are built as CI artifacts)
 docs/reports/*.pdf
-docs/figures/*.png
-docs/figures/*.pdf
 /out/
 .env
