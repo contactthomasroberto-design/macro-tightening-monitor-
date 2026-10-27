@@ -84,6 +84,11 @@ Release lag = days between the end of the reference period and first publication
 | `SX5E` | EA | D | yahoo | `^STOXX50E` | index | 1 |  | Euro Stoxx 50 | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `N225` | JP | D | yahoo | `^N225` | index | 1 |  | Nikkei 225 | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `SOX` | US | D | yahoo | `^SOX` | index | 1 |  | PHLX Semiconductor index | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
+| `NVDA` | US | D | yahoo | `NVDA` | USD | 1 |  | NVIDIA share price (AI-leader basket component) | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
+| `MSFT` | US | D | yahoo | `MSFT` | USD | 1 |  | Microsoft share price (AI-leader basket component) | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
+| `GOOGL` | US | D | yahoo | `GOOGL` | USD | 1 |  | Alphabet class A share price (AI-leader basket component) | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
+| `AMZN` | US | D | yahoo | `AMZN` | USD | 1 |  | Amazon share price (AI-leader basket component) | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
+| `META` | US | D | yahoo | `META` | USD | 1 |  | Meta Platforms share price (AI-leader basket component) | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `VIX` | US | D | yahoo | `^VIX` | index | 1 |  | CBOE VIX (Yahoo) | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `MOVE` | US | D | yahoo | `^MOVE` | index | 1 | yes | ICE BofA MOVE index (Yahoo) | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `EURUSD` | GLOBAL | D | yahoo | `EURUSD=X` | USD per EUR | 1 |  | EURUSD spot | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |

@@ -462,6 +462,12 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
         + 0.002
     )
     out["SOX"] = _daily_price(sox_ret, gen, 160.0, 0.012)
+    for k, (tk, start_px) in enumerate(
+        (("NVDA", 0.5), ("MSFT", 2.0), ("GOOGL", 15.0), ("AMZN", 5.0), ("META", 30.0))
+    ):
+        idio = gen.normal(0, 0.06, n)
+        ret = M(1.3 * (mu - 0.035 * d_rr) - 0.05 * d_rr + 1.2 * sig * eq_shock + idio + 0.006 + 0.002 * k)
+        out[tk] = _daily_price(ret, gen, start_px, 0.015)
     out["VIX"] = out["VIXCLS"] * (1 + _ar1(len(days), 0.5, 0.01, gen))
     move_m = (70 + 25 * stress_m + 12 * M(np.abs(np.r_[0, np.diff(us["y2Y"])])) * 10).clip(lower=45)
     out["MOVE"] = _daily_level(move_m, gen, 4.0, phi=0.8)

@@ -111,6 +111,11 @@ series:
   - {id: SX5E, source: yahoo, source_id: "^STOXX50E", freq: D, units: index, release_lag_days: 1, region: EA, category: equities, description: Euro Stoxx 50, terms: *yahoo}
   - {id: N225, source: yahoo, source_id: "^N225", freq: D, units: index, release_lag_days: 1, region: JP, category: equities, description: Nikkei 225, terms: *yahoo}
   - {id: SOX, source: yahoo, source_id: "^SOX", freq: D, units: index, release_lag_days: 1, region: US, category: equities, description: PHLX Semiconductor index, terms: *yahoo}
+  - {id: NVDA, source: yahoo, source_id: "NVDA", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: NVIDIA share price (AI-leader basket component), terms: *yahoo}
+  - {id: MSFT, source: yahoo, source_id: "MSFT", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: Microsoft share price (AI-leader basket component), terms: *yahoo}
+  - {id: GOOGL, source: yahoo, source_id: "GOOGL", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: Alphabet class A share price (AI-leader basket component), terms: *yahoo}
+  - {id: AMZN, source: yahoo, source_id: "AMZN", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: Amazon share price (AI-leader basket component), terms: *yahoo}
+  - {id: META, source: yahoo, source_id: "META", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: Meta Platforms share price (AI-leader basket component), terms: *yahoo}
   - {id: VIX, source: yahoo, source_id: "^VIX", freq: D, units: index, release_lag_days: 1, region: US, category: markets, description: CBOE VIX (Yahoo), terms: *yahoo}
   - {id: MOVE, source: yahoo, source_id: "^MOVE", freq: D, units: index, release_lag_days: 1, region: US, category: markets, description: ICE BofA MOVE index (Yahoo), verify: true, terms: *yahoo}
   - {id: EURUSD, source: yahoo, source_id: "EURUSD=X", freq: D, units: USD per EUR, release_lag_days: 1, region: GLOBAL, category: fx, description: EURUSD spot, terms: *yahoo}
