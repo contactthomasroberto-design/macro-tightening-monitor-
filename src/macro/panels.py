@@ -158,3 +158,42 @@ def policy_panel(bank: str) -> dict:
     q = m.resample("QS").mean()
     y2 = monthly(ids["y2"]) if "y2" in ids else None
     return {"monthly": m, "quarterly": q, "y2": y2, "gap_note": gap_note, "ids": ids}
+
+
+FCI_IDS = {
+    "policy_rate": "DFF",
+    "y10": "DGS10",
+    "mortgage": "MORTGAGE30US",
+    "baa": "DBAA",
+    "equity": "SPX",
+    "house": "CSUSHPISA",
+    "dollar": "DTWEXBGS",
+}
+
+
+def fincond_panel() -> dict:
+    """Quarterly-average levels of the seven FCI variables, GDP, and comparison indices."""
+    levels_q = pd.DataFrame({k: monthly(sid).resample("QS").mean() for k, sid in FCI_IDS.items()})
+    gdp = get_series("GDPC1")
+    pot = get_series("GDPPOT")
+    gap = 100 * np.log(gdp / pot.reindex(gdp.index))
+    stat = pd.DataFrame(
+        {
+            "credit_spread": monthly("BAA10Y"),
+            "vix": monthly("VIXCLS"),
+            "curve_inversion": -monthly("T10Y3M"),
+            "dollar_12m": 100 * np.log(monthly("DTWEXBGS")).diff(12),
+            "equity_drawdown": -100
+            * (monthly("SPX", how="last") / monthly("SPX", how="last").rolling(12).max() - 1),
+        }
+    )
+    nfci = monthly("NFCI")
+    fcig = monthly("FCIG_1Y", optional=True)
+    return {
+        "levels_q": levels_q,
+        "gdp_q": gdp,
+        "output_gap_q": gap,
+        "stat_panel": stat,
+        "nfci": nfci,
+        "fcig": fcig,
+    }
