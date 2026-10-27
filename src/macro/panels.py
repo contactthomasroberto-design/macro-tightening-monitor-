@@ -197,3 +197,55 @@ def fincond_panel() -> dict:
         "nfci": nfci,
         "fcig": fcig,
     }
+
+
+def growth_raw() -> dict[str, pd.Series]:
+    """Native-frequency raw series for the nowcast panel (latest vintage)."""
+    from macro.growth import GDP_ID, GROWTH_SPEC
+
+    out = {sid: try_series(sid) for sid in GROWTH_SPEC}
+    out = {k: v for k, v in out.items() if v is not None}
+    out[GDP_ID] = get_series(GDP_ID)
+    return out
+
+
+def growth_vintage(raw: dict[str, pd.Series], as_of) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Data set published by `as_of` (release-lag truncation), transformed for the DFM."""
+    from macro.data.vintages import truncate_as_of
+    from macro.growth import GDP_ID, transform
+
+    cols = {}
+    for sid, s in raw.items():
+        if sid == GDP_ID:
+            continue
+        t = truncate_as_of(s, as_of, series_id=sid)
+        freq = catalogue().get(sid).freq
+        cols[sid] = t if freq == "M" else to_monthly(t)
+    gdp = truncate_as_of(raw[GDP_ID], as_of, series_id=GDP_ID)
+    return transform(pd.DataFrame(cols), gdp)
+
+
+def recession_panel(region: str = "US") -> tuple[pd.DataFrame, pd.Series]:
+    """Monthly regressors and the recession indicator. Target y_t = REC_{t+12}."""
+    from macro.recession import target
+
+    if region == "US":
+        rec = monthly("USREC")
+        df = pd.DataFrame(
+            {
+                "spread_3m10y": monthly("T10Y3M"),
+                "credit_spread": monthly("BAA10Y"),
+                "d6_unemp": monthly("UNRATE").diff(6),
+                "nfci": monthly("NFCI"),
+            }
+        )
+    else:
+        rec = monthly("EUROREC")
+        df = pd.DataFrame(
+            {
+                "spread_2y10y": monthly("EA_YC_10Y") - monthly("EA_YC_2Y"),
+                "d6_unemp": monthly("EA_UNRATE").diff(6),
+            }
+        )
+    df["y"] = target(rec).reindex(df.index)
+    return df, rec
