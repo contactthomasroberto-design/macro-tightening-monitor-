@@ -426,6 +426,9 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
     stress_m = M(stress)
     bbb_spread = 1.6 - 0.25 * gap_m + 1.2 * stress_m
     out["BAMLC0A4CBBBEY"] = _daily_level(M(us["y10Y"]) + bbb_spread, gen, 0.05)
+    baa_spread = 1.9 - 0.2 * gap_m + 1.1 * stress_m
+    out["DBAA"] = _daily_level(M(us["y10Y"]) + baa_spread, gen, 0.04)
+    out["BAA10Y"] = out["DBAA"] - out["DGS10"]
     out["BAMLH0A0HYM2"] = _daily_level((4.5 - 0.9 * gap_m + 4.0 * stress_m).clip(lower=2.5), gen, 0.12)
     out["BAMLC0A0CM"] = _daily_level((1.2 - 0.2 * gap_m + 1.0 * stress_m).clip(lower=0.6), gen, 0.03)
     vix_m = (14 - 1.0 * gap_m + 14 * stress_m).clip(lower=9)

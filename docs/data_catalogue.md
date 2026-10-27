@@ -23,6 +23,8 @@ Release lag = days between the end of the reference period and first publication
 | `ACMTP10` | US | D | nyfed_files | `ACMTermPremium.xls:ACMTP10` | percent | 7 | yes | ACM 10Y term premium (NY Fed); not on FRED as of writing | NY Fed research series; cite source |
 | `MORTGAGE30US` | US | W | fred | `MORTGAGE30US` | percent | 1 |  | 30-year fixed mortgage rate (Freddie Mac) | FRED; public domain unless noted by the original source |
 | `BAMLC0A4CBBBEY` | US | D | fred | `BAMLC0A4CBBBEY` | percent | 1 | yes | ICE BofA BBB corporate effective yield | ICE BofA via FRED: copyrighted, FRED may truncate history; do not redistribute raw data |
+| `DBAA` | US | D | fred | `DBAA` | percent | 1 |  | Moody's seasoned Baa corporate bond yield (long-history substitute for the ICE BBB yield) | Moody's via FRED; cite source |
+| `BAA10Y` | US | D | fred | `BAA10Y` | percentage points | 1 |  | Moody's Baa yield minus 10-year Treasury | Moody's via FRED; cite source |
 | `BAMLH0A0HYM2` | US | D | fred | `BAMLH0A0HYM2` | percentage points | 1 | yes | ICE BofA US high yield OAS | ICE BofA via FRED: copyrighted, FRED may truncate history; do not redistribute raw data |
 | `BAMLC0A0CM` | US | D | fred | `BAMLC0A0CM` | percentage points | 1 | yes | ICE BofA US corporate IG OAS | ICE BofA via FRED: copyrighted, FRED may truncate history; do not redistribute raw data |
 | `NFCI` | US | W | fred | `NFCI` | index | 5 |  | Chicago Fed National Financial Conditions Index | FRED; public domain unless noted by the original source |
