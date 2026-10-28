@@ -155,14 +155,17 @@ Numbers update themselves when new data is published:
 
 - **In the dashboard (live mode).** A background thread re-downloads every series whose cache has
   expired (daily series after 12 hours, weekly after 2 days, monthly after 3 days, quarterly after 7
-  days), every 3 hours by default (`MACRO_REFRESH_HOURS`). Models are recomputed only when an
-  observation actually changed (the result cache is keyed on a data version, not on file times), and
-  pages pick the new results up within an hour. The Data health page shows the last refresh and has a
-  "Refresh now" button.
-- **On GitHub (weekdays).** The `refresh` workflow runs every weekday at 05:17 UTC: data, models,
-  forecast archive, track record, README executive summary and figures; the weekly monitor on Mondays.
-  Its push to `main` also makes Streamlit Community Cloud redeploy the online dashboard. Needs the
-  repository to allow Actions to push (Settings → Actions → Workflow permissions: read and write).
+  days), every 3 hours by default (`MACRO_REFRESH_HOURS`). Model results come from the daily
+  snapshot below; a local server with enough memory can also recompute them in the background when
+  an observation changed (`MACRO_BACKGROUND_MODELS=1`). The Data health page shows the last refresh
+  and has a "Refresh now" button.
+- **On GitHub (weekdays).** The `refresh` workflow runs every weekday at 14:17 UTC (after the 8:30 ET
+  US releases) and after every code change on `main`: data, models, forecast archive, track record,
+  README executive summary and figures; the weekly monitor on Mondays.
+- **Warm start.** The same workflow writes `snapshot/live/`: the live data (~2 MB parquet) and the
+  computed results. The hosted app adopts each new snapshot as soon as Streamlit pulls the commit, so
+  it opens without recomputing any model. **This repository must stay private**: the snapshot holds
+  copies of third-party data (Yahoo, ICE BofA and S&P series are not redistributable).
 
 ## 10. Governance
 

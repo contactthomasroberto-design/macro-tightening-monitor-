@@ -1,9 +1,9 @@
 """Keep the live dashboard current without anyone running a script.
 
 `refresh_and_warm()` re-downloads every catalogue series whose cache has expired (TTL by frequency in
-`data/store.py`: 12 hours for daily series, 2 days weekly, 3 days monthly, 7 days quarterly) and, if
-any observation changed, recomputes the model bundles so pages load the new numbers already
-computed. `start_background()` runs it in a daemon thread every `interval_hours` (one thread per
+`data/store.py`: 12 hours for daily series, 2 days weekly, 3 days monthly, 7 days quarterly) and,
+when background models are on (MACRO_BACKGROUND_MODELS=1) and an observation changed, recomputes the
+model bundles. On the hosted app the models come from the daily snapshot (macro.warmstart) instead. `start_background()` runs it in a daemon thread every `interval_hours` (one thread per
 process). Status is written to data/cache/refresh_status.json for the Data health page.
 
 Forecast-archive writes are NOT done here: the archive is appended by `scripts/run_all.py` (the
@@ -16,6 +16,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import os
 import threading
 import time
 from collections.abc import Callable
@@ -85,8 +86,19 @@ def _bundles() -> list[tuple[str, Callable]]:
     return steps
 
 
-def refresh_and_warm(warm: bool = True) -> dict:
-    """One refresh cycle. Never raises: failures are logged and written to the status file."""
+def background_models() -> bool:
+    """Recompute models in the app's background thread? Off by default: on Streamlit Community Cloud
+    (about 1 GB of memory) the daily snapshot computed by GitHub Actions provides the results, and
+    recomputing the dynamic factor model there exceeded the memory limit. MACRO_BACKGROUND_MODELS=1
+    turns it on (a local server with enough memory)."""
+    return os.environ.get("MACRO_BACKGROUND_MODELS", "0") == "1"
+
+
+def refresh_and_warm(warm: bool | None = None) -> dict:
+    """One refresh cycle: expired data always; models only when `warm` (default: background_models()).
+    Never raises: failures are logged and written to the status file."""
+    if warm is None:
+        warm = background_models()
     if is_demo():
         return {"skipped": "demo mode"}
     if not _LOCK.acquire(blocking=False):
