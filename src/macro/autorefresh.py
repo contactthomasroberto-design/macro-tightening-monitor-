@@ -101,9 +101,12 @@ def refresh_and_warm(warm: bool = True) -> dict:
         changed = store().data_version() != v0
         warm_errors: dict[str, str] = {}
         if warm and (changed or read_status().get("warmed_version") != store().data_version()):
+            from macro.results import fresh_results
+
             for name, fn in _bundles():
                 try:
-                    fn()
+                    with fresh_results():
+                        fn()
                 except Exception as exc:  # one module failing must not stop the others
                     warm_errors[name] = f"{type(exc).__name__}: {exc}"[:300]
                     log.warning("warming %s failed: %s", name, exc)

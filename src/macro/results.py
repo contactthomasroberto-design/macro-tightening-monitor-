@@ -69,18 +69,44 @@ def load_or_compute(name: str, fn: Callable[[], Any], force: bool = False) -> An
         return _load_or_compute(name, fn, force)
 
 
+# Dashboard processes set SERVE_STALE: a stored result computed by the same code and model version,
+# but from older data, is returned at once while the background refresh (macro.autorefresh, which
+# computes inside `fresh_results()`) replaces it. Scripts and tests never serve stale results.
+SERVE_STALE = False
+_FRESH = threading.local()
+
+
+class fresh_results:  # noqa: N801  (used as a context manager)
+    """Within this block, load_or_compute never returns a stale result."""
+
+    def __enter__(self):
+        _FRESH.on = True
+
+    def __exit__(self, *exc):
+        _FRESH.on = False
+
+
+def _meta(name: str) -> dict:
+    return {"code": code_hash(), "mode": mode(), "version": MODEL_VERSIONS.get(name.split(":")[0], "0")}
+
+
 def _load_or_compute(name: str, fn: Callable[[], Any], force: bool) -> Any:
     path = _dir() / f"{name.replace(':', '__')}.pkl"
     fp = _fingerprint(name)
     if path.exists() and not force:
         try:
             with open(path, "rb") as fh:
-                stored_fp, obj = pickle.load(fh)
+                stored = pickle.load(fh)
+            stored_fp, obj = stored[0], stored[1]
+            stored_meta = stored[2] if len(stored) > 2 else {}
             if stored_fp == fp:
+                return obj
+            if SERVE_STALE and not getattr(_FRESH, "on", False) and stored_meta == _meta(name):
+                log.info("serving %s computed from older data while it is refreshed", name)
                 return obj
         except (pickle.UnpicklingError, EOFError, AttributeError, ModuleNotFoundError) as exc:
             log.warning("discarding unreadable result cache %s: %s", path.name, exc)
     obj = fn()
     with open(path, "wb") as fh:
-        pickle.dump((fp, obj), fh)
+        pickle.dump((fp, obj, _meta(name)), fh)
     return obj

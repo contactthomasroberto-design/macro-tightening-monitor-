@@ -46,6 +46,14 @@ def _autorefresh():
     return autorefresh.start_background(float(os.environ.get("MACRO_REFRESH_HOURS", "3")))
 
 
+def _serve_stale_results() -> None:
+    """Pages show the last computed results at once; the background refresh replaces them."""
+    from macro import results
+
+    results.SERVE_STALE = True
+
+
+_serve_stale_results()
 _autorefresh()
 
 PAGES_DIR = Path(__file__).parent / "views"
