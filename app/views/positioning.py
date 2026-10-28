@@ -28,7 +28,6 @@ ref = pd.Timestamp(b["as_of"])
 st.info(
     f"Reference date (Tuesday positions): **{ref:%Y-%m-%d}**, published about {b['lag_days']} days later (Friday). "
     "Positions are futures-only, by trader category.",
-    icon="🗓️",
 )
 tab = b["table"]
 st.dataframe(tab.round(1), use_container_width=True)

@@ -21,7 +21,6 @@ if is_demo() and len(a):
     st.warning(
         "Demo archive: includes pseudo out-of-sample forecasts backfilled from the inflation module so this page can be "
         "exercised. The live archive only contains forecasts actually made by scheduled runs.",
-        icon="⚠️",
     )
 
 rows, summ = track_record()

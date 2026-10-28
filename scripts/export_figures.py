@@ -11,6 +11,7 @@ from fpdf import FPDF
 import _bootstrap  # noqa: F401
 from macro import figures, pipeline
 from macro.config import ROOT
+from macro.plotting import fit_time_axis
 from macro.reports import ensure_browser, out_dir
 from macro.utils import DISCLAIMER, is_demo
 
@@ -60,6 +61,7 @@ def main() -> int:
         )
         fig.update_layout(margin={"b": 110})
         path = d / f"{name}.png"
+        fit_time_axis(fig)
         fig.write_image(str(path), width=W, height=H, scale=1)
         fig.write_image(
             str(ROOT / "docs" / "figures" / f"{name}.png"), width=W, height=H, scale=1

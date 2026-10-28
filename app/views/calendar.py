@@ -18,7 +18,7 @@ rows = [
         "bank/region": e.bank or e.region,
         "category": e.category,
         "source": cal.sources.get(e.source, e.source),
-        "verified": "✔ verified" if e.verified else "▲ unverified",
+        "verified": "verified" if e.verified else "unverified",
         "retrieved": e.retrieved,
     }
     for e in cal.events
@@ -30,7 +30,6 @@ if n_unver:
     st.warning(
         f"{n_unver} events are marked **unverified**: entered without retrieving the official calendar. Check the source "
         "link and set `verified: true` and `retrieved:` in config/calendar.yaml.",
-        icon="⚠️",
     )
 st.subheader("Upcoming")
 st.dataframe(upcoming, use_container_width=True, hide_index=True)
