@@ -16,10 +16,8 @@ import plotly.graph_objects as go
 
 import _bootstrap  # noqa: F401
 from macro import pipeline
-from macro import plotting as pl
 from macro.config import ROOT
 from macro.data import get_series
-from macro.reports import Report
 from macro.utils import is_demo
 
 if is_demo():
@@ -175,510 +173,982 @@ hb = pipeline.history_bundle()
 sim = {k: hb["similar"][k] for k in ("USA", "DEU", "JPN")}
 cur = hb["current"]
 
-# ------------------------------------------------------------------ graphiques
-TH = "light"
+# ================================================================== mise en page (style institutionnel)
+# Inspirations : BlackRock Investment Institute (titre = conclusion, points clés, tableau des vues),
+# Goldman Sachs Top of Mind (encadré « notre lecture », graphiques numérotés dont le titre est le
+# message), Bridgewater (ce qui est intégré vs ce que nous attendons), J.P. Morgan Guide to the Markets
+# (système visuel strict, chiffres clés en grand, un message par graphique), pratique des hedge funds
+# macro (scénario central + alternatives probabilisées + signaux d'invalidation).
+import os  # noqa: E402
+
+from fpdf import FPDF  # noqa: E402
+
+from macro.reports import _font_path, ensure_browser  # noqa: E402
+
+NAVY = (31, 58, 95)
+INK = (33, 37, 41)
+MUTED = (110, 117, 125)
+RULE = (210, 215, 222)
+TINT = (238, 242, 247)
+RUST = (200, 85, 61)
+TEAL = (42, 157, 143)
+GOLD = (183, 121, 31)
+HEX = {
+    "navy": "#1f3a5f",
+    "rust": "#c8553d",
+    "teal": "#2a9d8f",
+    "gold": "#b7791f",
+    "grey": "#8a939c",
+    "sky": "#7fa7d6",
+    "sand": "#e9a98f",
+}
+ASOF = pd.Timestamp(K["dgs10_d"])
+DATE_FR = f"{ASOF.day} {['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][ASOF.month - 1]} {ASOF.year}"
 
 
-def line(df: pd.DataFrame, title: str, source: str, yaxis: str, hline=None, colors=None, height=360):
+class Note(FPDF):
+    def __init__(self):
+        super().__init__(orientation="P", unit="mm", format="A4")
+        self.add_font("DejaVu", "", _font_path())
+        self.add_font("DejaVu", "B", _font_path(True))
+        self.set_margins(18, 16, 18)
+        self.set_auto_page_break(auto=True, margin=20)
+        self.exhibit_no = 0
+        self.cover = True
+
+    def multi_cell(self, *args, align="L", **kw):
+        # left-aligned by default: justified headlines and labels look stretched
+        return super().multi_cell(*args, align=align, **kw)
+
+    # -------------------------------------------------- en-tête / pied
+    def header(self):
+        if self.cover:
+            return
+        self.set_font("DejaVu", "B", 7)
+        self.set_text_color(*NAVY)
+        self.set_xy(18, 9)
+        self.cell(0, 4, "MACRO TIGHTENING MONITOR  ·  NOTE DE RECHERCHE")
+        self.set_font("DejaVu", "", 7)
+        self.set_text_color(*MUTED)
+        self.set_xy(18, 9)
+        self.cell(0, 4, DATE_FR, align="R")
+        self.set_draw_color(*NAVY)
+        self.set_line_width(0.4)
+        self.line(18, 14, self.w - 18, 14)
+        self.set_y(18)
+
+    def footer(self):
+        self.set_y(-13)
+        self.set_draw_color(*RULE)
+        self.set_line_width(0.2)
+        self.line(18, self.get_y() - 1, self.w - 18, self.get_y() - 1)
+        self.set_font("DejaVu", "", 6.5)
+        self.set_text_color(*MUTED)
+        self.cell(
+            0,
+            3.5,
+            "Produit de recherche éducatif, pas un conseil en investissement ni une vue officielle d'une banque centrale. "
+            "Voir l'avertissement en dernière page.",
+        )
+        self.set_x(18)
+        self.cell(0, 3.5, str(self.page_no()), align="R")
+
+    # -------------------------------------------------- briques
+    def text(self, s, size=9.2, color=INK, bold=False, lh=4.6, align="J"):
+        self.set_font("DejaVu", "B" if bold else "", size)
+        self.set_text_color(*color)
+        self.multi_cell(0, lh, s, align=align, new_x="LMARGIN", new_y="NEXT")
+
+    def rich(self, lead, body, size=9.2):
+        """Paragraph with a bold lead-in, as in sell-side notes."""
+        self.set_text_color(*INK)
+        self.set_font("DejaVu", "B", size)
+        self.write(4.6, lead + " ")
+        self.set_font("DejaVu", "", size)
+        self.write(4.6, body)
+        self.ln(6)
+
+    def need(self, mm):
+        if self.get_y() + mm > self.h - 22:
+            self.add_page()
+
+    def section(self, n, label, headline):
+        self.need(70)
+        self.ln(2)
+        self.set_font("DejaVu", "B", 7.5)
+        self.set_text_color(*RUST)
+        self.cell(0, 4, f"{n}  ·  {label.upper()}", new_x="LMARGIN", new_y="NEXT")
+        self.set_font("DejaVu", "B", 14)
+        self.set_text_color(*NAVY)
+        self.multi_cell(0, 6.4, headline, new_x="LMARGIN", new_y="NEXT")
+        self.ln(1.5)
+
+    def takeaway(self, title, s):
+        """Shaded box with a navy rule on the left (« notre lecture »)."""
+        self.ln(1)
+        x, y = self.get_x(), self.get_y()
+        self.set_font("DejaVu", "", 8.8)
+        lines = self.multi_cell(self.w - 36 - 6, 4.4, s, dry_run=True, output="LINES")
+        h = 7 + 4.4 * len(lines) + 2
+        self.need(h + 2)
+        x, y = self.get_x(), self.get_y()
+        self.set_fill_color(*TINT)
+        self.rect(x, y, self.w - 36, h, style="F")
+        self.set_fill_color(*NAVY)
+        self.rect(x, y, 1.2, h, style="F")
+        self.set_xy(x + 4, y + 2)
+        self.set_font("DejaVu", "B", 7.5)
+        self.set_text_color(*NAVY)
+        self.cell(0, 4, title.upper(), new_x="LMARGIN", new_y="NEXT")
+        self.set_x(x + 4)
+        self.set_font("DejaVu", "", 8.8)
+        self.set_text_color(*INK)
+        self.multi_cell(self.w - 36 - 6, 4.4, s, align="J", new_x="LMARGIN", new_y="NEXT")
+        self.set_y(y + h + 3)
+
+    def exhibit(self, title, fig, source, h_px=430, w_px=1100):
+        self.exhibit_no += 1
+        h_mm = (self.w - 36) * h_px / w_px
+        self.need(h_mm + 16)
+        self.set_font("DejaVu", "B", 8.5)
+        self.set_text_color(*NAVY)
+        self.multi_cell(0, 4.4, f"Graphique {self.exhibit_no} : {title}", new_x="LMARGIN", new_y="NEXT")
+        self.ln(0.5)
+        if isinstance(fig, str):
+            self.image(fig, w=self.w - 36)
+        else:
+            ensure_browser()
+            path = str(SCRATCH / f"exhibit_{self.exhibit_no}.png")
+            fig.write_image(path, width=w_px, height=h_px, scale=2)
+            self.image(path, w=self.w - 36)
+            os.unlink(path)
+        self.set_font("DejaVu", "", 6.8)
+        self.set_text_color(*MUTED)
+        self.multi_cell(0, 3.4, f"Source : {source}.", new_x="LMARGIN", new_y="NEXT")
+        self.ln(2.5)
+
+    def table(self, header, rows, widths, size=7.6, zebra=True, bold_first=True, aligns=None):
+        self.need(6 + 5.2 * len(rows))
+        aligns = aligns or ["L"] * len(header)
+        self.set_fill_color(*NAVY)
+        self.set_text_color(255, 255, 255)
+        self.set_font("DejaVu", "B", size)
+        nh = max(
+            len(self.multi_cell(w - 1.5, 3.6, h, dry_run=True, output="LINES"))
+            for h, w in zip(header, widths, strict=True)
+        )
+        hh = 3.6 * nh + 2
+        y0 = self.get_y()
+        self.rect(18, y0, sum(widths), hh, style="F")
+        x = 18
+        for h, w, a in zip(header, widths, aligns, strict=True):
+            self.set_xy(x + 0.8, y0 + 1)
+            self.multi_cell(w - 1.5, 3.6, h, align=a)
+            x += w
+        self.set_y(y0 + hh)
+        for k, r in enumerate(rows):
+            # row height from the tallest wrapped cell (first column is bold)
+            nl = 1
+            for j, (c, w) in enumerate(zip(r, widths, strict=True)):
+                self.set_font("DejaVu", "B" if (bold_first and j == 0) else "", size)
+                nl = max(nl, len(self.multi_cell(w - 1.5, 3.7, str(c), dry_run=True, output="LINES")))
+            hrow = 3.7 * nl + 1.6
+            self.need(hrow + 1)
+            y0 = self.get_y()
+            if zebra and k % 2 == 1:
+                self.set_fill_color(*TINT)
+                self.rect(18, y0, sum(widths), hrow, style="F")
+            x = 18
+            for j, (c, w, a) in enumerate(zip(r, widths, aligns, strict=True)):
+                self.set_xy(x + 0.8, y0 + 0.8)
+                self.set_font("DejaVu", "B" if (bold_first and j == 0) else "", size)
+                self.set_text_color(*(NAVY if (bold_first and j == 0) else INK))
+                self.multi_cell(w - 1.5, 3.7, str(c), align=a)
+                x += w
+            self.set_y(y0 + hrow)
+            self.set_draw_color(*RULE)
+            self.set_line_width(0.15)
+            self.line(18, self.get_y(), 18 + sum(widths), self.get_y())
+        self.ln(2)
+
+    def tiles(self, items):
+        """Big-number tiles (Guide to the Markets style): value, label, context line."""
+        n = len(items)
+        gap_ = 3
+        w = (self.w - 36 - gap_ * (n - 1)) / n
+        y = self.get_y()
+        for k, (val, lab, ctx) in enumerate(items):
+            x = 18 + k * (w + gap_)
+            self.set_fill_color(*TINT)
+            self.rect(x, y, w, 23, style="F")
+            self.set_fill_color(*RUST)
+            self.rect(x, y, w, 0.9, style="F")
+            self.set_xy(x + 2.5, y + 2.6)
+            self.set_font("DejaVu", "B", 15)
+            self.set_text_color(*NAVY)
+            self.cell(w - 5, 7, val)
+            self.set_xy(x + 2.5, y + 10.2)
+            self.set_font("DejaVu", "B", 6.8)
+            self.set_text_color(*INK)
+            self.multi_cell(w - 5, 3.2, lab.upper())
+            self.set_xy(x + 2.5, y + 17.2)
+            self.set_font("DejaVu", "", 6.5)
+            self.set_text_color(*MUTED)
+            self.multi_cell(w - 5, 3, ctx)
+        self.set_y(y + 27)
+
+
+SCRATCH = ROOT / "out" / "live"
+SCRATCH.mkdir(parents=True, exist_ok=True)
+
+
+# ================================================================== graphiques (thème maison)
+def theme(fig, ytitle="", height=430, legend=True):
+    fig.update_layout(
+        template="none",
+        font={"family": "DejaVu Sans, Arial", "size": 13, "color": "#212529"},
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        margin={"l": 55, "r": 70, "t": 30, "b": 35},
+        height=height,
+        showlegend=legend,
+        legend={"orientation": "h", "x": 0, "y": 1.08, "font": {"size": 12}, "bgcolor": "rgba(0,0,0,0)"},
+        hovermode="x unified",
+    )
+    fig.update_xaxes(showgrid=False, linecolor="#8a939c", ticks="outside", tickcolor="#8a939c")
+    fig.update_yaxes(gridcolor="#e6e9ee", zeroline=False, title_text=ytitle, title_font={"size": 12})
+    return fig
+
+
+def end_labels(fig, series: dict, fmt="{:.1f} %", colors=None):
+    """Value of each line written at its last point (Guide to the Markets habit)."""
+    for k, (_name, s) in enumerate(series.items()):
+        s = s.dropna()
+        fig.add_annotation(
+            x=s.index[-1],
+            y=float(s.iloc[-1]),
+            text=fmt.format(float(s.iloc[-1])).replace(".", ","),
+            showarrow=False,
+            xanchor="left",
+            xshift=6,
+            font={"size": 12, "color": (colors or [])[k] if colors else "#1f3a5f"},
+        )
+
+
+def lines_fig(df, colors, ytitle, label_fmt="{:.1f} %", hline=None, height=430, dash=None):
     fig = go.Figure()
     for k, col in enumerate(df.columns):
         s = df[col].dropna()
         fig.add_trace(
             go.Scatter(
-                x=s.index, y=s.values, name=col, line={"width": 2, "color": (colors or pl.PALETTE)[k % 7]}
+                x=s.index,
+                y=s.values,
+                name=col,
+                mode="lines",
+                line={
+                    "width": 2.6 if k == 0 else 2,
+                    "color": colors[k],
+                    "dash": (dash or {}).get(col, "solid"),
+                },
             )
         )
     if hline is not None:
-        fig.add_hline(y=hline, line_dash="dash", line_width=1, line_color="#6a737d")
-    fig.update_yaxes(title_text=yaxis)
-    pl.base_layout(
-        fig, title, source, pd.Timestamp(df.dropna(how="all").index[-1]).strftime("%Y-%m"), TH, height=height
-    )
-    return fig
+        fig.add_hline(y=hline, line_dash="dot", line_color="#8a939c", line_width=1.2)
+    end_labels(fig, {c: df[c] for c in df.columns}, label_fmt, colors)
+    return theme(fig, ytitle, height)
 
 
+# 1. inflation
 infl_df = pd.concat(
     {
-        "États-Unis, IPC": yoy_series("CPIAUCSL"),
-        "États-Unis, IPC sous-jacent": yoy_series("CPILFESL"),
-        "Zone euro, IPCH": yoy_series("EA_HICP"),
-        "Zone euro, IPCH sous-jacent": yoy_series("EA_HICP_CORE"),
+        "États-Unis, totale": yoy_series("CPIAUCSL"),
+        "États-Unis, sous-jacente": yoy_series("CPILFESL"),
+        "Zone euro, totale": yoy_series("EA_HICP"),
+        "Zone euro, sous-jacente": yoy_series("EA_HICP_CORE"),
     },
     axis=1,
-).loc[START:]
-fig_infl = line(
+).loc["2020-01-01":]
+fig_infl = lines_fig(
     infl_df,
-    "Inflation : la composante énergie fait remonter l'inflation totale",
-    "FRED (BLS), Eurostat",
+    [HEX["navy"], HEX["sky"], HEX["rust"], HEX["sand"]],
     "% sur un an",
     hline=2.0,
-    colors=[pl.ENTITY["fed"], "#8fb8ec", pl.ENTITY["ecb"], "#f3b28f"],
+    dash={"États-Unis, sous-jacente": "dash", "Zone euro, sous-jacente": "dash"},
 )
-brent = get_series("DCOILBRENTEU").resample("W-FRI").last().loc[START:].to_frame("Brent, USD/baril")
-fig_brent = line(
-    brent,
-    f"Pétrole : Brent à {fr(K['brent'], 0)} $ ({frs(K['brent_12m'], 0)} % sur un an)",
-    "FRED (EIA)",
-    "USD",
-    height=300,
-)
-
-rates = pd.concat(
-    {
-        "Fed (taux effectif)": get_series("DFF").resample("W-FRI").last(),
-        "BCE (taux de dépôt)": get_series("EA_DFR").resample("W-FRI").last(),
-        "BoJ (taux au jour le jour)": get_series("JP_CALL_D").resample("W-FRI").last(),
-    },
-    axis=1,
-).loc[START:]
-fig_rates = line(
-    rates,
-    "Taux directeurs : un resserrement synchronisé",
-    "FRED, BCE, Banque du Japon",
-    "%",
-    colors=[pl.ENTITY["fed"], pl.ENTITY["ecb"], pl.ENTITY["boj"]],
+fig_infl.add_annotation(
+    x=infl_df.index[-1],
+    y=2.0,
+    text="cible 2 %",
+    showarrow=False,
+    yshift=-10,
+    xanchor="right",
+    font={"size": 11, "color": "#8a939c"},
 )
 
-bars = pd.Series(
-    {
-        "Taux effectif actuel": K["dff"],
-        "Modèle (médiane, 4 trim.)": K["model_med"],
-        "Marché (dans 12 mois)": K["priced"],
-        "Règle de Taylor (r* = 0,75 %)": K["taylor"],
-    }
+# 2. Brent
+brent_w = get_series("DCOILBRENTEU").resample("W-FRI").last().loc["2021-01-01":].to_frame("Brent")
+fig_brent = lines_fig(brent_w, [HEX["navy"]], "USD par baril", label_fmt="{:.0f} $", height=330)
+fig_brent.update_layout(showlegend=False)
+peak = brent_w["Brent"].loc["2026-01-01":].idxmax()
+fig_brent.add_annotation(
+    x=peak,
+    y=float(brent_w["Brent"].loc[peak]),
+    text="Guerre en Iran, détroit d'Ormuz",
+    showarrow=True,
+    arrowhead=0,
+    ax=-120,
+    ay=-10,
+    font={"size": 11, "color": "#c8553d"},
+    arrowcolor="#c8553d",
 )
-fig_bars = go.Figure(
+
+# 3. Fed : où se situe le marché
+FOMC_SEP = 4.1  # médiane du FOMC pour fin 2026 (projections de septembre 2026) — source externe citée
+anchors = [
+    ("Taux effectif\naujourd'hui", K["dff"], HEX["grey"]),
+    ("Nos scénarios\n(médiane, 4 trim.)", K["model_med"], HEX["sky"]),
+    ("FOMC\n(médiane fin 2026)", FOMC_SEP, HEX["teal"]),
+    ("Marché\n(dans 12 mois)", K["priced"], HEX["navy"]),
+    ("Règle de Taylor\n(r* = 0,75 %)", K["taylor"], HEX["rust"]),
+]
+fig_fed = go.Figure(
     go.Bar(
-        x=bars.index,
-        y=bars.values,
-        marker_color=["#6a737d", pl.ENTITY["fed"], "#1f3a5f", pl.SERIES_ORDER[0]],
-        text=[f"{fr(x, 2)} %" for x in bars.values],
+        x=[a[0].replace("\n", "<br>") for a in anchors],
+        y=[a[1] for a in anchors],
+        marker_color=[a[2] for a in anchors],
+        text=[fr(a[1], 2) + " %" for a in anchors],
         textposition="outside",
+        textfont={"size": 13},
+        width=0.6,
     )
 )
-fig_bars.update_yaxes(title_text="%", range=[0, max(bars.values) * 1.2])
-pl.base_layout(
-    fig_bars,
-    "Fed : où se situe le prix de marché ?",
-    "FRED, Atlanta Fed (Market Probability Tracker), modèles du projet",
-    mois(K["priced_d"]),
-    TH,
-    height=330,
-)
+theme(fig_fed, "%", 360, legend=False)
+fig_fed.update_layout(margin={"b": 70})
+fig_fed.update_yaxes(range=[0, max(a[1] for a in anchors) * 1.22])
 
+# 4. taux directeurs
+rates = pd.concat(
+    {
+        "Fed": get_series("DFF").resample("W-FRI").last(),
+        "BCE": get_series("EA_DFR").resample("W-FRI").last(),
+        "BoJ": get_series("JP_CALL_D").resample("W-FRI").last(),
+    },
+    axis=1,
+).loc["2021-01-01":]
+fig_rates = lines_fig(rates, [HEX["navy"], HEX["rust"], HEX["teal"]], "%", label_fmt="{:.2f} %", height=360)
+
+# 5. décomposition du 10 ans
 dec = (
     pd.concat(
         {
             "10 ans nominal": get_series("DGS10"),
-            "10 ans réel (TIPS)": get_series("DFII10"),
+            "Taux réel (TIPS)": get_series("DFII10"),
             "Point mort d'inflation": get_series("T10YIE"),
-            "Prime de terme (Kim-Wright)": get_series("THREEFYTP10"),
+            "Prime de terme": get_series("THREEFYTP10"),
         },
         axis=1,
     )
     .resample("W-FRI")
     .last()
-    .loc[START:]
+    .loc["2021-01-01":]
 )
-fig_dec = line(
-    dec,
-    f"Taux US à 10 ans : {fr(K['dgs10'], 2)} % = {fr(K['real10'], 2)} % réel + {fr(K['be10'], 2)} % d'inflation anticipée",
-    "FRED, Fed Board (Kim-Wright)",
-    "%",
+fig_dec = lines_fig(
+    dec, [HEX["navy"], HEX["rust"], HEX["teal"], HEX["gold"]], "%", label_fmt="{:.2f} %", height=400
 )
 
-fig_sov = line(
-    sov.loc[START:],
-    f"Écarts souverains face au Bund : l'OAT ({fr(K['oat'], 0)} pb) au-dessus du BTP ({fr(K['btp'], 0)} pb)",
-    "BCE (taux à long terme harmonisés)",
-    "points de base",
-    colors=["#1f3a5f", pl.ENTITY["ecb"], pl.SERIES_ORDER[2]],
-    height=320,
+# 6. écarts souverains
+sov_m = sov.loc["2021-01-01":].rename(
+    columns={"OAT-Bund": "France (OAT)", "BTP-Bund": "Italie (BTP)", "Bonos-Bund": "Espagne (Bonos)"}
+)
+fig_sov = lines_fig(
+    sov_m,
+    [HEX["navy"], HEX["rust"], HEX["gold"]],
+    "points de base vs Bund",
+    label_fmt="{:.0f} pb",
+    height=340,
 )
 
-# ------------------------------------------------------------------ texte
+# 7. corrélation actions-obligations par régime
+sbr_plot = sbr.reindex(["core < 2%", "core 2-3%", "core > 3%"])
+fig_corr = go.Figure(
+    go.Bar(
+        x=["Inflation sous-jacente<br>< 2 %", "2 à 3 %", "> 3 %"],
+        y=sbr_plot["corr"],
+        error_y={
+            "type": "data",
+            "symmetric": False,
+            "array": sbr_plot["upper"] - sbr_plot["corr"],
+            "arrayminus": sbr_plot["corr"] - sbr_plot["lower"],
+            "color": "#8a939c",
+        },
+        marker_color=[HEX["sky"], HEX["sky"], HEX["rust"]],
+        text=[frs(x, 2) for x in sbr_plot["corr"]],
+        textposition="outside",
+        width=0.55,
+    )
+)
+theme(fig_corr, "corrélation", 340, legend=False)
+fig_corr.update_layout(margin={"b": 60})
+fig_corr.add_hline(y=0, line_color="#8a939c", line_width=1)
+fig_corr.update_yaxes(range=[-0.8, 1.0])
+
+# 8. éventail du taux directeur
+q = sr["q_i"]
+hist_ff = get_series("DFF").resample("MS").mean().loc["2022-01-01":]
+fig_fan = go.Figure()
+xs = [hist_ff.index[-1], *q.index]
+for lo, hi, col, lab in (
+    (0.05, 0.95, "rgba(31,58,95,0.13)", "90 % des trajectoires"),
+    (0.16, 0.84, "rgba(31,58,95,0.28)", "68 % des trajectoires"),
+):
+    ys_hi = [float(hist_ff.iloc[-1]), *q[hi]]
+    ys_lo = [float(hist_ff.iloc[-1]), *q[lo]]
+    fig_fan.add_trace(
+        go.Scatter(
+            x=xs + xs[::-1],
+            y=ys_hi + ys_lo[::-1],
+            fill="toself",
+            mode="lines",
+            fillcolor=col,
+            line={"width": 0},
+            name=lab,
+            hoverinfo="skip",
+        )
+    )
+fig_fan.add_trace(
+    go.Scatter(
+        x=hist_ff.index,
+        y=hist_ff.values,
+        name="Taux effectif",
+        mode="lines",
+        line={"color": HEX["grey"], "width": 2.4},
+    )
+)
+fig_fan.add_trace(
+    go.Scatter(
+        x=xs,
+        y=[float(hist_ff.iloc[-1]), *q[0.5]],
+        name="Médiane des scénarios",
+        mode="lines",
+        line={"color": HEX["navy"], "width": 2.6},
+    )
+)
+t12 = hist_ff.index[-1] + pd.DateOffset(months=12)
+fig_fan.add_trace(
+    go.Scatter(
+        x=[t12],
+        y=[K["priced"]],
+        mode="markers+text",
+        name="Marché (12 mois)",
+        marker={"color": HEX["rust"], "size": 11, "symbol": "diamond"},
+        text=[fr(K["priced"], 2) + " %"],
+        textposition="top center",
+        textfont={"color": HEX["rust"], "size": 12},
+    )
+)
+fig_fan.add_trace(
+    go.Scatter(
+        x=[pd.Timestamp("2026-12-31")],
+        y=[FOMC_SEP],
+        mode="markers",
+        name="FOMC (fin 2026)",
+        marker={"color": HEX["teal"], "size": 10, "symbol": "square"},
+    )
+)
+theme(fig_fan, "%", 380)
+
+# ================================================================== rédaction
+priced_hikes = (K["priced"] - K["dff"]) / 0.25
+ecb_priced = (K["ea2y"] - K["ea_dfr"]) * 100
+boj_priced = (K["jp2y"] - K["jp_call"]) * 100
 fed_gap_now = K["taylor"] - K["dff"]
-r = Report("Macro Tightening Monitor", "Note de recherche — octobre 2026")
+w_model = dict(zip(sr["table"].index, sr["table"]["probability"], strict=False))
+OUR_W = {
+    "Soft landing / disinflation": 0.35,
+    "Sticky inflation / stagflation-lite": 0.30,
+    "Energy supply shock": 0.15,
+    "Hard landing": 0.20,
+}
 
-
-def need(mm: float) -> None:
-    """Start a new page unless `mm` of vertical space remain (no orphaned headings or split tables)."""
-    if r.get_y() + mm > r.h - 20:
-        r.add_page()
-
-
-r.add_page()
-r.set_font(r.family, "B", 18)
-r.multi_cell(
-    0,
-    8,
-    r.t("Resserrement synchronisé : justifié par l'inflation, déjà largement intégré par les marchés"),
+n = Note()
+n.add_page()
+# ---------------------------------------------------------------- couverture
+n.set_fill_color(*NAVY)
+n.rect(0, 0, n.w, 62, style="F")
+n.set_xy(18, 12)
+n.set_font("DejaVu", "B", 8)
+n.set_text_color(200, 212, 228)
+n.cell(0, 4, f"MACRO TIGHTENING MONITOR  ·  NOTE DE RECHERCHE  ·  {DATE_FR.upper()}")
+n.set_xy(18, 20)
+n.set_font("DejaVu", "B", 21)
+n.set_text_color(255, 255, 255)
+n.multi_cell(n.w - 36, 9, "Une dernière hausse, pas un nouveau cycle", new_x="LMARGIN", new_y="NEXT")
+n.set_x(18)
+n.set_font("DejaVu", "", 10.5)
+n.set_text_color(214, 224, 236)
+n.multi_cell(
+    n.w - 36,
+    5.2,
+    "Le choc pétrolier justifie le resserrement synchronisé de la Fed, de la BCE et de la BoJ. Mais le marché "
+    "intègre déjà davantage que ce que nous jugeons probable pour la Fed.",
     new_x="LMARGIN",
     new_y="NEXT",
-    align="L",
 )
-r.set_font(r.family, "", 9)
-r.set_text_color(90, 90, 90)
-r.multi_cell(
-    0,
-    4.5,
-    r.t(
-        f"Fed, BCE, BoJ · données arrêtées au {pd.Timestamp(K['dgs10_d']).strftime('%d/%m/%Y')} · produit de recherche, pas un conseil en investissement"
-    ),
-    new_x="LMARGIN",
-    new_y="NEXT",
+n.set_y(68)
+n.cover = False
+n.set_font("DejaVu", "B", 7.5)
+n.set_text_color(*RUST)
+n.cell(0, 4, "POINTS CLÉS", new_x="LMARGIN", new_y="NEXT")
+n.ln(1)
+n.rich(
+    "Le choc est réel et se diffuse.",
+    f"Le Brent ({fr(K['brent'], 0)} $, {frs(K['brent_12m'], 0)} % sur un an) a porté l'inflation totale à {fr(K['cpi'])} % "
+    f"aux États-Unis et {fr(K['hicp'])} % en zone euro. Aux États-Unis, l'inflation sous-jacente accélère : {fr(K['core3m'])} % "
+    f"en rythme annualisé sur 3 mois, contre {fr(K['core'])} % sur un an.",
 )
-r.set_text_color(0, 0, 0)
-r.ln(2)
-
-r.h2("Synthèse")
-r.bullets(
+n.rich(
+    "Une dernière hausse de la Fed, pas un cycle.",
+    f"Nos scénarios placent le taux directeur à {fr(K['model_med'], 2)} % dans un an, proche de la médiane du FOMC "
+    f"({fr(FOMC_SEP, 1)} % fin 2026). Le marché ({fr(K['priced'], 2)} %, environ {fr(priced_hikes, 0)} hausses de plus) va "
+    "plus loin. Nous ne le suivrons que si l'inflation sous-jacente ne ralentit pas d'ici le premier trimestre.",
+)
+n.rich(
+    "Les vrais risques sont en dehors des États-Unis.",
+    f"En zone euro, l'écart OAT-Bund ({fr(K['oat'], 0)} pb) dépasse celui de l'Italie et limite la marge de la BCE. Au Japon, "
+    f"le yen ({fr(K['usdjpy'], 1)} par dollar) pousse la BoJ à poursuivre. Côté marchés, avec une inflation sous-jacente "
+    "au-dessus de 3 %, actions et obligations baissent ensemble : la diversification ne protège plus.",
+)
+n.ln(1)
+n.tiles(
     [
-        f"Un choc énergétique (Brent à {fr(K['brent'], 0)} $, {frs(K['brent_12m'], 0)} % sur un an) relance l'inflation totale : "
-        f"{fr(K['cpi'])} % aux États-Unis ({mois(K['cpi_d'])}), {fr(K['hicp'])} % en zone euro. L'inflation sous-jacente reste "
-        f"au-dessus des cibles ({fr(K['pce_core'])} % pour le PCE sous-jacent américain, {fr(K['hicp_core'])} % en zone euro) "
-        f"et son rythme récent accélère aux États-Unis ({fr(K['core3m'])} % en rythme annualisé sur 3 mois, contre {fr(K['core'])} % sur un an).",
-        f"La Fed a déjà relevé ses taux (fourchette cible jusqu'à {fr(K['tgt_hi'], 2)} %). Une règle de Taylor (r* = 0,75 %) prescrit "
-        f"encore {fr(K['taylor'], 2)} %, soit {fr(fed_gap_now, 2)} point au-dessus du taux effectif actuel ({fr(K['dff'], 2)} %).",
-        f"Le marché intègre déjà l'essentiel de cet écart : {fr(K['priced'], 2)} % attendus dans 12 mois (options sur SOFR), "
-        f"contre {fr(K['model_med'], 2)} % pour la médiane de nos scénarios (intervalle à 68 % : {fr(K['model_lo'], 2)}–{fr(K['model_hi'], 2)} %).",
-        f"La croissance résiste : nowcast du PIB américain {K['nc_q']} à {fr(K['nc'])} % annualisé (GDPNow : {fr(K['gdpnow'])} %), "
-        f"probabilité de récession à 12 mois {fr(100 * K['rec_us'], 0)} % aux États-Unis et {fr(100 * K['rec_ea'], 0)} % en zone euro. "
-        f"Mais l'emploi ralentit (+{fr(K['payroll_yoy'])} % sur un an) et le quantile à 5 % de la croissance du trimestre prochain est négatif ({fr(K['gar1'])} %).",
-        f"Les marchés de taux portent le coût : 10 ans américain à {fr(K['dgs10'], 2)} %, dont {fr(K['real10'], 2)} % de taux réel ; "
-        f"prime de terme de {fr(K['tp'], 2)} %"
-        + (f", au plus haut depuis {K['tp_since']}" if K["tp_since"] else "")
-        + ". "
-        f"En Europe, l'écart OAT-Bund ({fr(K['oat'], 0)} pb) dépasse désormais l'écart BTP-Bund ({fr(K['btp'], 0)} pb).",
+        (f"{fr(K['brent'], 0)} $", "Brent", f"{frs(K['brent_12m'], 0)} % sur un an"),
+        (f"{fr(K['core3m'])} %", "Inflation sous-jacente US", "rythme 3 mois annualisé"),
+        (f"{fr(K['priced'], 2)} %", "Fed attendue à 12 mois", f"vs {fr(K['dff'], 2)} % aujourd'hui"),
+        (f"{fr(K['dgs10'], 2)} %", "Taux US à 10 ans", f"dont {fr(K['real10'], 2)} % réel"),
+        (f"{fr(K['oat'], 0)} pb", "Écart OAT-Bund", f"Italie : {fr(K['btp'], 0)} pb"),
     ]
 )
-r.box(
-    "Notre vue (recherche, pas un conseil)",
-    "Le resserrement est justifié aux États-Unis et, dans une moindre mesure, en zone euro : l'inflation sous-jacente est au-dessus "
-    "de la cible, les écarts de production sont positifs et le choc pétrolier menace les anticipations "
-    f"(attentes des ménages à un an : {fr(K['mich'])} %). Pour la Fed, le marché se situe entre la règle de Taylor et le comportement "
-    "historique estimé de la banque centrale : il a déjà intégré l'essentiel du resserrement justifié par les règles. "
-    "Nous jugeons donc le prix de marché cohérent avec le scénario d'inflation tenace, mais légèrement trop restrictif au regard "
-    "de nos scénarios pondérés, à condition que le choc énergétique ne se propage pas à l'inflation sous-jacente. "
-    "Le signal à surveiller est l'inflation sous-jacente en rythme annualisé sur 3 mois : "
-    f"à {fr(K['core3m'])} %, elle va pour l'instant dans le sens du marché. "
-    "Pour la BoJ, la normalisation doit se poursuivre graduellement ; pour la BCE, la marge est limitée par le stress souverain français.",
-)
-
-r.h2("Chiffres clés")
-kt = pd.DataFrame(
+n.set_font("DejaVu", "B", 7.5)
+n.set_text_color(*RUST)
+n.cell(0, 4, "NOS VUES EN UN COUP D'ŒIL", new_x="LMARGIN", new_y="NEXT")
+n.ln(1)
+n.table(
+    ["Thème", "Notre vue", "Ce qui est intégré", "Conviction", "Ce qui la ferait changer"],
     [
         [
-            "Inflation totale (sur un an)",
-            f"{fr(K['cpi'])} %",
-            f"{fr(K['hicp'])} %",
-            f"{fr(K['jp_cpi'])} % ({mois(K['jp_d'])})",
+            "Fed",
+            "Une hausse de plus, puis pause",
+            f"{fr(K['priced'], 2)} % dans 12 mois (≈ {fr(priced_hikes, 0)} hausses)",
+            "Moyenne",
+            "Inflation sous-jacente > 3 % (3 mois) jusqu'en mars",
         ],
         [
-            "Inflation sous-jacente (sur un an)",
-            f"{fr(K['core'])} % (IPC) / {fr(K['pce_core'])} % (PCE)",
-            f"{fr(K['hicp_core'])} %",
-            "n.d.",
-        ],
-        ["Taux directeur", f"{fr(K['dff'], 2)} %", f"{fr(K['ea_dfr'], 2)} %", f"{fr(K['jp_call'], 2)} %"],
-        ["Taux à 2 ans", f"{fr(K['dgs2'], 2)} %", f"{fr(K['ea2y'], 2)} % (AAA)", f"{fr(K['jp2y'], 2)} %"],
-        [
-            "Taux à 10 ans",
-            f"{fr(K['dgs10'], 2)} %",
-            f"{fr(K['ea10y'], 2)} % (AAA)",
-            f"{fr(K['jp10y'], 2)} % ({frs(K['jp10y_12m'], 0)} pb sur 12 mois)",
+            "BCE",
+            "Pause, puis une hausse en décembre",
+            f"2 ans à {fr(K['ea2y'], 2)} % (≈ {frs(ecb_priced, 0)} pb)",
+            "Moyenne",
+            "OAT-Bund au-delà de 120 pb",
         ],
         [
-            "Écart règle de Taylor − taux",
-            f"{frs(gap['FED'], 2)} pt",
-            f"{frs(gap['ECB'], 2)} pt",
-            f"{frs(gap['BOJ'], 2)} pt",
+            "BoJ",
+            "Normalisation graduelle (déc. ou janv.)",
+            f"2 ans à {fr(K['jp2y'], 2)} % (≈ {frs(boj_priced, 0)} pb)",
+            "Moyenne",
+            "USD/JPY au-delà de 160",
         ],
         [
-            "Probabilité de récession à 12 mois",
-            f"{fr(100 * K['rec_us'], 0)} %",
-            f"{fr(100 * K['rec_ea'], 0)} %",
-            "n.d.",
+            "Croissance US",
+            "Ralentissement sans récession à 12 mois",
+            f"Probabilité de récession : {fr(100 * K['rec_us'], 0)} %",
+            "Élevée",
+            "Règle de Sahm déclenchée",
+        ],
+        [
+            "Taux longs US",
+            "Pression haussière tant que l'inflation dépasse 3 %",
+            f"10 ans à {fr(K['dgs10'], 2)} %, prime {fr(K['tp'], 2)} %",
+            "Moyenne",
+            "Brent sous 90 $",
+        ],
+        [
+            "Diversification",
+            "Actions et obligations corrélées positivement",
+            f"Corrélation actuelle {frs(K['corr_now'], 2)}",
+            "Moyenne",
+            "Inflation sous-jacente sous 2,5 %",
         ],
     ],
-    columns=["", "États-Unis", "Zone euro", "Japon"],
+    [27, 44, 41, 19, 43],
+    size=7.3,
 )
-r.table(kt, col_widths=[52, 50, 40, 40], size=7.5, index=False)
-r.set_font(r.family, "", 7)
-r.set_text_color(110, 110, 110)
-r.multi_cell(
-    0,
-    3.4,
-    r.t(
-        "Écarts de Taylor calculés avec les dernières données trimestrielles disponibles (taux moyen du trimestre), avant la dernière hausse de la Fed."
-    ),
-    new_x="LMARGIN",
-    new_y="NEXT",
-)
-r.set_text_color(0, 0, 0)
-
-# --- 1. Inflation
-r.add_page()
-r.h1("1. Inflation : le choc énergétique et la question de la diffusion")
-r.para(
-    f"L'inflation totale remonte des deux côtés de l'Atlantique : {fr(K['cpi'])} % aux États-Unis et {fr(K['hicp'])} % en zone euro, "
-    f"portée par l'énergie (Brent {frs(K['brent_12m'], 0)} % sur un an). La question décisive pour les banques centrales est la "
-    "diffusion à l'inflation sous-jacente. Aux États-Unis, le rythme sur 3 mois de l'IPC sous-jacent "
-    f"({fr(K['core3m'])} % annualisé) dépasse son rythme sur un an ({fr(K['core'])} %) : la dynamique récente accélère. En zone euro, "
-    f"l'inflation sous-jacente ({fr(K['hicp_core'])} % sur un an, {fr(K['hicp_core3m'])} % annualisé sur 3 mois) reste plus contenue. "
-    f"Au Japon, l'IPC progresse de {fr(K['jp_cpi'])} % sur un an, mais la donnée disponible date de {mois(K['jp_d'])} "
-    "(série BIS publiée avec retard) et sous-estime probablement l'effet du yen faible "
-    f"({fr(K['usdjpy'], 1)} yens par dollar)."
-)
-r.image_fig(fig_infl, px=(1000, 420))
-r.image_fig(fig_brent, px=(1000, 300))
-r.h2("Prévisions à 12 mois et leur fiabilité")
-r.para(
-    f"La combinaison de modèles prévoit {fr(K['fc12_US'])} % d'inflation totale américaine dans 12 mois et {fr(K['fc12_EA'])} % en zone euro. "
-    f"La probabilité que l'inflation dépasse 2,5 % est de {fr(100 * K['p25_US'], 0)} % aux États-Unis et de "
-    f"{fr(100 * K['p25_EA'], 0)} % en zone euro. L'incertitude est large (écart-type de {fr(K['sig_US'])} point aux États-Unis)."
-)
-r.para(
-    f"Ces prévisions doivent être lues avec leur historique. Aux États-Unis, la combinaison réduit l'erreur de "
-    f"{fr(100 * (1 - K['rel_US']), 0)} % par rapport à une prévision naïve (test de Diebold-Mariano, p = {fr(K['dmp_US'], 2)}). "
-    f"En zone euro, le gain est faible ({fr(100 * (1 - K['rel_EA']), 0)} %, p = {fr(K['dmp_EA'], 2)}) : les modèles n'y battent "
-    "pas significativement la prévision naïve, et l'inflation actuelle reste la meilleure référence."
+n.text(
+    "Les vues décrivent des implications macroéconomiques, pas des positions. « Ce qui est intégré » est lu dans les prix de "
+    "marché ; « conviction » reflète l'accord entre nos modèles et la robustesse des estimations.",
+    size=6.8,
+    color=MUTED,
+    lh=3.4,
 )
 
-# --- 2. Banques centrales
-r.add_page()
-r.h1("2. Banques centrales : derrière la courbe, mais le marché a corrigé")
-r.image_fig(fig_rates, px=(1000, 400))
-r.h2("Fed")
-r.para(
-    f"Avec un PCE sous-jacent à {fr(K['fed_pi'])} %, un écart de production estimé à {frs(K['fed_y'])} % (CBO) et un chômage "
-    f"({fr(K['fed_u'])} %) sous son niveau naturel estimé ({fr(K['fed_ustar'])} %), toutes les règles de politique monétaire "
-    f"prescrivent un taux plus élevé que le taux actuel. La règle de Taylor (r* = 0,75 %) indique {fr(K['taylor'], 2)} %. "
-    "Le verdict ne dépend pas de l'hypothèse sur r* : la règle reste au-dessus du taux effectif sur toute la plage de r* "
-    "(0 à 1,5 %) et de coefficients testée."
+# ---------------------------------------------------------------- 1. inflation
+n.add_page()
+n.section(
+    1,
+    "Inflation",
+    "Le choc énergétique passe dans l'inflation sous-jacente américaine, pas encore européenne",
 )
-r.image_fig(fig_bars, px=(1000, 330))
-r.para(
-    f"Trois repères encadrent le taux dans un an. La médiane de nos scénarios ({fr(K['model_med'], 2)} %) reflète l'inertie "
-    f"historique de la Fed. Le prix de marché ({fr(K['priced'], 2)} %) correspond à environ trois hausses de 25 pb. La règle de "
-    f"Taylor ({fr(K['taylor'], 2)} %) ne tient compte ni de l'inertie ni du risque de récession. Le marché se situe donc plus près "
-    "de la règle que du comportement passé de la Fed. Les simulations (10 000 trajectoires par scénario) attribuent "
-    f"{fr(100 * float(sr['moves'].loc[3, 'P(at least k hikes)']), 0)} % de probabilité à au moins trois hausses de 25 pb en "
-    f"quatre trimestres, et {fr(100 * float(sr['moves'].loc[4, 'P(at least k hikes)']), 0)} % à au moins quatre. Ces chiffres sont "
-    f"comptés à partir du taux moyen du troisième trimestre ({fr(K['fed_i_q'], 2)} %)."
+n.text(
+    f"L'inflation totale a nettement remonté depuis le début de l'année : {fr(K['cpi'])} % aux États-Unis ({mois(K['cpi_d'])}) "
+    f"et {fr(K['hicp'])} % en zone euro. La cause est connue : la guerre en Iran et les perturbations du détroit d'Ormuz ont "
+    f"porté le Brent à {fr(K['brent'], 0)} $. Pour les banques centrales, la question n'est pas le niveau de l'énergie mais sa "
+    "diffusion au reste des prix, que l'on lit dans la dynamique de l'inflation sous-jacente."
 )
-r.h2("BCE")
-r.para(
-    f"Le taux de dépôt ({fr(K['ea_dfr'], 2)} %) est proche de l'inflation sous-jacente ({fr(K['hicp_core'])} %) : le taux réel est "
-    f"donc voisin de zéro. Le taux à 2 ans AAA ({fr(K['ea2y'], 2)} %) intègre des hausses. L'écart à la règle de Taylor "
-    f"({frs(gap['ECB'], 2)} pt) est le plus élevé des trois banques centrales, mais il est fragile pour deux raisons : il dépend "
-    f"d'un écart de production estimé ({frs(K['ecb_y'])} %), et la fonction de réaction estimée de la BCE ne satisfait pas le "
-    f"principe de Taylor (coefficient d'inflation {fr(K['ecb_b'], 2)}, sur seulement {K['ecb_rf_n']} trimestres). "
-    "Nous retenons la direction (resserrement modéré) plus que l'ampleur."
+n.exhibit(
+    "l'inflation totale remonte avec l'énergie ; la sous-jacente reste au-dessus de la cible",
+    fig_infl,
+    "BLS (via FRED), Eurostat ; glissement annuel ; calculs Macro Tightening Monitor",
 )
-r.h2("BoJ")
-r.para(
-    f"La normalisation est en cours : taux au jour le jour à {fr(K['jp_call'], 2)} %, 2 ans à {fr(K['jp2y'], 2)} %, et 10 ans à "
-    f"{fr(K['jp10y'], 2)} % ({frs(K['jp10y_12m'], 0)} pb en un an). L'inflation mesurée ({fr(K['jp_cpi'])} %, {mois(K['jp_d'])}) est "
-    f"proche de la cible. L'écart de Taylor ({frs(gap['BOJ'], 2)} pt) plaide pour une poursuite graduelle des hausses, d'autant "
-    f"que le yen faible ({fr(K['usdjpy'], 1)}) entretient l'inflation importée."
+n.rich(
+    "États-Unis : la diffusion a commencé.",
+    f"L'inflation sous-jacente progresse de {fr(K['core3m'])} % en rythme annualisé sur trois mois, au-dessus de son rythme "
+    f"annuel ({fr(K['core'])} %). Le PCE sous-jacent, la mesure ciblée par la Fed, est à {fr(K['pce_core'])} %. Les ménages "
+    f"anticipent {fr(K['mich'])} % d'inflation à un an, mais le point mort à 5 ans dans 5 ans ({fr(K['t5y5y'], 2)} %) montre "
+    "que les marchés croient toujours à la désinflation à long terme.",
 )
-
-# --- 3. Croissance
-need(75)
-r.h1("3. Croissance et risque de récession")
-r.para(
-    f"Le nowcast du modèle à facteurs dynamiques donne {fr(K['nc'])} % de croissance annualisée pour {K['nc_q']}, avec un "
-    f"intervalle à 68 % de {fr(K['nc_lo'])} à {fr(K['nc_hi'])} %. GDPNow (Fed d'Atlanta) est plus optimiste ({fr(K['gdpnow'])} %), "
-    f"et l'indice économique hebdomadaire (WEI) ressort à {fr(K['wei'])} % sur un an. Les inscriptions hebdomadaires au chômage "
-    f"({fr(K['claims'] / 1000, 0)} 000) restent basses et la règle de Sahm ne se déclenche pas ({fr(K['sahm'], 2)} point). "
-    f"En revanche, les créations d'emplois ralentissent nettement (+{fr(K['payroll_yoy'])} % sur un an)."
+n.rich(
+    "Zone euro : pas encore.",
+    f"L'inflation sous-jacente ({fr(K['hicp_core'])} % sur un an) ralentit en rythme récent ({fr(K['hicp_core3m'])} % annualisé "
+    "sur trois mois). Le choc y est pour l'instant un choc de niveau, pas de dynamique.",
 )
-r.para(
-    f"La probabilité de récession à 12 mois (probit fondé sur la pente de la courbe, le crédit et le chômage) est de "
-    f"{fr(100 * K['rec_us'], 0)} % aux États-Unis. En zone euro, elle est de {fr(100 * K['rec_ea'], 0)} % "
-    f"(intervalle {fr(100 * K['rec_ea_lo'], 0)}–{fr(100 * K['rec_ea_hi'], 0)} %). L'approche Growth-at-Risk donne une image moins "
-    f"rassurante à court terme : le quantile à 5 % de la croissance du trimestre suivant est de {fr(K['gar1'])} % (annualisé), "
-    f"et redevient positif ({fr(K['gar4'])} %) à quatre trimestres. Le risque n'est pas une récession imminente, mais une "
-    "queue de distribution défavorable si les conditions financières se durcissent."
+n.exhibit(
+    "le pétrole a presque doublé en un an",
+    fig_brent,
+    "EIA (via FRED), prix hebdomadaire du Brent ; annotation : Macro Tightening Monitor",
+    h_px=330,
 )
-r.image(str(ROOT / "docs" / "figures" / "3_growth_at_risk_recession.png"), w=r.w - 28)
-
-# --- 4. Taux et marchés
-r.add_page()
-r.h1("4. Taux, crédit et marchés")
-r.image_fig(fig_dec, px=(1000, 380))
-r.para(
-    f"Le 10 ans américain ({fr(K['dgs10'], 2)} %) se décompose en {fr(K['real10'], 2)} % de taux réel et {fr(K['be10'], 2)} % "
-    f"d'inflation anticipée. Le point mort à 5 ans dans 5 ans ({fr(K['t5y5y'], 2)} %) reste ancré : le marché croit à la "
-    f"désinflation à long terme. La prime de terme ({fr(K['tp'], 2)} % selon Kim-Wright) est élevée : elle rémunère "
-    "l'incertitude sur l'inflation et l'offre de titres publics. La courbe 3 mois-10 ans est positive "
-    f"({frs(100 * K['t10y3m'], 0)} pb) et la dernière variation est de type « {K['regime']} »."
-)
-r.para(
-    f"Le crédit reste calme (écart haut rendement de {fr(100 * K['hy'], 0)} pb, VIX à {fr(K['vix'], 1)}). Notre indice de conditions "
-    f"financières (FCI-lite) indique qu'un resserrement supplémentaire équivalent à {fr(K['fci_gap'], 2)} point de croissance serait "
-    "nécessaire pour refermer l'écart de production. Autrement dit, les conditions financières ne freinent pas encore "
-    "suffisamment l'activité."
-)
-r.image_fig(fig_sov, px=(1000, 320))
-r.para(
-    f"En zone euro, le fait marquant est le stress souverain français : l'écart OAT-Bund ({fr(K['oat'], 0)} pb, {mois(K['sov_d'])}) "
-    f"dépasse celui du BTP italien ({fr(K['btp'], 0)} pb), tandis que l'Espagne reste à {fr(K['bonos'], 0)} pb. C'est la principale "
-    "contrainte pour la BCE : chaque hausse de taux pèse sur la soutenabilité perçue des dettes les plus fragiles."
+n.takeaway(
+    "Notre lecture",
+    f"Nos modèles prévoient {fr(K['fc12_US'])} % d'inflation totale américaine dans un an et {fr(K['fc12_EA'])} % en zone euro, "
+    f"avec {fr(100 * K['p25_US'], 0)} % et {fr(100 * K['p25_EA'], 0)} % de probabilité de rester au-dessus de 2,5 %. "
+    f"Aux États-Unis, la combinaison de modèles bat une prévision naïve de {fr(100 * (1 - K['rel_US']), 0)} % (p = {fr(K['dmp_US'], 2)}). "
+    f"En zone euro, elle ne la bat pas (p = {fr(K['dmp_EA'], 2)}) : nous y donnons plus de poids à l'inflation observée qu'aux prévisions.",
 )
 
-# --- 5. Transmission
-need(75)
-r.h1("5. Transmission et positionnement")
-r.para(
-    "La corrélation entre actions et obligations dépend du régime d'inflation. Quand l'inflation sous-jacente dépasse 3 %, elle "
-    f"est nettement positive ({frs(K['corr_hi'], 2)}) : actions et obligations baissent ensemble, et les obligations ne protègent "
-    f"plus un portefeuille. Entre 2 et 3 %, elle est négative ({frs(K['corr_mid'], 2)}). La corrélation glissante actuelle "
-    f"({frs(K['corr_now'], 2)}) est en transition, cohérente avec une inflation sous-jacente autour de 3 %."
+# ---------------------------------------------------------------- 2. banques centrales
+n.section(
+    2, "Banques centrales", "Le marché a déjà fait le chemin vers les règles. La Fed, elle, s'arrêtera avant"
 )
-r.para(
-    f"Dans ce même régime, une hausse de 10 pb du taux réel à 10 ans s'accompagne en moyenne d'une baisse d'environ "
-    f"{fr(abs(K['beta_hi']) / 10, 2)} % du S&P 500 sur la semaine (bêta de {frs(K['beta_hi'], 2)}, écart-type "
-    f"{fr(K['beta_hi_se'], 2)}). Les semi-conducteurs et les valeurs liées à l'IA y sont encore plus sensibles."
+n.text(
+    f"La Fed a relevé ses taux le 16 septembre (fourchette 3,75-4,00 %), une première depuis 2023. Avec un PCE sous-jacent à "
+    f"{fr(K['fed_pi'])} %, un écart de production positif ({frs(K['fed_y'])} %, CBO) et un chômage ({fr(K['fed_u'])} %) sous son "
+    f"niveau naturel estimé ({fr(K['fed_ustar'])} %), toutes les règles de politique monétaire demandent davantage. La règle de "
+    f"Taylor prescrit {fr(K['taylor'], 2)} %, soit {fr(fed_gap_now, 2)} point au-dessus du taux effectif ({fr(K['dff'], 2)} %). "
+    "Ce verdict tient pour toute valeur de r* entre 0 et 1,5 %."
 )
-r.para(
-    "Côté positionnement (CFTC), les gérants d'actifs détiennent une position longue record sur le 10 ans américain "
-    f"({fr(K['am_ust_pct'], 0)}e centile sur 3 ans). Une nouvelle hausse des taux pourrait donc forcer des ventes. "
-    f"Les fonds à effet de levier sont, eux, très vendeurs d'euro ({fr(K['lev_eur_pct'], 0)}e centile)."
+n.exhibit(
+    "le marché s'est rapproché de la règle de Taylor ; nos scénarios et le FOMC restent en deçà",
+    fig_fed,
+    "FRED ; Atlanta Fed Market Probability Tracker (options sur SOFR, moyenne neutre au risque) ; projections du FOMC de "
+    "septembre 2026 ; scénarios Macro Tightening Monitor (Monte Carlo, 10 000 trajectoires)",
+    h_px=360,
+)
+n.rich(
+    "Ce qui est intégré, ce que nous attendons.",
+    f"Le marché attend {fr(K['priced'], 2)} % dans un an, environ {fr(priced_hikes, 0)} hausses de plus. Notre médiane "
+    f"({fr(K['model_med'], 2)} %, intervalle à 68 % de {fr(K['model_lo'], 2)} à {fr(K['model_hi'], 2)} %) intègre l'inertie "
+    "historique de la Fed et le risque de récession. Elle est cohérente avec le FOMC, qui ne prévoit qu'une hausse de plus "
+    "d'ici fin 2026. L'écart avec le marché n'est pas une conviction forte : il disparaît si l'inflation sous-jacente reste au "
+    "rythme actuel jusqu'au premier trimestre.",
+)
+n.exhibit(
+    "un resserrement synchronisé, mais à des niveaux très différents",
+    fig_rates,
+    "Réserve fédérale (via FRED), BCE, Banque du Japon ; données hebdomadaires",
+    h_px=360,
+)
+n.rich(
+    "BCE.",
+    f"Le taux de dépôt ({fr(K['ea_dfr'], 2)} %, après les hausses de juin et septembre) est à peine supérieur à l'inflation "
+    f"sous-jacente ({fr(K['hicp_core'])} %). Le 2 ans AAA ({fr(K['ea2y'], 2)} %) intègre environ {fr(ecb_priced, 0)} pb de hausses. "
+    f"L'écart à la règle de Taylor ({frs(gap['ECB'], 2)} pt) est élevé, mais fragile : il dépend d'un écart de production estimé "
+    f"({frs(K['ecb_y'])} %). Surtout, la fonction de réaction estimée ne respecte pas le principe de Taylor (coefficient "
+    f"{fr(K['ecb_b'], 2)} sur {K['ecb_rf_n']} trimestres). Nous attendons une pause demain et une hausse en décembre, "
+    "sous réserve du marché obligataire français.",
+)
+n.rich(
+    "BoJ.",
+    f"Le taux au jour le jour est à {fr(K['jp_call'], 2)} % après la hausse de septembre. Le 2 ans ({fr(K['jp2y'], 2)} %) intègre "
+    f"la suite, et le 10 ans a pris {fr(K['jp10y_12m'], 0)} pb en un an. L'inflation publiée ({fr(K['jp_cpi'])} %, {mois(K['jp_d'])}) "
+    f"est proche de la cible. Le yen faible ({fr(K['usdjpy'], 1)}) et l'écart de Taylor ({frs(gap['BOJ'], 2)} pt) plaident pour "
+    "une nouvelle hausse en décembre ou en janvier.",
 )
 
-# --- 6. Histoire
-need(75)
-r.h1("6. Ce que dit l'histoire (Global Macro Database)")
+# ---------------------------------------------------------------- 3. croissance
+n.section(
+    3,
+    "Croissance et récession",
+    "L'économie américaine ralentit sans casser ; le risque est dans la queue de distribution",
+)
+n.table(
+    ["Indicateur", "Dernier point", "Lecture"],
+    [
+        [
+            f"Nowcast du PIB {K['nc_q']} (modèle à facteurs)",
+            f"{fr(K['nc'])} % annualisé",
+            f"Intervalle à 68 % : {fr(K['nc_lo'])} à {fr(K['nc_hi'])} %",
+        ],
+        ["GDPNow (Fed d'Atlanta)", f"{fr(K['gdpnow'])} %", "Plus optimiste que notre modèle"],
+        ["Indice économique hebdomadaire (WEI)", f"{fr(K['wei'])} %", "Activité toujours solide"],
+        ["Emploi salarié", f"+{fr(K['payroll_yoy'])} % sur un an", "Ralentissement net des créations"],
+        ["Inscriptions au chômage", f"{fr(K['claims'] / 1000, 0)} 000", "Pas de licenciements de masse"],
+        ["Règle de Sahm", f"{fr(K['sahm'], 2)} pt", "Seuil de récession : 0,5 pt"],
+        [
+            "Probabilité de récession à 12 mois",
+            f"États-Unis {fr(100 * K['rec_us'], 0)} %, zone euro {fr(100 * K['rec_ea'], 0)} %",
+            f"Zone euro : intervalle {fr(100 * K['rec_ea_lo'], 0)}–{fr(100 * K['rec_ea_hi'], 0)} %",
+        ],
+        [
+            "Croissance, pire cas à 5 % (Growth-at-Risk)",
+            f"{fr(K['gar1'])} % (1 trim.), {fr(K['gar4'])} % (4 trim.)",
+            "Queue défavorable à court terme",
+        ],
+    ],
+    [62, 46, 66],
+)
+n.takeaway(
+    "Notre lecture",
+    "Les indicateurs d'activité ne signalent pas de récession à un an. Mais l'emploi ralentit, et le quantile à 5 % de la "
+    "croissance du prochain trimestre est négatif. Si les conditions financières se durcissent brutalement, la Fed n'aura "
+    f"pas besoin d'aller au bout de ce que le marché intègre. Historiquement, {fr(100 * sim['USA']['share'], 0)} % des cycles "
+    f"de hausse comparables à celui des États-Unis (sur {int(sim['USA']['n'])}) ont fini en récession dans les deux ans : un "
+    "risque réel, mais pas un destin.",
+)
+
+# ---------------------------------------------------------------- 4. marchés
+n.section(
+    4,
+    "Taux, crédit et souverains",
+    "Le 10 ans à 5 % : plus de prime de terme, pas de perte de confiance dans la désinflation",
+)
+n.exhibit(
+    f"un 10 ans à {fr(K['dgs10'], 2)} % porté par le taux réel et la prime de terme, pas par les anticipations d'inflation",
+    fig_dec,
+    "FRED (Trésor américain), Fed Board (prime de terme Kim-Wright) ; données hebdomadaires",
+    h_px=400,
+)
+n.text(
+    f"Le 10 ans se décompose en {fr(K['real10'], 2)} % de taux réel et {fr(K['be10'], 2)} % d'inflation anticipée. La prime de "
+    f"terme ({fr(K['tp'], 2)} %) est au plus haut depuis {K['tp_since']} : les investisseurs exigent d'être payés pour "
+    "l'incertitude sur l'inflation et pour l'offre de titres publics. Le crédit reste calme (écart haut rendement "
+    f"{fr(100 * K['hy'], 0)} pb, VIX {fr(K['vix'], 1)}). Selon notre indice de conditions financières, il faudrait encore "
+    f"l'équivalent de {fr(K['fci_gap'], 2)} point de croissance de resserrement pour refermer l'écart de production."
+)
+n.exhibit(
+    "la France paie désormais plus que l'Italie face au Bund",
+    fig_sov,
+    "BCE (taux à long terme harmonisés) ; écarts mensuels face au Bund ; calculs Macro Tightening Monitor",
+    h_px=340,
+)
+n.takeaway(
+    "Notre lecture",
+    f"L'écart OAT-Bund ({fr(K['oat'], 0)} pb en {mois(K['sov_d'])}) au-dessus du BTP ({fr(K['btp'], 0)} pb) est le fait marquant "
+    "du trimestre en Europe. Il ne s'agit pas d'une crise : l'Espagne reste à "
+    f"{fr(K['bonos'], 0)} pb, et le marché ne fuit pas la zone euro. Mais c'est une contrainte de premier ordre pour la BCE : "
+    "chaque hausse de taux pèse sur la dette française. C'est la principale raison pour laquelle nous attendons une BCE "
+    "plus lente que ne le suggère sa règle de Taylor.",
+)
+
+# ---------------------------------------------------------------- 5. transmission
+n.section(
+    5,
+    "Transmission et positionnement",
+    "Quand l'inflation dépasse 3 %, les obligations ne diversifient plus les actions",
+)
+n.exhibit(
+    "la corrélation actions-obligations change de signe au-dessus de 3 % d'inflation sous-jacente",
+    fig_corr,
+    "FRED ; corrélation des rendements mensuels du S&P 500 et des variations du 10 ans, par régime d'inflation sous-jacente "
+    "depuis 2000 ; barres : intervalle de confiance à 95 % ; calculs Macro Tightening Monitor",
+    h_px=340,
+)
+n.text(
+    f"Au-dessus de 3 % d'inflation sous-jacente, la corrélation entre actions et obligations est de {frs(K['corr_hi'], 2)} : les "
+    f"deux baissent ensemble. Entre 2 et 3 %, elle est de {frs(K['corr_mid'], 2)}. Aujourd'hui ({frs(K['corr_now'], 2)}), nous "
+    f"sommes à la frontière. Dans ce régime, 10 pb de hausse du taux réel coûtent en moyenne {fr(abs(K['beta_hi']) / 10, 2)} % au "
+    "S&P 500 sur la semaine, davantage aux semi-conducteurs et aux valeurs liées à l'IA. Le positionnement amplifie le risque : "
+    f"les gérants d'actifs détiennent une position longue record sur le 10 ans américain ({fr(K['am_ust_pct'], 0)}e centile sur "
+    "trois ans). Une nouvelle hausse des taux pourrait les forcer à vendre."
+)
+
+# ---------------------------------------------------------------- 6. scénarios
+n.section(6, "Scénarios", "Notre scénario central : une dernière hausse et une désinflation lente")
+tab = sr["table"]
+names = {
+    "Soft landing / disinflation": "Désinflation lente (central)",
+    "Sticky inflation / stagflation-lite": "Inflation tenace",
+    "Energy supply shock": "Nouveau choc énergétique",
+    "Hard landing": "Atterrissage brutal",
+}
 rows = []
-for iso, lab in (("USA", "États-Unis"), ("DEU", "Allemagne (zone euro)"), ("JPN", "Japon")):
-    cr = cur.loc[iso]
-    s = sim[iso]
+for k, lab in names.items():
+    rr = tab.loc[k]
     rows.append(
         [
             lab,
-            f"{int(cr['trough'])} → {int(cr['peak'])}",
-            f"{frs(cr['rise (pp)'], 2)} pt",
-            f"{fr(cr['inflation at peak'])} %",
-            f"{int(s['n'])}",
-            f"{fr(100 * s['share'], 0)} % ({fr(100 * s['lo'], 0)}–{fr(100 * s['hi'], 0)} %)",
+            f"{fr(100 * w_model[k], 0)} %",
+            f"{fr(100 * OUR_W[k], 0)} %",
+            f"{fr(rr['policy rate 4Q (median)'], 2)} %",
+            f"{fr(rr['policy rate 8Q (median)'], 2)} %",
+            f"{fr(rr['core PCE 4Q (median)'], 2)} %",
         ]
     )
-r.table(
-    pd.DataFrame(
-        rows,
-        columns=[
-            "Pays",
-            "Creux → pic",
-            "Hausse",
-            "Inflation au pic",
-            "Comparables",
-            "Suivis d'une récession",
-        ],
-    ),
-    col_widths=[40, 24, 20, 26, 22, 50],
-    size=7.5,
-    index=False,
-)
-r.para(
-    "Sur environ 1 200 cycles de resserrement dans 171 pays, entre un quart et un tiers des cycles comparables aux cycles actuels "
-    "(même ampleur de hausse, même inflation au pic) ont été suivis d'une récession dans les deux ans. Ce taux est plus faible "
-    "que l'intuition commune selon laquelle « les hausses de taux finissent toujours en récession ». Données annuelles : il s'agit "
-    "d'ordres de grandeur, pas de prévisions. Licence de la Global Macro Database : usage académique uniquement."
-)
-
-# --- 7. Scénarios
-need(75)
-r.h1("7. Scénarios et risques")
-tab = sr["table"]
-names = {
-    "Soft landing / disinflation": "Désinflation (atterrissage en douceur)",
-    "Sticky inflation / stagflation-lite": "Inflation tenace",
-    "Energy supply shock": "Choc d'offre énergétique",
-    "Hard landing": "Atterrissage brutal",
-    "Probability-weighted": "Moyenne pondérée",
-}
-t2 = pd.DataFrame(
-    {
-        "Scénario": [names.get(i, i) for i in tab.index],
-        "Probabilité": [f"{fr(100 * x, 0)} %" for x in tab["probability"]],
-        "Fed, 4 trim.": [f"{fr(x, 2)} %" for x in tab["policy rate 4Q (median)"]],
-        "Fed, 8 trim.": [f"{fr(x, 2)} %" for x in tab["policy rate 8Q (median)"]],
-        "PCE sous-j., 4 trim.": [f"{fr(x, 2)} %" for x in tab["core PCE 4Q (median)"]],
-    }
-)
-r.table(t2, col_widths=[62, 24, 32, 32, 32], size=7.5, index=False)
-r.set_font(r.family, "", 7)
-r.set_text_color(110, 110, 110)
-r.multi_cell(
-    0,
-    3.4,
-    r.t("Médianes des simulations de Monte Carlo (10 000 trajectoires par scénario)."),
-    new_x="LMARGIN",
-    new_y="NEXT",
-)
-r.set_text_color(0, 0, 0)
-r.image(str(ROOT / "docs" / "figures" / "5_policy_fan.png"), w=r.w - 28)
-r.para(
-    "Les probabilités des scénarios (désinflation 40 %, inflation tenace 25 %, choc énergétique 15 %, atterrissage brutal 20 %) "
-    "sont des hypothèses du modèle (config/scenarios.yaml). Avec un Brent au-dessus de 110 $ et une inflation sous-jacente qui "
-    "accélère, nous jugeons le poids du scénario d'inflation tenace plutôt sous-estimé que surestimé. C'est la principale raison "
-    "pour laquelle nous ne contestons pas frontalement le prix de marché de la Fed."
-)
-r.h2("Ce qui ferait changer la vue")
-r.bullets(
+wm = sum(OUR_W[k] * tab.loc[k, "policy rate 4Q (median)"] for k in names)
+rows.append(["Moyenne (notre pondération)", "", "100 %", f"{fr(wm, 2)} %", "", ""])
+n.table(
     [
-        "Deux publications consécutives d'inflation sous-jacente sous 2,5 % en rythme annualisé sur 3 mois : le prix de marché deviendrait trop restrictif.",
-        "Une hausse du chômage de type Sahm (+0,5 point) : bascule vers le scénario d'atterrissage brutal, et des baisses de taux redeviennent probables.",
-        "Un durcissement brutal des conditions financières (FCI-lite +0,5 point, écart haut rendement au-dessus de 500 pb) : le resserrement serait fait par les marchés.",
-        "Une extension du stress souverain français (OAT-Bund au-delà de 120 pb) : la BCE ralentirait ses hausses.",
-        "Un Brent ramené sous 90 $ : le choc énergétique se dissiperait et l'inflation totale retomberait vite.",
-    ]
+        "Scénario",
+        "Poids modèle",
+        "Notre poids",
+        "Fed dans 4 trim.",
+        "Fed dans 8 trim.",
+        "PCE sous-jacent 4 trim.",
+    ],
+    rows,
+    [52, 22, 22, 26, 26, 26],
+    aligns=["L", "R", "R", "R", "R", "R"],
+)
+n.text(
+    "Médianes de 10 000 trajectoires simulées par scénario. Le poids modèle est l'hypothèse par défaut du projet ; notre "
+    f"pondération relève le scénario d'inflation tenace de {fr(100 * (OUR_W['Sticky inflation / stagflation-lite'] - w_model['Sticky inflation / stagflation-lite']), 0)} "
+    "points, au vu de l'accélération de l'inflation sous-jacente et du niveau du pétrole. Même ainsi, la moyenne pondérée "
+    f"({fr(wm, 2)} %) reste sous le prix de marché ({fr(K['priced'], 2)} %).",
+    size=7.8,
+    color=MUTED,
+    lh=3.9,
+)
+n.exhibit(
+    "un éventail large : nous attendons un plateau, mais avec une asymétrie dans les deux sens",
+    fig_fan,
+    "FRED ; Atlanta Fed Market Probability Tracker ; projections du FOMC ; scénarios Macro Tightening Monitor (Monte "
+    "Carlo, 10 000 trajectoires pondérées ; bandes de 5 à 95 % et de 16 à 84 %)",
+    h_px=380,
 )
 
-# --- 8. Limites
-need(75)
-r.h1("Méthodologie et limites")
-r.para(
-    "Données publiques (FRED/ALFRED, BCE, Eurostat, BIS, Banque du Japon, ministère japonais des Finances, CFTC, Fed d'Atlanta, "
-    "Fed de New York, Fed de Philadelphie, Global Macro Database), mises à jour quotidiennement. Les modèles sont décrits dans les "
-    "fiches de modèle du projet (inflation : combinaison de modèles évaluée hors échantillon ; politique monétaire : règles et "
-    "fonction de réaction estimée ; croissance : modèle à facteurs dynamiques et Growth-at-Risk ; scénarios : Monte Carlo, "
-    "10 000 trajectoires)."
-)
-r.para(
-    "Limites principales. Le r* et l'écart de production sont inobservables. Les évaluations utilisent les données actuelles "
-    "(révisées), pas celles disponibles en temps réel. L'IPC japonais n'est disponible qu'avec retard. Faute de courbe OIS gratuite, "
-    "le chemin anticipé de la BCE et de la BoJ est approché par les taux à 2 ans. Les probabilités de scénarios sont subjectives. "
-    "Peu de cycles de resserrement et de récessions figurent dans les échantillons mensuels."
-)
-r.box(
-    "Avertissement",
-    "Produit de recherche éducatif. Ce document ne constitue ni une vue officielle d'une banque centrale, ni un conseil en "
-    "investissement, ni une recommandation d'achat ou de vente. Les « vues » décrivent des implications macroéconomiques, "
-    "pas des positions.",
+# ---------------------------------------------------------------- 7. signaux
+n.section(7, "Ce qui ferait changer notre vue", "Sept signaux, des seuils explicites")
+n.table(
+    ["Signal", "Dernier point", "Seuil", "Ce que cela changerait"],
+    [
+        [
+            "Inflation sous-jacente US, 3 mois annualisé",
+            f"{fr(K['core3m'])} %",
+            "< 2,5 % deux mois de suite",
+            "Le prix de marché de la Fed devient trop restrictif ; notre vue se renforce",
+        ],
+        [
+            "Inflation sous-jacente US, 3 mois annualisé",
+            f"{fr(K['core3m'])} %",
+            "> 3 % jusqu'en mars",
+            "Nous rejoignons le marché : plusieurs hausses de plus",
+        ],
+        [
+            "Brent",
+            f"{fr(K['brent'], 0)} $",
+            "< 90 $ ou > 130 $",
+            "Désinflation rapide, ou second choc et bascule vers l'inflation tenace",
+        ],
+        [
+            "Règle de Sahm (chômage)",
+            f"{fr(K['sahm'], 2)} pt",
+            "≥ 0,5 pt",
+            "Atterrissage brutal : la Fed s'arrête et baisse ensuite",
+        ],
+        ["Écart OAT-Bund", f"{fr(K['oat'], 0)} pb", "> 120 pb", "La BCE suspend ses hausses"],
+        ["USD/JPY", f"{fr(K['usdjpy'], 1)}", "> 160", "La BoJ accélère la normalisation"],
+        [
+            "Écart haut rendement",
+            f"{fr(100 * K['hy'], 0)} pb",
+            "> 500 pb",
+            "Les marchés font le resserrement à la place des banques centrales",
+        ],
+    ],
+    [50, 24, 34, 66],
 )
 
-path = ROOT / "docs" / "research" / f"note_de_recherche_{pd.Timestamp(K['dgs10_d']).strftime('%Y-%m')}.pdf"
-r.output(str(path))
-print(path)
-for k in (
-    "cpi",
-    "core",
-    "core3m",
-    "pce_core",
-    "hicp",
-    "hicp_core",
-    "hicp_core3m",
-    "taylor",
-    "priced",
-    "model_med",
-    "tp",
-    "tp_since",
-    "oat",
-    "btp",
-    "corr_now",
-):
-    print(k, K[k])
-print("scenario keys", list(sr.keys()) if isinstance(sr, dict) else type(sr))
+# ---------------------------------------------------------------- 8. consensus
+n.section(
+    8, "Où nous nous situons", "Alignés avec le FOMC sur la Fed, plus prudents que le consensus sur l'Europe"
+)
+n.table(
+    ["", "Fed", "BCE", "BoJ"],
+    [
+        [
+            "Nos modèles",
+            f"{fr(K['model_med'], 2)} % dans 4 trim. (médiane)",
+            f"Règle : {frs(gap['ECB'], 2)} pt d'écart, fiabilité faible",
+            f"Règle : {frs(gap['BOJ'], 2)} pt d'écart",
+        ],
+        [
+            "Marché",
+            f"{fr(K['priced'], 2)} % dans 12 mois",
+            f"≈ {fr(ecb_priced, 0)} pb de hausses (2 ans AAA)",
+            f"≈ {fr(boj_priced, 0)} pb de hausses (2 ans)",
+        ],
+        [
+            "Banque centrale",
+            "FOMC : médiane 4,1 % fin 2026 (sept.)",
+            "Pause attendue le 29 oct., hausse en déc.",
+            "Pause attendue fin oct., hausse en déc. ou janv.",
+        ],
+        [
+            "Grandes maisons",
+            "BlackRock : une hausse de plus, marché trop restrictif",
+            "Consensus : pause en octobre (32 sur 32)",
+            "Standard Chartered : hausse en janvier",
+        ],
+    ],
+    [30, 50, 48, 46],
+)
+n.text(
+    "Notre vue sur la Fed rejoint celle du FOMC et de BlackRock : une hausse de plus, pas un cycle. Nous nous en écartons sur "
+    "un point : nous accordons plus de poids au risque de diffusion de l'énergie, d'où une conviction seulement moyenne. "
+    "En Europe, nous sommes plus prudents que la règle de Taylor ne le suggère, à cause du marché obligataire français."
+)
+
+# ---------------------------------------------------------------- annexes
+n.add_page()
+n.section("A", "Méthodologie et limites", "Comment lire cette note")
+n.text(
+    "Données publiques mises à jour chaque jour : FRED et ALFRED, BCE, Eurostat, BIS, Banque du Japon, ministère japonais des "
+    "Finances, CFTC, Fed d'Atlanta, de New York et de Philadelphie, Global Macro Database. Les modèles sont décrits dans les "
+    "fiches de modèle du projet : combinaison de modèles d'inflation évaluée hors échantillon ; règles de politique monétaire "
+    "et fonction de réaction estimée ; modèle à facteurs dynamiques et Growth-at-Risk ; probit de récession ; scénarios de "
+    "Monte Carlo avec graphiques en éventail ; bases de cycles historiques."
+)
+n.text(
+    "Limites. Le r* et l'écart de production sont inobservables. Les évaluations utilisent les données révisées, pas celles "
+    "disponibles en temps réel. L'inflation japonaise n'est disponible qu'avec retard. Faute de courbe OIS gratuite, les "
+    "anticipations de la BCE et de la BoJ sont approchées par les taux à 2 ans. Les probabilités de scénarios, celles du "
+    "modèle comme les nôtres, sont subjectives."
+)
+n.section("B", "Sources externes citées", "Contexte de marché et consensus")
+n.text(
+    "Décision du FOMC du 16 septembre 2026 et projections économiques (CNBC, TD Economics). BlackRock Investment Institute, "
+    "commentaire hebdomadaire du 26 octobre 2026, « The Mideast energy shock's next phase ». Aperçus de la réunion de la BCE "
+    "du 29 octobre 2026 (Funds Europe, RTÉ, finchiefs). Standard Chartered sur la BoJ (via Mitrade, 22 octobre 2026). "
+    "Article Wikipédia « 2026 Iran war fuel crisis ». Ces sources servent au contexte ; les chiffres de la note viennent des "
+    "données et modèles du projet.",
+    size=8.4,
+    lh=4.2,
+)
+n.section("C", "Avertissement", "Produit de recherche")
+n.text(
+    "Produit de recherche éducatif, susceptible d'être révisé ou interrompu. Ce document ne constitue ni une vue officielle "
+    "d'une banque centrale, ni un conseil en investissement, ni une recommandation d'achat ou de vente. Les « vues » décrivent "
+    "des implications macroéconomiques, pas des positions. Les données restent la propriété de leurs fournisseurs.",
+    size=8.4,
+    lh=4.2,
+)
+
+path = ROOT / "docs" / "research" / f"note_de_recherche_{ASOF:%Y-%m}.pdf"
+n.output(str(path))
+print(path, n.page_no(), "pages")
