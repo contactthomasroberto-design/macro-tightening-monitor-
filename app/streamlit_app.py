@@ -12,6 +12,26 @@ for p in (ROOT / "src", ROOT / "app"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+
+def _purge_stale_modules() -> None:
+    """After a redeploy, Streamlit Community Cloud can pull the new files without restarting the
+    server process, which keeps project modules imported from the previous code (an ImportError on a
+    name added since). Drop them, and the cached results, whenever the project files changed since
+    they were loaded, so the next imports read the new code."""
+    files = [f for d in (ROOT / "src" / "macro", ROOT / "app") for f in d.rglob("*.py")]
+    sig = hash(tuple(sorted((str(f), f.stat().st_mtime_ns) for f in files)))
+    prev = getattr(sys, "_mtm_code_signature", None)
+    loaded = "components" in sys.modules or "macro" in sys.modules
+    if (prev is None and loaded) or (prev is not None and prev != sig):
+        for name in list(sys.modules):
+            if name in ("components", "macro") or name.startswith("macro."):
+                del sys.modules[name]
+        st.cache_data.clear()
+        st.cache_resource.clear()
+    sys._mtm_code_signature = sig  # type: ignore[attr-defined]
+
+
+_purge_stale_modules()
 st.set_page_config(page_title="Macro Tightening Monitor", page_icon="📉", layout="wide")
 
 
