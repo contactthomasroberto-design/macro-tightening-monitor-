@@ -57,7 +57,6 @@ if stale:
     st.warning(
         f"Market-pricing assumptions missing or older than 30 days: {', '.join(stale)} (config/assumptions.yaml). "
         "2-year yields are used as proxies.",
-        icon="⚠️",
     )
 
 st.subheader("Scorecard")

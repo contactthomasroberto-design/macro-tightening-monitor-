@@ -32,7 +32,7 @@ def _purge_stale_modules() -> None:
 
 
 _purge_stale_modules()
-st.set_page_config(page_title="Macro Tightening Monitor", page_icon="📉", layout="wide")
+st.set_page_config(page_title="Macro Tightening Monitor", layout="wide")
 
 
 @st.cache_resource
@@ -50,33 +50,55 @@ _autorefresh()
 
 PAGES_DIR = Path(__file__).parent / "views"
 
-# (file, title, icon) — order is the navigation order. Pages are added milestone by milestone.
-PAGES = [
-    ("overview.py", "Overview", "🧭"),
-    ("calendar.py", "Calendar and news", "🗓️"),
-    ("inflation.py", "Inflation", "🔥"),
-    ("policy.py", "Policy", "🏛️"),
-    ("fincond.py", "Financial conditions", "🌡️"),
-    ("curves.py", "Curves and term premium", "📈"),
-    ("growth.py", "Growth and recession risk", "🏭"),
-    ("transmission.py", "Transmission", "🔗"),
-    ("positioning.py", "Positioning", "🧲"),
-    ("scenarios.py", "Scenarios and fans", "🌪️"),
-    ("regimes.py", "Regime and views", "🧭"),
-    ("history.py", "Historical cycles", "📜"),
-    ("track_record.py", "Track record", "🎯"),
-    ("data_health.py", "Data health", "🩺"),
-    ("model_cards.py", "Model cards", "📇"),
+# Navigation sections: (section, [(file, title), ...]) — order is the navigation order.
+SECTIONS = [
+    ("Monitor", [("overview.py", "Overview"), ("calendar.py", "Calendar and releases")]),
+    (
+        "Models",
+        [
+            ("inflation.py", "Inflation"),
+            ("policy.py", "Monetary policy"),
+            ("fincond.py", "Financial conditions"),
+            ("curves.py", "Yield curves and term premium"),
+            ("growth.py", "Growth and recession risk"),
+            ("transmission.py", "Transmission"),
+            ("positioning.py", "Positioning"),
+        ],
+    ),
+    (
+        "Outlook",
+        [
+            ("scenarios.py", "Scenarios and fan charts"),
+            ("regimes.py", "Regime and views"),
+            ("history.py", "Historical cycles"),
+        ],
+    ),
+    (
+        "Governance",
+        [
+            ("track_record.py", "Track record"),
+            ("data_health.py", "Data health"),
+            ("model_cards.py", "Model cards"),
+        ],
+    ),
 ]
+PAGES = [p for _, ps in SECTIONS for p in ps]
 
 
 def build_navigation():
-    pages = [
-        st.Page(str(PAGES_DIR / f), title=t, icon=i, default=(k == 0))
-        for k, (f, t, i) in enumerate(PAGES)
-        if (PAGES_DIR / f).exists()
-    ]
-    return st.navigation(pages)
+    nav = {
+        section: [
+            st.Page(str(PAGES_DIR / f), title=t, default=(f == PAGES[0][0]))
+            for f, t in ps
+            if (PAGES_DIR / f).exists()
+        ]
+        for section, ps in SECTIONS
+    }
+    return st.navigation(nav, expanded=True)
 
 
-build_navigation().run()
+page = build_navigation()
+from components import global_controls  # noqa: E402  (after sys.path setup and the stale-module purge)
+
+global_controls()
+page.run()

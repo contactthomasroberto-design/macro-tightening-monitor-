@@ -113,7 +113,7 @@ for key, label, hist, cond in specs:
         theme=th,
     )
     chart(fig, fq, key=f"fan_{key}")
-st.info(HOW_TO_READ, icon="📖")
+st.info(HOW_TO_READ)
 st.caption(
     "Width: dispersion of the modal scenario's Monte Carlo paths (bootstrap of historical one-step errors). Skew: probability-"
     "weighted mean minus mode across scenarios (two-piece normal). Bands are equal-tailed 10%…90% intervals; the BoE draws "

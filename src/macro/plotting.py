@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Sequence
 
 import numpy as np
@@ -22,10 +23,10 @@ ENTITY_BY_REGION = {"US": ENTITY["fed"], "EA": ENTITY["ecb"], "JP": ENTITY["boj"
 SERIES_ORDER = ["#6250d6", "#e87ba4", "#eda100", "#008300", "#e34948"]
 PALETTE = [ENTITY["fed"], ENTITY["ecb"], ENTITY["boj"], *SERIES_ORDER]
 STATUS = {
-    "good": ("#0ca30c", "✔", "Good"),
-    "warning": ("#fab219", "▲", "Warning"),
-    "serious": ("#ec835a", "◆", "Serious"),
-    "critical": ("#d03b3b", "✖", "Critical"),
+    "good": ("#2e7d32", "", "Good"),
+    "warning": ("#b7791f", "", "Watch"),
+    "serious": ("#c05621", "", "Serious"),
+    "critical": ("#b42318", "", "Critical"),
 }
 LINE_WIDTH = 2
 
@@ -108,6 +109,78 @@ def base_layout(
     )
     if is_demo():
         stamp_synthetic(fig)
+    return fig
+
+
+MAX_POINTS = 2500  # per trace: denser series are thinned (every k-th point, last point kept)
+
+
+def _as_dates(x) -> pd.DatetimeIndex | None:
+    if x is None or len(x) == 0:
+        return None
+    arr = np.asarray(x)
+    if (
+        arr.dtype.kind == "M"
+        or isinstance(arr[0], (pd.Timestamp, np.datetime64))
+        or (hasattr(arr[0], "year") and hasattr(arr[0], "month") and not isinstance(arr[0], str))
+    ):
+        return pd.DatetimeIndex(pd.to_datetime(arr))
+    return None
+
+
+def fit_time_axis(
+    fig: go.Figure, start: str | pd.Timestamp | None = None, max_points: int = MAX_POINTS
+) -> go.Figure:
+    """Fit a time-series figure to what it shows: the x axis spans [max(start, first observation),
+    last observation]; traces are cut at `start` and thinned above `max_points`; shapes (recession
+    shading, policy-date lines) outside that window are dropped. Non-date axes are left alone."""
+    spans = []
+    for tr in fig.data:
+        d = _as_dates(getattr(tr, "x", None))
+        if d is not None and len(d):
+            spans.append((d.min(), d.max()))
+    if not spans:
+        return fig
+    data_lo = min(a for a, _ in spans)
+    data_hi = max(b for _, b in spans)
+    lo = max(pd.Timestamp(start), data_lo) if start is not None else data_lo
+    if lo >= data_hi:
+        lo = data_lo
+    for tr in fig.data:
+        d = _as_dates(getattr(tr, "x", None))
+        if d is None:
+            continue
+        keep = np.asarray(d >= lo)
+        n = int(keep.sum())
+        if n > max_points:
+            idx = np.flatnonzero(keep)
+            k = int(np.ceil(n / max_points))
+            sel = np.zeros_like(keep)
+            sel[idx[::k]] = True
+            sel[idx[-1]] = True
+            keep = sel
+        if keep.all():
+            continue
+        m = len(d)
+        for attr in ("x", "y", "text", "customdata", "hovertext"):
+            v = getattr(tr, attr, None)
+            if v is not None and not isinstance(v, str) and len(v) == m:
+                setattr(tr, attr, np.asarray(v, dtype=object if attr != "y" else None)[keep])
+    shapes = []
+    for sh in fig.layout.shapes or ():
+        if sh.xref is None or re.fullmatch(r"x\d*", str(sh.xref)):  # data coordinates, not 'x domain'/paper
+            try:
+                x0, x1 = pd.Timestamp(sh.x0), pd.Timestamp(sh.x1)
+            except (TypeError, ValueError):
+                shapes.append(sh)
+                continue
+            if x1 < lo or x0 > data_hi:
+                continue
+            if x0 < lo:
+                sh.x0 = lo
+        shapes.append(sh)
+    fig.layout.shapes = shapes
+    fig.update_xaxes(range=[lo, data_hi], autorange=False)
     return fig
 
 
@@ -306,8 +379,7 @@ def bar_chart(
 
 def status_badge(level: str) -> str:
     """Text badge for reserved status colours: always icon + label, never colour alone."""
-    c, icon, label = STATUS[level]
-    return f"{icon} {label}"
+    return STATUS[level][2]
 
 
 def footer_text() -> str:

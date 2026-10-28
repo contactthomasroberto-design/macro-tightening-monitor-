@@ -51,6 +51,9 @@ def fig_png(fig: go.Figure, width: int = 1000, height: int = 480) -> str:
     ensure_browser()
     fd, path = tempfile.mkstemp(suffix=".png")
     os.close(fd)
+    from macro.plotting import fit_time_axis
+
+    fit_time_axis(fig)  # axis spans the data, not the recession history
     fig.write_image(path, width=width, height=height, scale=2)
     return path
 

@@ -63,7 +63,6 @@ n_verify = int(h["verify_flag"].sum())
 st.warning(
     f"{n_verify} series carry a `verify` flag in config/series.yaml: their ID, units or freshness has not yet been "
     "confirmed against the live source (run `make test-live`).",
-    icon="🔎",
 )
 region = st.multiselect("Region", sorted(h["region"].unique()), default=sorted(h["region"].unique()))
 st.dataframe(h[h["region"].isin(region)], use_container_width=True, hide_index=True)

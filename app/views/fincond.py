@@ -40,7 +40,6 @@ st.info(
         if b["fcig_available"]
         else "The published FCI-G could not be loaded (place it in data/manual/FCIG_1Y.csv)."
     ),
-    icon="ℹ️",
 )
 
 # ------------------------------------------------------------------ level and decomposition

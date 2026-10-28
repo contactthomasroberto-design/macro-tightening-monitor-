@@ -35,7 +35,6 @@ as_of = str(b["last_actual_year"])
 st.info(
     f"{b['licence']} Cite: {b['citation']}. Years after {b['last_actual_year']} are projections in the "
     "database and are excluded.",
-    icon="📜",
 )
 cyc = b["cycles"]
 done = cyc.dropna(subset=["recession_after"])

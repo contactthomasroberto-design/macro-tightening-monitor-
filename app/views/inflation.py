@@ -31,9 +31,16 @@ dec = b["decomposition"]
 # ------------------------------------------------------------------ headline numbers
 last = dec.dropna(subset=["headline"]).iloc[-1]
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Headline yoy", f"{last['headline']:.1f}%", f"{last['headline'] - tgt:+.1f} pp vs target")
+c1.metric(
+    "Headline yoy",
+    f"{last['headline']:.1f}%",
+    f"{last['headline'] - tgt:+.1f} pp vs target",
+    delta_color="inverse",
+)
 if "core" in dec:
-    c2.metric("Core yoy", f"{last['core']:.1f}%", f"{last['core'] - tgt:+.1f} pp vs target")
+    c2.metric(
+        "Core yoy", f"{last['core']:.1f}%", f"{last['core'] - tgt:+.1f} pp vs target", delta_color="inverse"
+    )
     mc = b["momentum_core"].dropna().iloc[-1]
     c3.metric("Core 3m annualised", f"{mc['3m ann.']:.1f}%")
 if "prob_exceed" in b:
