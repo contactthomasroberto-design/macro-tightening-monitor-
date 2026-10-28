@@ -134,6 +134,9 @@ def start_background(interval_hours: float = 3.0) -> threading.Thread | None:
         return None
     if _THREAD is not None and _THREAD.is_alive():
         return _THREAD
+    for t in threading.enumerate():  # started by a previous copy of this module (app redeploy)
+        if t.name == "macro-autorefresh" and t.is_alive():
+            return t
 
     def loop() -> None:
         while True:
