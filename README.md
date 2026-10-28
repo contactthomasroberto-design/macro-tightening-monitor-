@@ -106,6 +106,10 @@ Figures in [`docs/figures/`](docs/figures/) are exported from live data by `scri
 and in `out/live/track_record_summary.csv`. Until the first live run, this section intentionally
 contains no numbers.
 
+**Research notes** (written analysis and view, in French) are in [`docs/research/`](docs/research/):
+[October 2026](docs/research/note_de_recherche_2026-10.pdf), built from live data by
+`scripts/research_note.py`.
+
 ## 7. Scenarios, fans and priced vs model
 
 Scenario narratives and probabilities live in [`config/scenarios.yaml`](config/scenarios.yaml) and are
