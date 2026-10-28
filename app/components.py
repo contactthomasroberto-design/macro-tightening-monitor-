@@ -10,6 +10,10 @@ import streamlit as st
 from macro.plotting import STATUS
 from macro.utils import DISCLAIMER, RESEARCH_SERIES_NOTE, SYNTHETIC_BANNER, is_demo, run_metadata
 
+# Pages re-read their (disk-cached) model results at most this often, so numbers recomputed by the
+# background refresh (macro.autorefresh) appear without restarting the app.
+CACHE_TTL = 3600
+
 
 def theme() -> str:
     try:

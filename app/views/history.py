@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from components import chart, footer, header, show_status, sidebar_controls, theme
+from components import CACHE_TTL, chart, footer, header, show_status, sidebar_controls, theme
 from macro import plotting as pl
 from macro.pipeline import history_bundle
 
@@ -16,7 +16,9 @@ sidebar_controls()
 th = theme()
 
 
-@st.cache_resource(show_spinner="Loading the Global Macro Database and dating the cycles (first run only)…")
+@st.cache_resource(
+    ttl=CACHE_TTL, show_spinner="Loading the Global Macro Database and dating the cycles (first run only)…"
+)
 def _bundle():
     return history_bundle()
 

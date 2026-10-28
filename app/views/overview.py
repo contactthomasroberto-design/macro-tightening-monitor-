@@ -1,6 +1,14 @@
 import streamlit as st
 
-from components import footer, header, scenario_controls, show_status, sidebar_controls, status_chip
+from components import (
+    CACHE_TTL,
+    footer,
+    header,
+    scenario_controls,
+    show_status,
+    sidebar_controls,
+    status_chip,
+)
 from macro import panels
 from macro.config import stale_assumptions
 from macro.data import as_of_label, source_label, try_series
@@ -15,7 +23,9 @@ ctl = sidebar_controls()
 weights = scenario_controls()
 
 
-@st.cache_data(show_spinner="Loading the latest results (first run computes every module, a few minutes)…")
+@st.cache_data(
+    ttl=CACHE_TTL, show_spinner="Loading the latest results (first run computes every module, a few minutes)…"
+)
 def _views(w: tuple):
     return build_views(dict(w))
 

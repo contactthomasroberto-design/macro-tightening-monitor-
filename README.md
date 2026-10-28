@@ -140,6 +140,21 @@ dashboard flags entries older than 30 days.
    `MACRO_MODE = "live"` and `FRED_API_KEY = "..."`. Without secrets the app runs in demo mode (synthetic data).
 4. **Deploy**. The first page load computes every model (several minutes); later loads use the cache.
 
+### Automatic updates
+
+Numbers update themselves when new data is published:
+
+- **In the dashboard (live mode).** A background thread re-downloads every series whose cache has
+  expired (daily series after 12 hours, weekly after 2 days, monthly after 3 days, quarterly after 7
+  days), every 3 hours by default (`MACRO_REFRESH_HOURS`). Models are recomputed only when an
+  observation actually changed (the result cache is keyed on a data version, not on file times), and
+  pages pick the new results up within an hour. The Data health page shows the last refresh and has a
+  "Refresh now" button.
+- **On GitHub (weekdays).** The `refresh` workflow runs every weekday at 05:17 UTC: data, models,
+  forecast archive, track record, README executive summary and figures; the weekly monitor on Mondays.
+  Its push to `main` also makes Streamlit Community Cloud redeploy the online dashboard. Needs the
+  repository to allow Actions to push (Settings → Actions → Workflow permissions: read and write).
+
 ## 10. Governance
 
 Model cards ([`docs/model_cards/`](docs/model_cards/)), a model changelog with a monthly code-freeze

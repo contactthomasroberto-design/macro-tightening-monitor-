@@ -17,6 +17,30 @@ def _table(mode: str) -> pd.DataFrame:
     return health_table(st_)
 
 
+if not is_demo():
+    import threading
+
+    from macro import autorefresh
+
+    rs = autorefresh.read_status()
+    if rs.get("running"):
+        show_status("warning", f"Automatic refresh running since {rs.get('started')} (data, then models).")
+    elif rs.get("finished"):
+        n_fail = len(rs.get("failed") or {})
+        show_status(
+            "good" if not n_fail and not rs.get("warm_errors") else "warning",
+            f"Last automatic refresh {rs['finished']}: {rs.get('checked', 0)} expired series re-checked, "
+            f"{n_fail} failed; new data: {'yes' if rs.get('data_changed') else 'no'}. "
+            "Runs every few hours in the background; models are recomputed only when data changed.",
+        )
+        if rs.get("warm_errors"):
+            st.caption(
+                "Model recomputation errors: " + "; ".join(f"{k}: {v}" for k, v in rs["warm_errors"].items())
+            )
+    if st.button("Refresh now (expired series only)", disabled=bool(rs.get("running"))):
+        threading.Thread(target=autorefresh.refresh_and_warm, daemon=True).start()
+        st.info("Refresh started in the background; reload this page in a few minutes.")
+
 h = _table("demo" if is_demo() else "live")
 counts = h["status"].value_counts()
 cols = st.columns(4)

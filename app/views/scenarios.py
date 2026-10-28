@@ -1,7 +1,16 @@
 import pandas as pd
 import streamlit as st
 
-from components import chart, footer, header, scenario_controls, show_status, sidebar_controls, theme
+from components import (
+    CACHE_TTL,
+    chart,
+    footer,
+    header,
+    scenario_controls,
+    show_status,
+    sidebar_controls,
+    theme,
+)
 from macro import plotting as pl
 from macro.data import source_label
 from macro.fans import HOW_TO_READ
@@ -16,12 +25,14 @@ weights = scenario_controls()
 th = theme()
 
 
-@st.cache_resource(show_spinner="Running the scenario engine and Monte Carlo (first run only)…")
+@st.cache_resource(
+    ttl=CACHE_TTL, show_spinner="Running the scenario engine and Monte Carlo (first run only)…"
+)
 def _bundle():
     return scenario_bundle()
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
 def _results(w: tuple):
     return scenario_results(_bundle(), dict(w))
 

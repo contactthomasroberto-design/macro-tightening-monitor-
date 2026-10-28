@@ -15,8 +15,10 @@ Fed; Yahoo answers intermittently with HTTP 429).
 | The author can explain every equation, assumption and chart | Supported | `docs/methodology.md` (equations), docstrings with formulas in every model function, notes stating what is replicated/simplified/fragile. Primary sources could not be downloaded here: each note says so and must be checked against the primary text before publication. |
 
 ## Known gaps and next steps
-1. ~~Run the live smoke test and fix the flagged IDs~~ (done 2026-10-28). Next: get daily S&P 500 history beyond 10 years when Yahoo is rate-limited, and a scripted CIE source.
-2. Fill `config/assumptions.yaml` market-pricing entries (dated OIS values) and verify `config/calendar.yaml` dates; add data-release dates.
-3. Download FCI-G and CIE into `data/manual/` (no stable file URL known).
+1. ~~Run the live smoke test and fix the flagged IDs~~ (done 2026-10-28). Automatic updates in place (dashboard background refresh, daily workflow). Next: get daily S&P 500 history beyond 10 years when Yahoo is rate-limited, and a scripted CIE source.
+2. Fill `config/assumptions.yaml` market-pricing entries for the ECB and the BoJ (the Fed path now comes from the Atlanta Fed tracker) and verify `config/calendar.yaml` dates; add data-release dates.
+3. Download CIE into `data/manual/` (no stable file URL known; FCI-G is now scripted).
 4. Read the primary sources listed in BRIEF §13 and reconcile the notes.
 5. Write LinkedIn posts only after the first live results (BRIEF §11).
+6. Bump the 0.1.1 model versions in `src/macro/versions.py` on 2026-11-01 (changes logged in the
+   changelog with that effective window; the archive's code-freeze check refuses a bump inside October).

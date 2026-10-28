@@ -2,7 +2,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from components import chart, footer, header, result_meta, show_status, sidebar_controls, theme
+from components import CACHE_TTL, chart, footer, header, result_meta, show_status, sidebar_controls, theme
 from macro import plotting as pl
 from macro.data import source_label, try_series
 from macro.pipeline import AI_BASKET, transmission_bundle
@@ -12,7 +12,7 @@ ctl = sidebar_controls()
 th = theme()
 
 
-@st.cache_resource(show_spinner="Computing transmission analytics (first run only)…")
+@st.cache_resource(ttl=CACHE_TTL, show_spinner="Computing transmission analytics (first run only)…")
 def _bundle():
     return transmission_bundle()
 

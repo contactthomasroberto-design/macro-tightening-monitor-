@@ -1,8 +1,8 @@
 """Disk cache of heavy model results, so dashboard pages load in seconds (BRIEF §7).
 
 `scripts/run_all.py` computes and stores every result; pages call `load_or_compute`, which
-returns the stored object if it was computed from the current data cache and model version,
-and computes it otherwise. Key = (name, mode, model version, data-cache modification time).
+returns the stored object if it was computed from the current data and model version, and
+computes it otherwise. Key = (name, mode, model version, data version of the store, code hash).
 """
 
 from __future__ import annotations
@@ -43,10 +43,13 @@ def code_hash() -> str:
 
 
 def _fingerprint(name: str) -> str:
+    """Changes when the data content changes (store data version), the model version or the code."""
+    from macro.data.store import Store
+
     db = default_path()
-    mtime = db.stat().st_mtime if db.exists() else 0
+    data_v = Store(db).data_version() if db.exists() else 0
     version = MODEL_VERSIONS.get(name.split(":")[0], "0")
-    return hashlib.sha1(f"{name}|{mode()}|{version}|{mtime}|{code_hash()}".encode()).hexdigest()[:16]
+    return hashlib.sha1(f"{name}|{mode()}|{version}|{data_v}|{code_hash()}".encode()).hexdigest()[:16]
 
 
 def load_or_compute(name: str, fn: Callable[[], Any], force: bool = False) -> Any:
