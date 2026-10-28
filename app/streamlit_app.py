@@ -29,6 +29,7 @@ PAGES = [
     ("positioning.py", "Positioning", "🧲"),
     ("scenarios.py", "Scenarios and fans", "🌪️"),
     ("regimes.py", "Regime and views", "🧭"),
+    ("history.py", "Historical cycles", "📜"),
     ("track_record.py", "Track record", "🎯"),
     ("data_health.py", "Data health", "🩺"),
     ("model_cards.py", "Model cards", "📇"),

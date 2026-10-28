@@ -40,6 +40,22 @@ st.caption(
     "Mixed-frequency dynamic factor model (statsmodels DynamicFactorMQ; factors Global, Soft, Nominal, Labor), "
     f"{len(GROWTH_SPEC)} monthly series plus quarterly GDP, data published by {as_of} (release lags applied)."
 )
+ext = b.get("external_nowcasts") or {}
+if ext:
+    parts = []
+    if "Atlanta Fed GDPNow" in ext:
+        parts.append(f"Atlanta Fed GDPNow for {nc['target']}: {ext['Atlanta Fed GDPNow']:.1f}%")
+    if "WEI week" in ext:
+        parts.append(
+            f"Weekly Economic Index: {ext['Weekly Economic Index (y/y, latest week)']:.2f}% y/y "
+            f"(week of {ext['WEI week']})"
+        )
+    st.caption(
+        "External benchmarks (published, not inputs to this model): "
+        + "; ".join(parts)
+        + ". "
+        + source_label("GDPNOW", "WEI")
+    )
 
 w = b["weekly"]
 news_cols = [c for c in w.columns if c.startswith("news: ")]

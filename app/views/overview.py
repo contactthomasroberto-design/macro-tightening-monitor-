@@ -1,8 +1,9 @@
 import streamlit as st
 
 from components import footer, header, scenario_controls, show_status, sidebar_controls, status_chip
+from macro import panels
 from macro.config import stale_assumptions
-from macro.data import as_of_label, try_series
+from macro.data import as_of_label, source_label, try_series
 from macro.pipeline import build_views
 from macro.views import format_value
 
@@ -25,7 +26,23 @@ src_dates = {
     for k in ("DFF", "CPIAUCSL", "EA_DFR", "EA_HICP", "JP_POLICY", "DGS10", "SPX")
 }
 st.caption("As of (per source): " + " · ".join(f"{k} {d}" for k, d in src_dates.items()))
-stale = stale_assumptions()
+overnight = {"SOFR": "SOFR", "€STR": "EA_ESTR", "Japan call rate": "JP_CALL_D"}
+on_txt = [
+    f"{lab} {s.dropna().iloc[-1]:.2f}% ({as_of_label(s)})"
+    for lab, sid in overnight.items()
+    if (s := try_series(sid)) is not None and not s.dropna().empty
+]
+if on_txt:
+    st.caption(
+        "Overnight rates (daily): " + " · ".join(on_txt) + ". " + source_label("SOFR", "EA_ESTR", "JP_CALL_D")
+    )
+fed_priced = panels.market_priced("fed")
+if fed_priced is not None:
+    st.caption(
+        f"Fed: market-priced 3-month average fed funds rate in 12 months {fed_priced['value']:.2f}% "
+        f"({fed_priced['source']}, {fed_priced['as_of']}). Risk-neutral: includes risk premia."
+    )
+stale = [k for k in stale_assumptions() if not (k == "fed_terminal_rate" and fed_priced is not None)]
 if stale:
     st.warning(
         f"Market-pricing assumptions missing or older than 30 days: {', '.join(stale)} (config/assumptions.yaml). "

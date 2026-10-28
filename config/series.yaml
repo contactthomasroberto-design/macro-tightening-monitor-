@@ -28,6 +28,8 @@ series:
   - {id: DFEDTARU, source: fred, source_id: DFEDTARU, freq: D, units: percent, release_lag_days: 0, region: US, category: policy, description: Fed funds target range upper limit, terms: *fred}
   - {id: DGS3MO, source: fred, source_id: DGS3MO, freq: D, units: percent, release_lag_days: 1, region: US, category: rates, description: 3-month Treasury constant maturity, terms: *fred}
   - {id: DGS2, source: fred, source_id: DGS2, freq: D, units: percent, release_lag_days: 1, region: US, category: rates, description: 2-year Treasury constant maturity, terms: *fred}
+  - {id: SOFR, source: fred, source_id: SOFR, freq: D, units: percent, release_lag_days: 1, region: US, category: policy, description: Secured overnight financing rate (NY Fed via FRED), terms: *fred}
+  - {id: FED_PRICED_12M, source: atlanta_fed, source_id: "MPT:12m", freq: D, units: percent, release_lag_days: 1, region: US, category: policy, description: "Market-priced 3-month average fed funds rate 12 months ahead (mean of the risk-neutral distribution from options on 3-month SOFR, Atlanta Fed Market Probability Tracker; interpolated between quarterly reference periods)", terms: "Federal Reserve Bank of Atlanta; cite source", optional: true}
   - {id: DGS5, source: fred, source_id: DGS5, freq: D, units: percent, release_lag_days: 1, region: US, category: rates, description: 5-year Treasury constant maturity, terms: *fred}
   - {id: DGS10, source: fred, source_id: DGS10, freq: D, units: percent, release_lag_days: 1, region: US, category: rates, description: 10-year Treasury constant maturity, terms: *fred}
   - {id: DGS30, source: fred, source_id: DGS30, freq: D, units: percent, release_lag_days: 1, region: US, category: rates, description: 30-year Treasury constant maturity, terms: *fred}
@@ -73,6 +75,8 @@ series:
   - {id: PAYEMS, source: fred, source_id: PAYEMS, freq: M, units: thousands, release_lag_days: 7, region: US, category: labor, description: Nonfarm payrolls, terms: *fred}
   - {id: ICSA, source: fred, source_id: ICSA, freq: W, units: claims, release_lag_days: 5, region: US, category: labor, description: Initial jobless claims, terms: *fred}
   - {id: GDPC1, source: fred, source_id: GDPC1, freq: Q, units: billions chained USD SAAR, release_lag_days: 30, region: US, category: activity, description: Real GDP, terms: *fred}
+  - {id: GDPNOW, source: fred, source_id: GDPNOW, freq: Q, units: percent q/q SAAR, release_lag_days: 0, region: US, category: activity, description: "Atlanta Fed GDPNow, latest nowcast for each quarter (external benchmark for the DFM nowcast)", terms: *fred, optional: true}
+  - {id: WEI, source: fred, source_id: WEI, freq: W, units: percent y/y scaled to GDP, release_lag_days: 5, region: US, category: activity, description: "Weekly Economic Index (Lewis-Mertens-Stock, Dallas Fed via FRED)", terms: *fred, optional: true}
   - {id: GDPPOT, source: fred, source_id: GDPPOT, freq: Q, units: billions chained USD, release_lag_days: 0, region: US, category: activity, description: CBO real potential GDP (projection series), terms: *fred}
   - {id: INDPRO, source: fred, source_id: INDPRO, freq: M, units: index, release_lag_days: 16, region: US, category: activity, description: Industrial production, terms: *fred}
   - {id: RSAFS, source: fred, source_id: RSAFS, freq: M, units: millions USD, release_lag_days: 15, region: US, category: consumption, description: Advance retail sales, terms: *fred}
@@ -86,6 +90,7 @@ series:
 
   # ------------------------------------------------------------------ Euro area
   - {id: EA_DFR, source: ecb, source_id: FM.D.U2.EUR.4F.KR.DFR.LEV, freq: D, units: percent, release_lag_days: 0, region: EA, category: policy, description: ECB deposit facility rate, terms: *ecb}
+  - {id: EA_ESTR, source: ecb, source_id: EST.B.EU000A2X2A25.WT, freq: D, units: percent, release_lag_days: 1, region: EA, category: policy, description: Euro short-term rate (volume-weighted trimmed mean), terms: *ecb}
   - {id: EA_HICP, source: eurostat, source_id: "prc_hicp_minr:EA:I25:TOTAL", freq: M, units: index 2025=100 (ECOICOP v2), release_lag_days: 17, region: EA, category: prices, description: HICP overall index, terms: "Eurostat; reuse allowed with source attribution"}
   - {id: EA_HICP_CORE, source: eurostat, source_id: "prc_hicp_minr:EA:I25:TOT_X_NRG_FOOD", freq: M, units: index 2025=100 (ECOICOP v2), release_lag_days: 17, region: EA, category: prices, description: HICP excl. energy, food, alcohol and tobacco, terms: "Eurostat; reuse allowed with source attribution"}
   - {id: EA_HICP_ENERGY, source: eurostat, source_id: "prc_hicp_minr:EA:I25:NRG", freq: M, units: index 2025=100 (ECOICOP v2), release_lag_days: 17, region: EA, category: prices, description: HICP energy, terms: "Eurostat; reuse allowed with source attribution"}
@@ -102,9 +107,11 @@ series:
   - {id: EUROREC, source: eurostat, source_id: "techrec:namq_10_gdp:EA:CLV10_MEUR:SCA:B1GQ", freq: M, units: 0/1, release_lag_days: 135, region: EA, category: cycle, description: "Euro area technical recession indicator (two or more consecutive quarters of falling real GDP, Eurostat); replaces the discontinued OECD-based EUROREC. Lag 135 days = first month of a quarter to its GDP release (quarter end + ~45 days), conservative for all three months", terms: "Eurostat; derived indicator"}
 
   # ------------------------------------------------------------------ Japan
-  - {id: JP_POLICY, source: fred, source_id: IRSTCI01JPM156N, freq: M, units: percent, release_lag_days: 30, region: JP, category: policy, description: Japan call money rate (OECD MEI; may be stale, replace with BoJ if so), verify: true, terms: *fred}
+  - {id: JP_POLICY, source: boj, source_id: "FM02:STRACLUCON", freq: M, units: percent, release_lag_days: 1, region: JP, category: policy, description: "Japan uncollateralised overnight call rate, monthly average (Bank of Japan API; replaces the OECD MEI copy on FRED)", terms: "Bank of Japan; cite source", fallback: {source: fred, source_id: IRSTCI01JPM156N}}
   - {id: JP_CPI, source: bis, source_id: "WS_LONG_CPI:M.JP.628", freq: M, units: index 2010=100, release_lag_days: 60, region: JP, category: prices, description: "Japan CPI all items (BIS long CPI series; replaces the discontinued OECD MEI series on FRED; BIS republishes national CPI with a ~2-month delay)", terms: "BIS statistics; cite source"}
-  - {id: JP_10Y, source: fred, source_id: IRLTLT01JPM156N, freq: M, units: percent, release_lag_days: 30, region: JP, category: sovereign, description: Japan 10Y government bond yield (OECD MEI), verify: true, terms: *fred}
+  - {id: JP_10Y, source: mof, source_id: "JGB:10Y", freq: D, units: percent, release_lag_days: 1, region: JP, category: sovereign, description: "Japan 10Y JGB benchmark yield, daily (Ministry of Finance; replaces the monthly OECD MEI copy on FRED)", terms: "Japan MOF; cite source"}
+  - {id: JP_2Y, source: mof, source_id: "JGB:2Y", freq: D, units: percent, release_lag_days: 1, region: JP, category: sovereign, description: "Japan 2Y JGB benchmark yield, daily (Ministry of Finance)", terms: "Japan MOF; cite source"}
+  - {id: JP_CALL_D, source: boj, source_id: "FM01:STRDCLUCON", freq: D, units: percent, release_lag_days: 1, region: JP, category: policy, description: "Japan uncollateralised overnight call rate, daily (Bank of Japan API)", terms: "Bank of Japan; cite source", optional: true}
 
   # ------------------------------------------------------------------ Markets (Yahoo)
   - {id: SPX, source: yahoo, source_id: "^GSPC", freq: D, units: index, release_lag_days: 1, region: US, category: equities, description: S&P 500, terms: *yahoo, fallback: {source: fred, source_id: SP500}}

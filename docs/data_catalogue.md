@@ -11,6 +11,8 @@ Release lag = days between the end of the reference period and first publication
 | `DFEDTARU` | US | D | fred | `DFEDTARU` | percent | 0 |  | Fed funds target range upper limit | FRED; public domain unless noted by the original source |
 | `DGS3MO` | US | D | fred | `DGS3MO` | percent | 1 |  | 3-month Treasury constant maturity | FRED; public domain unless noted by the original source |
 | `DGS2` | US | D | fred | `DGS2` | percent | 1 |  | 2-year Treasury constant maturity | FRED; public domain unless noted by the original source |
+| `SOFR` | US | D | fred | `SOFR` | percent | 1 |  | Secured overnight financing rate (NY Fed via FRED) | FRED; public domain unless noted by the original source |
+| `FED_PRICED_12M` | US | D | atlanta_fed | `MPT:12m` | percent | 1 |  | Market-priced 3-month average fed funds rate 12 months ahead (mean of the risk-neutral distribution from options on 3-month SOFR, Atlanta Fed Market Probability Tracker; interpolated between quarterly reference periods) | Federal Reserve Bank of Atlanta; cite source |
 | `DGS5` | US | D | fred | `DGS5` | percent | 1 |  | 5-year Treasury constant maturity | FRED; public domain unless noted by the original source |
 | `DGS10` | US | D | fred | `DGS10` | percent | 1 |  | 10-year Treasury constant maturity | FRED; public domain unless noted by the original source |
 | `DGS30` | US | D | fred | `DGS30` | percent | 1 |  | 30-year Treasury constant maturity | FRED; public domain unless noted by the original source |
@@ -52,6 +54,8 @@ Release lag = days between the end of the reference period and first publication
 | `PAYEMS` | US | M | fred | `PAYEMS` | thousands | 7 |  | Nonfarm payrolls | FRED; public domain unless noted by the original source |
 | `ICSA` | US | W | fred | `ICSA` | claims | 5 |  | Initial jobless claims | FRED; public domain unless noted by the original source |
 | `GDPC1` | US | Q | fred | `GDPC1` | billions chained USD SAAR | 30 |  | Real GDP | FRED; public domain unless noted by the original source |
+| `GDPNOW` | US | Q | fred | `GDPNOW` | percent q/q SAAR | 0 |  | Atlanta Fed GDPNow, latest nowcast for each quarter (external benchmark for the DFM nowcast) | FRED; public domain unless noted by the original source |
+| `WEI` | US | W | fred | `WEI` | percent y/y scaled to GDP | 5 |  | Weekly Economic Index (Lewis-Mertens-Stock, Dallas Fed via FRED) | FRED; public domain unless noted by the original source |
 | `GDPPOT` | US | Q | fred | `GDPPOT` | billions chained USD | 0 |  | CBO real potential GDP (projection series) | FRED; public domain unless noted by the original source |
 | `INDPRO` | US | M | fred | `INDPRO` | index | 16 |  | Industrial production | FRED; public domain unless noted by the original source |
 | `RSAFS` | US | M | fred | `RSAFS` | millions USD | 15 |  | Advance retail sales | FRED; public domain unless noted by the original source |
@@ -63,6 +67,7 @@ Release lag = days between the end of the reference period and first publication
 | `BACTSAMFRBDAL` | US | M | fred | `BACTSAMFRBDAL` | diffusion index | 0 |  | Dallas Fed Texas manufacturing outlook, current general business activity (replaces the Empire State survey, no longer on FRED) | FRED; public domain unless noted by the original source |
 | `USREC` | US | M | fred | `USREC` | 0/1 | 0 |  | NBER recession indicator (dated with long lags by NBER) | FRED; public domain unless noted by the original source |
 | `EA_DFR` | EA | D | ecb | `FM.D.U2.EUR.4F.KR.DFR.LEV` | percent | 0 |  | ECB deposit facility rate | ECB Data Portal: reuse allowed with source attribution |
+| `EA_ESTR` | EA | D | ecb | `EST.B.EU000A2X2A25.WT` | percent | 1 |  | Euro short-term rate (volume-weighted trimmed mean) | ECB Data Portal: reuse allowed with source attribution |
 | `EA_HICP` | EA | M | eurostat | `prc_hicp_minr:EA:I25:TOTAL` | index 2025=100 (ECOICOP v2) | 17 |  | HICP overall index | Eurostat; reuse allowed with source attribution |
 | `EA_HICP_CORE` | EA | M | eurostat | `prc_hicp_minr:EA:I25:TOT_X_NRG_FOOD` | index 2025=100 (ECOICOP v2) | 17 |  | HICP excl. energy | Eurostat; reuse allowed with source attribution |
 | `EA_HICP_ENERGY` | EA | M | eurostat | `prc_hicp_minr:EA:I25:NRG` | index 2025=100 (ECOICOP v2) | 17 |  | HICP energy | Eurostat; reuse allowed with source attribution |
@@ -77,9 +82,11 @@ Release lag = days between the end of the reference period and first publication
 | `ES_10Y` | EA | M | ecb | `IRS.M.ES.L.L40.CI.0000.EUR.N.Z` | percent | 10 | yes | Spain 10Y long-term interest rate | ECB Data Portal: reuse allowed with source attribution |
 | `EA_UNRATE` | EA | M | ecb | `LFSI.M.I9.S.UNEHRT.TOTAL0.15_74.T` | percent | 32 | yes | Euro area unemployment rate (country group code may change with enlargement) | ECB Data Portal: reuse allowed with source attribution |
 | `EUROREC` | EA | M | eurostat | `techrec:namq_10_gdp:EA:CLV10_MEUR:SCA:B1GQ` | 0/1 | 135 |  | Euro area technical recession indicator (two or more consecutive quarters of falling real GDP, Eurostat); replaces the discontinued OECD-based EUROREC. Lag 135 days = first month of a quarter to its GDP release (quarter end + ~45 days), conservative for all three months | Eurostat; derived indicator |
-| `JP_POLICY` | JP | M | fred | `IRSTCI01JPM156N` | percent | 30 | yes | Japan call money rate (OECD MEI; may be stale | FRED; public domain unless noted by the original source |
+| `JP_POLICY` | JP | M | boj | `FM02:STRACLUCON` | percent | 1 |  | Japan uncollateralised overnight call rate, monthly average (Bank of Japan API; replaces the OECD MEI copy on FRED) | Bank of Japan; cite source |
 | `JP_CPI` | JP | M | bis | `WS_LONG_CPI:M.JP.628` | index 2010=100 | 60 |  | Japan CPI all items (BIS long CPI series; replaces the discontinued OECD MEI series on FRED; BIS republishes national CPI with a ~2-month delay) | BIS statistics; cite source |
-| `JP_10Y` | JP | M | fred | `IRLTLT01JPM156N` | percent | 30 | yes | Japan 10Y government bond yield (OECD MEI) | FRED; public domain unless noted by the original source |
+| `JP_10Y` | JP | D | mof | `JGB:10Y` | percent | 1 |  | Japan 10Y JGB benchmark yield, daily (Ministry of Finance; replaces the monthly OECD MEI copy on FRED) | Japan MOF; cite source |
+| `JP_2Y` | JP | D | mof | `JGB:2Y` | percent | 1 |  | Japan 2Y JGB benchmark yield, daily (Ministry of Finance) | Japan MOF; cite source |
+| `JP_CALL_D` | JP | D | boj | `FM01:STRDCLUCON` | percent | 1 |  | Japan uncollateralised overnight call rate, daily (Bank of Japan API) | Bank of Japan; cite source |
 | `SPX` | US | D | yahoo | `^GSPC` | index | 1 |  | S&P 500 | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `SX5E` | EA | D | yahoo | `^STOXX50E` | index | 1 |  | Euro Stoxx 50 | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `N225` | JP | D | yahoo | `^N225` | index | 1 |  | Nikkei 225 | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |

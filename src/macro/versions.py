@@ -18,4 +18,5 @@ MODEL_VERSIONS: dict[str, str] = {
     "positioning": "0.1.0",
     "scenarios": "0.1.0",
     "regimes": "0.1.0",
+    "history": "0.1.0",
 }

@@ -187,3 +187,66 @@ def test_http_error_raises_sourceerror():
         with pytest.raises(SourceError, match="HTTP 404"):
             http.get("u")
     json.dumps({})  # keep json import used for clarity of payload shapes
+
+
+def test_boj_api_pages_and_monthly_dates():
+    p1 = {
+        "STATUS": 200,
+        "NEXTPOSITION": 3,
+        "RESULTSET": [{"VALUES": {"SURVEY_DATES": [202401, 202402], "VALUES": [0.1, None]}}],
+    }
+    p2 = {
+        "STATUS": 200,
+        "NEXTPOSITION": None,
+        "RESULTSET": [{"VALUES": {"SURVEY_DATES": [202403], "VALUES": [0.2]}}],
+    }
+    with patch.object(sources, "get", side_effect=[FakeResp(js=p1), FakeResp(js=p2)]) as g:
+        df = sources.fetch_boj(catalogue().get("JP_POLICY"))
+    assert df["date"].tolist() == [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-03-01")]
+    assert df["value"].tolist() == [0.1, 0.2]
+    assert g.call_args_list[1].args[1]["startPosition"] == 3
+
+
+def test_boj_api_error_raises():
+    bad = FakeResp(js={"STATUS": 400, "MESSAGE": "bad code"})
+    with patch.object(sources, "get", return_value=bad), pytest.raises(SourceError, match="bad code"):
+        sources.fetch_boj(catalogue().get("JP_POLICY"))
+
+
+def test_mof_jgb_history_plus_current_month():
+    hist = "Interest Rate,,,(Unit : %)\nDate,1Y,2Y,10Y\n2026/9/29,1.6,1.9,3.0\n2026/9/30,1.6,1.9,-\n"
+    cur = "Interest Rate (October 2026),,,(Unit : %)\nDate,1Y,2Y,10Y\n2026/10/1,1.7,1.9,3.09\n,,,\n"
+    with patch.object(sources, "get", side_effect=[FakeResp(text=hist), FakeResp(text=cur)]):
+        df = sources.fetch_mof_jgb(catalogue().get("JP_10Y"))
+    assert df["date"].tolist() == [pd.Timestamp("2026-09-29"), pd.Timestamp("2026-10-01")]
+    assert df["value"].tolist() == [3.0, 3.09]
+
+
+def test_mpt_interpolates_twelve_months_ahead():
+    buf = io.BytesIO()
+    d = pd.DataFrame(
+        {
+            "date": ["2026-01-01"] * 3,
+            "reference_start": ["2026-07-01", "2027-01-01", "2027-07-01"],
+            "target_range": ["375bps - 400bps"] * 3,
+            "field": ["Rate: mean"] * 3,
+            "value": [400.0, 420.0, 440.0],
+        }
+    )
+    with pd.ExcelWriter(buf) as xw:
+        d.to_excel(xw, sheet_name="DATA", index=False)
+    out = sources._parse_mpt(buf.getvalue(), "12m")
+    assert out["value"].iloc[0] == pytest.approx(4.2, abs=0.01)
+
+
+def test_market_priced_prefers_fresh_series(monkeypatch):
+    from macro import panels
+
+    s = pd.Series([4.5], index=[pd.Timestamp(panels.reference_today())])
+    monkeypatch.setattr(panels, "try_series", lambda sid: s)
+    got = panels.market_priced("fed", {"value": 3.0, "source": "manual", "as_of": "2020-01-01"})
+    assert got["value"] == 4.5 and "Atlanta" in got["source"]
+    stale = pd.Series([4.5], index=[pd.Timestamp(panels.reference_today()) - pd.Timedelta(days=60)])
+    monkeypatch.setattr(panels, "try_series", lambda sid: stale)
+    assert panels.market_priced("fed", {"value": 3.0})["value"] == 3.0
+    assert panels.market_priced("ecb", None) is None

@@ -15,6 +15,7 @@ from macro import curves as cv
 from macro import fans, panels
 from macro import fincond as fc
 from macro import growth as gr
+from macro import history as hist
 from macro import inflation as inf
 from macro import policy as pol
 from macro import positioning as pos
@@ -367,6 +368,15 @@ def growth_bundle(force: bool = False, eval_start: str = "2008Q1") -> dict:
         if spf is not None:
             spf.index = pd.PeriodIndex(spf.index, freq="Q")
         ev_rt = gr.realtime_evaluation(vfn, gdp_g, quarters, spf_cq=spf)
+        # external, published nowcasts for the same target quarter (benchmarks, not inputs)
+        external: dict = {}
+        if (gn := try_series("GDPNOW")) is not None:
+            gn.index = pd.PeriodIndex(gn.index, freq="Q")
+            if target in gn.index:
+                external["Atlanta Fed GDPNow"] = float(gn.loc[target])
+        if (wei := try_series("WEI")) is not None and not wei.dropna().empty:
+            external["Weekly Economic Index (y/y, latest week)"] = float(wei.dropna().iloc[-1])
+            external["WEI week"] = wei.dropna().index[-1].date().isoformat()
         nfci_q = panels.monthly("NFCI").resample("QS").mean()
         gdp_q = raw[gr.GDP_ID]
         gar = {h: gr.growth_at_risk(gdp_q, nfci_q, h) for h in (1, 4)}
@@ -395,6 +405,7 @@ def growth_bundle(force: bool = False, eval_start: str = "2008Q1") -> dict:
                 "factors": gr.factor_structure(),
             },
             "nowcast": now,
+            "external_nowcasts": external,
             "weekly": weekly,
             "realtime": ev_rt,
             "gar": gar,
@@ -406,10 +417,58 @@ def growth_bundle(force: bool = False, eval_start: str = "2008Q1") -> dict:
             "gdp_growth": gdp_g,
             "vintage_label": LATEST_VINTAGE_LABEL,
         }
-        ids = [*gr.GROWTH_SPEC, gr.GDP_ID, "NFCI", "T10Y3M", "BAA10Y", "UNRATE", "USREC", "SPF_RGDP_CQ"]
+        ids = [
+            *gr.GROWTH_SPEC,
+            gr.GDP_ID,
+            "NFCI",
+            "T10Y3M",
+            "BAA10Y",
+            "UNRATE",
+            "USREC",
+            "SPF_RGDP_CQ",
+            "GDPNOW",
+            "WEI",
+        ]
         return stamp(out, ids, today)
 
     return load_or_compute("growth:US", compute, force=force)
+
+
+def history_bundle(force: bool = False) -> dict:
+    """Historical tightening cycles from the Global Macro Database (annual, cross-country)."""
+    from macro.data import gmd
+    from macro.data.health import reference_today
+
+    panel, version = gmd.load_panel()
+    last = gmd.last_actual_year(reference_today())
+
+    def compute() -> dict:
+        cyc = hist.add_buckets(hist.find_cycles(panel, last))
+        cyc_ex = hist.add_buckets(hist.find_cycles(panel, last, ignore_years=(2020,)))
+        cur = hist.current_position(panel, last)
+        similar = {
+            iso: hist.similar_share(
+                cyc, r["rise (pp)"], r["inflation at peak"], exclude=(str(iso), int(r["trough"]))
+            )
+            for iso, r in cur.iterrows()
+        }
+        return {
+            "version": version,
+            "last_actual_year": last,
+            "cycles": cyc,
+            "by_era": hist.summarise(cyc, "era"),
+            "by_rise": hist.summarise(cyc, "rise bucket"),
+            "by_inflation": hist.summarise(cyc, "inflation at peak"),
+            "by_era_ex2020": hist.summarise(cyc_ex, "era"),
+            "logit": hist.logit_recession(cyc),
+            "current": cur,
+            "similar": similar,
+            "n_countries": int(cyc["ISO3"].nunique()) if len(cyc) else 0,
+            "citation": gmd.CITATION,
+            "licence": gmd.LICENCE,
+        }
+
+    return load_or_compute(f"history:GMD_{version}", compute, force=force)
 
 
 AI_BASKET = ["NVDA", "MSFT", "GOOGL", "AMZN", "META"]
@@ -613,7 +672,7 @@ def scenario_bundle(force: bool = False, n_per: int = 10_000) -> dict:
         g_star = float(100 * np.log(pot).diff(4).dropna().iloc[-1])
         y2_now = float(panels.monthly("DGS2").dropna().iloc[-1])
         priced, priced_src = pol.priced_rate_proxy(
-            y2_now, init["i"], a["market_pricing"].get("fed_terminal_rate")
+            y2_now, init["i"], panels.market_priced("fed", a["market_pricing"].get("fed_terminal_rate"))
         )
         out = {
             "params": p,

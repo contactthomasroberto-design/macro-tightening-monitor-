@@ -12,6 +12,7 @@ IMPLEMENTED = [
     "recession",
     "transmission",
     "positioning",
+    "history",
 ]  # extended milestone by milestone
 
 

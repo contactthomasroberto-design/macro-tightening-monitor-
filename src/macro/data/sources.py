@@ -48,7 +48,11 @@ RESEARCH_FILES: dict[str, dict] = {
         "url": "https://www.newyorkfed.org/medialibrary/media/research/data_indicators/ACMTermPremium.xls",
         "kind": "excel",
     },
-    "CIE": {"url": None, "kind": "manual"},  # Fed Board CIE: no stable file URL found (checked 2026-10-28)
+    "CIE": {"url": None, "kind": "manual"},
+    "MPT": {
+        "url": "https://www.atlantafed.org/-/media/Project/Atlanta/FRBA/Documents/research-and-data/data/market-probability-tracker/mpt_histdata.xlsx",
+        "kind": "mpt",
+    },  # Fed Board CIE: no stable file URL found (checked 2026-10-28)
     "FCIG_1Y": {
         "url": "https://www.federalreserve.gov/econres/notes/feds-notes/fci_g_public_monthly_1yr.csv",
         "kind": "csv",
@@ -237,6 +241,54 @@ def fetch_bis(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
     return _tidy(pd.to_datetime(df["TIME_PERIOD"].astype(str)), df["OBS_VALUE"])
 
 
+# ------------------------------------------------------------------------------------ Japan: BoJ, MOF
+BOJ_API = "https://www.stat-search.boj.or.jp/api/v1/getDataCode"
+MOF_JGB = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate"
+
+
+def fetch_boj(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
+    """Bank of Japan Time-Series Data Search API. source_id = '<DB>:<SERIES_CODE>' (e.g. FM02:STRACLUCON).
+    Dates come as YYYYMMDD (daily) or YYYYMM (monthly); the API pages long series via NEXTPOSITION."""
+    db, code = spec.source_id.split(":")
+    dates: list = []
+    values: list = []
+    pos = None
+    for _ in range(50):
+        params = {"format": "json", "lang": "en", "db": db, "code": code}
+        if pos:
+            params["startPosition"] = pos
+        js = get(BOJ_API, params).json()
+        if js.get("STATUS") != 200 or not js.get("RESULTSET"):
+            raise SourceError(f"BoJ API: {js.get('MESSAGE', 'no result')}")
+        v = js["RESULTSET"][0]["VALUES"]
+        dates += v["SURVEY_DATES"]
+        values += v["VALUES"]
+        pos = js.get("NEXTPOSITION")
+        if not pos:
+            break
+    d = pd.Series(dates).astype(str)
+    fmt = "%Y%m%d" if d.str.len().max() == 8 else "%Y%m"
+    return _tidy(pd.to_datetime(d, format=fmt), pd.to_numeric(pd.Series(values), errors="coerce"))
+
+
+def _jgb_csv(text: str) -> pd.DataFrame:
+    raw = pd.read_csv(io.StringIO(text), skiprows=1, na_values=["-"])
+    raw["Date"] = pd.to_datetime(raw["Date"], format="%Y/%m/%d", errors="coerce")
+    return raw.dropna(subset=["Date"])
+
+
+def fetch_mof_jgb(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
+    """Japan Ministry of Finance JGB benchmark yields (daily). source_id = 'JGB:<tenor>' e.g. JGB:10Y.
+    History file (to the previous month) + current-month file."""
+    tenor = spec.source_id.split(":")[1]
+    hist = _jgb_csv(get(f"{MOF_JGB}/historical/jgbcme_all.csv").text)
+    cur = _jgb_csv(get(f"{MOF_JGB}/jgbcme.csv").text)
+    df = pd.concat([hist, cur]).drop_duplicates("Date", keep="last").sort_values("Date")
+    if tenor not in df:
+        raise SourceError(f"tenor {tenor} not in MOF JGB file: {list(df.columns)}")
+    return _tidy(df["Date"], pd.to_numeric(df[tenor], errors="coerce"))
+
+
 # ------------------------------------------------------------------------------------ research files
 def _manual(spec: SeriesSpec) -> pd.DataFrame | None:
     p = MANUAL_DIR / f"{spec.id}.csv"
@@ -285,6 +337,8 @@ def fetch_research_file(spec: SeriesSpec, vintage: str | None = None) -> pd.Data
         return _parse_spf_growth(resp.content, column)
     if kind == "spf_infl":
         return _parse_spf_infl(resp.content, column)
+    if kind == "mpt":
+        return _parse_mpt(resp.content, column)
     return _excel_column(resp.content, column)
 
 
@@ -305,6 +359,29 @@ def _parse_rstar(content: bytes, sheet: str, block: str, column: str) -> pd.Data
         dates = pd.to_datetime(body.iloc[:, 0], errors="coerce")
         return _tidy(dates, body.iloc[:, j])
     raise SourceError(f"block {block!r} / column {column!r} not found in sheet {sheet!r}")
+
+
+def _parse_mpt(content: bytes, column: str) -> pd.DataFrame:
+    """Atlanta Fed Market Probability Tracker (options on 3-month compounded SOFR): for each trade date,
+    the mean of the risk-neutral distribution of the 3-month average fed funds rate for each quarterly
+    reference period. '<N>m' -> linear interpolation of that mean at trade date + N months (percent).
+    Risk-neutral: includes term/risk premia, so it is 'priced', not an expectation."""
+    months = int(column.rstrip("m"))
+    df = pd.read_excel(io.BytesIO(content), sheet_name="DATA")
+    df = df[df["field"] == "Rate: mean"].copy()
+    df["date"] = pd.to_datetime(df["date"])
+    df["ref"] = pd.to_datetime(df["reference_start"])
+    df["days"] = (df["ref"] - df["date"]).dt.days
+    target = months * 30.4375
+    out = {}
+    for d, g in df.groupby("date"):
+        g = g.sort_values("days")
+        if g["days"].min() <= target <= g["days"].max():
+            out[d] = float(np.interp(target, g["days"], g["value"])) / 100
+    if not out:
+        raise SourceError("MPT file: no trade date spans the requested horizon")
+    sr = pd.Series(out).sort_index()
+    return _tidy(sr.index, sr.to_numpy())
 
 
 def _spf_dates(df: pd.DataFrame) -> pd.DatetimeIndex:
@@ -338,6 +415,9 @@ FETCHERS: dict[str, Callable[[SeriesSpec, str | None], pd.DataFrame]] = {
     "ecb": fetch_ecb,
     "eurostat": fetch_eurostat,
     "bis": fetch_bis,
+    "boj": fetch_boj,
+    "mof": fetch_mof_jgb,
+    "atlanta_fed": fetch_research_file,
     "yahoo": fetch_yahoo,
     "cftc": fetch_cftc,
     "nyfed_files": fetch_research_file,

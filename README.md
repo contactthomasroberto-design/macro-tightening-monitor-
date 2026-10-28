@@ -39,6 +39,8 @@ limitations.
 | [PIMCO (2026)](https://www.pimco.com/ch/en/insights/monetary-policy-through-the-lens-of-financial-conditions) | Gap to neutral conditions, equivalence table "not forecasts", projected path | `fincond.py` |
 | [BoE fan chart (1998)](https://www.bankofengland.co.uk/-/media/boe/files/quarterly-bulletin/1998/the-inflation-report-projections-understanding-the-fan-chart) | Two-piece normal fans, mode as central projection, scenario-based skew | `fans.py` |
 | [OFR / CFTC TFF](https://financialresearch.gov/hedge-fund-monitor/datasets/tff) | Positioning by trader type, duration-adjusted, crowding percentiles | `positioning.py` |
+| [Atlanta Fed Market Probability Tracker](https://www.atlantafed.org/research-and-data/data/market-probability-tracker) | Daily market-priced fed funds path from SOFR options (risk-neutral), replacing a hand-entered OIS value | `panels.market_priced` |
+| [Global Macro Database](https://www.globalmacrodata.com) (Müller et al., 2025) | Two centuries of tightening cycles in about 170 countries: base rates of recession and crisis after a cycle (academic-use licence) | `history.py` |
 | [Philadelphia Fed SPF and RTDSM](https://www.philadelphiafed.org/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/mean-forecasts) | Consensus benchmarks and real-time data | `evaluation.py` |
 | Macro-fund process ([Risk.net](https://www.risk.net/asset-management/hedge-funds/7530341/global-macro-views-combine-with-quantitative-models-to-produce-consistent-returns), sponsored, unverified) | View layer and market-confirmation check (no sizing, no P&L) | `views.py` |
 
@@ -47,8 +49,11 @@ What is replicated, simplified and why is documented per module in [`docs/notes/
 ## 4. Data, vintages and publication lags
 
 One interface, `get_series(id, vintage=None, as_of=None)`, over FRED/ALFRED, the ECB Data Portal,
-Yahoo Finance (personal-use terms), CFTC and research files from the NY Fed, the Fed Board and the
-Philadelphia Fed, cached in SQLite with TTLs, retries and graceful degradation. The full catalogue,
+Eurostat, the BIS, the Bank of Japan API, the Japan MOF (daily JGB yields), Yahoo Finance
+(personal-use terms, FRED fallbacks when rate-limited), CFTC and research files from the NY Fed, the
+Fed Board, the Atlanta Fed and the Philadelphia Fed, cached in SQLite with TTLs, retries and graceful
+degradation. The Global Macro Database (annual, cross-country) is loaded as a panel for the
+Historical cycles page only. The full catalogue,
 with release lags and redistribution terms, is in [`docs/data_catalogue.md`](docs/data_catalogue.md)
 (generated from [`config/series.yaml`](config/series.yaml)). Series flagged `verify` must pass the
 live smoke test (`make test-live`) before publication.
@@ -100,11 +105,12 @@ scenario-conditional and probability-weighted paths against what is priced, with
 
 ## 8. Limitations
 
-Few recessions and hiking cycles (N is shown beside every statistic); r\* and the output gap are
+Few recessions and hiking cycles in the monthly samples (N is shown beside every statistic; the
+Historical cycles page adds about 1,200 annual cycles, at the cost of coarse annual dating); r\* and the output gap are
 unobservable; data revisions (latest-vintage unless ALFRED vintages are loaded); structural breaks; the
-policy-surprise proxy mixes surprise and information effects; free-data constraints (no OIS curve:
-2-year yields proxy the priced path; ICE history on FRED may be truncated; the broad dollar starts in
-2006); subjective scenario inputs; statistical (not FRB/US) FCI weights; a smaller nowcast panel than
+policy-surprise proxy mixes surprise and information effects; free-data constraints (no free OIS
+curve for the ECB and the BoJ: 2-year yields proxy their priced paths, while the Fed path comes from
+the Atlanta Fed tracker; ICE history on FRED may be truncated; the broad dollar starts in 2006); subjective scenario inputs; statistical (not FRB/US) FCI weights; a smaller nowcast panel than
 the NY Fed's.
 
 ## 9. How to run
@@ -145,7 +151,7 @@ refreshes live data, appends the archive and builds the reports.
 
 ## 11. Roadmap
 
-OIS-implied policy paths; PMI-based nowcasting; SNB and BoE modules; NLP tone indices of central-bank
+OIS-implied policy paths for the ECB and the BoJ; Japan CPI from e-Stat (needs a free API key); PMI-based nowcasting; SNB and BoE modules; NLP tone indices of central-bank
 statements; ALFRED vintages inside the inflation forecast loop; switching fan variances to the
 archive's own forecast errors once enough evaluation points exist.
 
@@ -155,5 +161,6 @@ Research product, may be revised or discontinued, not an official view and not i
 Derived indices (FCI-lite, the expectations factor, term-premium decompositions) are research series,
 may be revised, and are not official statistics. Data remain the property of their providers: FRED
 series follow their original sources' terms (ICE BofA and S&P series are copyrighted); Yahoo Finance
-data are for personal, non-commercial use; ECB, CFTC, NY Fed, Fed Board and Philadelphia Fed data are
-cited on every chart. No raw third-party data is committed to this repository.
+data are for personal, non-commercial use; ECB, Eurostat, BIS, Bank of Japan, Japan MOF, CFTC, NY Fed,
+Fed Board, Atlanta Fed and Philadelphia Fed data are cited on every chart. The Global Macro Database is
+free for academic use only; other uses need written permission from its authors. No raw third-party data is committed to this repository.

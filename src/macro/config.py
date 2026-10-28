@@ -19,7 +19,18 @@ CONFIG_DIR = ROOT / "config"
 
 Freq = Literal["D", "W", "M", "Q"]
 Source = Literal[
-    "fred", "ecb", "eurostat", "bis", "yahoo", "nyfed_files", "fed_board_files", "philly", "cftc"
+    "fred",
+    "ecb",
+    "eurostat",
+    "bis",
+    "boj",
+    "mof",
+    "atlanta_fed",
+    "yahoo",
+    "nyfed_files",
+    "fed_board_files",
+    "philly",
+    "cftc",
 ]
 
 
