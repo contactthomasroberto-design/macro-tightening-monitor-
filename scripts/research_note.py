@@ -180,28 +180,36 @@ cur = hb["current"]
 # (système visuel strict, chiffres clés en grand, un message par graphique), pratique des hedge funds
 # macro (scénario central + alternatives probabilisées + signaux d'invalidation).
 import os  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 from fpdf import FPDF  # noqa: E402
 
 from macro.reports import _font_path, ensure_browser  # noqa: E402
 
-NAVY = (31, 58, 95)
-INK = (33, 37, 41)
-MUTED = (110, 117, 125)
-RULE = (210, 215, 222)
-TINT = (238, 242, 247)
-RUST = (200, 85, 61)
-TEAL = (42, 157, 143)
-GOLD = (183, 121, 31)
+# Palette sobre : encre noire, un seul bleu institutionnel, une échelle de gris. Pas d'aplats colorés ;
+# la hiérarchie vient de la typographie et de filets fins, comme dans les notes de banques centrales.
+INK = (17, 17, 17)
+BLUE = (0, 40, 85)
+MUTED = (96, 96, 96)
+RULE = (150, 150, 150)
+HAIR = (215, 215, 215)
 HEX = {
-    "navy": "#1f3a5f",
-    "rust": "#c8553d",
-    "teal": "#2a9d8f",
-    "gold": "#b7791f",
-    "grey": "#8a939c",
-    "sky": "#7fa7d6",
-    "sand": "#e9a98f",
+    "blue": "#002855",  # série principale (États-Unis, notre vue)
+    "steel": "#7391b5",  # deuxième série (zone euro)
+    "dark": "#3a3a3a",
+    "grey": "#8c8c8c",
+    "light": "#c4c4c4",
+    "oxblood": "#7d1d1d",  # réservé au message d'un graphique
 }
+FONT_DIR = Path("/usr/share/fonts/truetype/liberation")
+
+
+def _font(name: str, bold: bool) -> str:
+    """Liberation Serif / Sans (métriques Times / Arial), DejaVu à défaut."""
+    f = FONT_DIR / f"Liberation{name}-{'Bold' if bold else 'Regular'}.ttf"
+    return str(f) if f.exists() else _font_path(bold)
+
+
 ASOF = pd.Timestamp(K["dgs10_d"])
 DATE_FR = f"{ASOF.day} {['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][ASOF.month - 1]} {ASOF.year}"
 
@@ -209,8 +217,9 @@ DATE_FR = f"{ASOF.day} {['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
 class Note(FPDF):
     def __init__(self):
         super().__init__(orientation="P", unit="mm", format="A4")
-        self.add_font("DejaVu", "", _font_path())
-        self.add_font("DejaVu", "B", _font_path(True))
+        for fam in ("Sans", "Serif"):
+            self.add_font(fam, "", _font(fam, False))
+            self.add_font(fam, "B", _font(fam, True))
         self.set_margins(18, 16, 18)
         self.set_auto_page_break(auto=True, margin=20)
         self.exhibit_no = 0
@@ -224,25 +233,25 @@ class Note(FPDF):
     def header(self):
         if self.cover:
             return
-        self.set_font("DejaVu", "B", 7)
-        self.set_text_color(*NAVY)
+        self.set_font("Sans", "B", 7)
+        self.set_text_color(*INK)
         self.set_xy(18, 9)
         self.cell(0, 4, "MACRO TIGHTENING MONITOR  ·  NOTE DE RECHERCHE")
-        self.set_font("DejaVu", "", 7)
+        self.set_font("Sans", "", 7)
         self.set_text_color(*MUTED)
         self.set_xy(18, 9)
         self.cell(0, 4, DATE_FR, align="R")
-        self.set_draw_color(*NAVY)
-        self.set_line_width(0.4)
+        self.set_draw_color(*INK)
+        self.set_line_width(0.25)
         self.line(18, 14, self.w - 18, 14)
         self.set_y(18)
 
     def footer(self):
         self.set_y(-13)
-        self.set_draw_color(*RULE)
+        self.set_draw_color(*HAIR)
         self.set_line_width(0.2)
         self.line(18, self.get_y() - 1, self.w - 18, self.get_y() - 1)
-        self.set_font("DejaVu", "", 6.5)
+        self.set_font("Sans", "", 6.5)
         self.set_text_color(*MUTED)
         self.cell(
             0,
@@ -255,16 +264,16 @@ class Note(FPDF):
 
     # -------------------------------------------------- briques
     def text(self, s, size=9.2, color=INK, bold=False, lh=4.6, align="J"):
-        self.set_font("DejaVu", "B" if bold else "", size)
+        self.set_font("Sans", "B" if bold else "", size)
         self.set_text_color(*color)
         self.multi_cell(0, lh, s, align=align, new_x="LMARGIN", new_y="NEXT")
 
     def rich(self, lead, body, size=9.2):
         """Paragraph with a bold lead-in, as in sell-side notes."""
         self.set_text_color(*INK)
-        self.set_font("DejaVu", "B", size)
+        self.set_font("Sans", "B", size)
         self.write(4.6, lead + " ")
-        self.set_font("DejaVu", "", size)
+        self.set_font("Sans", "", size)
         self.write(4.6, body)
         self.ln(6)
 
@@ -275,33 +284,39 @@ class Note(FPDF):
     def section(self, n, label, headline):
         self.need(70)
         self.ln(2)
-        self.set_font("DejaVu", "B", 7.5)
-        self.set_text_color(*RUST)
-        self.cell(0, 4, f"{n}  ·  {label.upper()}", new_x="LMARGIN", new_y="NEXT")
-        self.set_font("DejaVu", "B", 14)
-        self.set_text_color(*NAVY)
-        self.multi_cell(0, 6.4, headline, new_x="LMARGIN", new_y="NEXT")
+        self.set_draw_color(*INK)
+        self.set_line_width(0.25)
+        self.line(18, self.get_y(), self.w - 18, self.get_y())
+        self.ln(1.5)
+        self.set_font("Sans", "B", 7.5)
+        self.set_text_color(*BLUE)
+        self.cell(0, 4, f"{n}.  {label.upper()}", new_x="LMARGIN", new_y="NEXT")
+        self.set_font("Serif", "B", 15)
+        self.set_text_color(*INK)
+        self.multi_cell(0, 6.6, headline, new_x="LMARGIN", new_y="NEXT")
         self.ln(1.5)
 
     def takeaway(self, title, s):
-        """Shaded box with a navy rule on the left (« notre lecture »)."""
+        """« Notre lecture » between a blue rule and a hairline (no shaded box)."""
         self.ln(1)
         x, y = self.get_x(), self.get_y()
-        self.set_font("DejaVu", "", 8.8)
+        self.set_font("Sans", "", 8.8)
         lines = self.multi_cell(self.w - 36 - 6, 4.4, s, dry_run=True, output="LINES")
         h = 7 + 4.4 * len(lines) + 2
         self.need(h + 2)
         x, y = self.get_x(), self.get_y()
-        self.set_fill_color(*TINT)
-        self.rect(x, y, self.w - 36, h, style="F")
-        self.set_fill_color(*NAVY)
-        self.rect(x, y, 1.2, h, style="F")
+        self.set_draw_color(*BLUE)
+        self.set_line_width(0.5)
+        self.line(x, y, x + self.w - 36, y)
+        self.set_draw_color(*HAIR)
+        self.set_line_width(0.25)
+        self.line(x, y + h, x + self.w - 36, y + h)
         self.set_xy(x + 4, y + 2)
-        self.set_font("DejaVu", "B", 7.5)
-        self.set_text_color(*NAVY)
+        self.set_font("Sans", "B", 7.5)
+        self.set_text_color(*BLUE)
         self.cell(0, 4, title.upper(), new_x="LMARGIN", new_y="NEXT")
         self.set_x(x + 4)
-        self.set_font("DejaVu", "", 8.8)
+        self.set_font("Sans", "", 8.8)
         self.set_text_color(*INK)
         self.multi_cell(self.w - 36 - 6, 4.4, s, align="J", new_x="LMARGIN", new_y="NEXT")
         self.set_y(y + h + 3)
@@ -310,8 +325,8 @@ class Note(FPDF):
         self.exhibit_no += 1
         h_mm = (self.w - 36) * h_px / w_px
         self.need(h_mm + 16)
-        self.set_font("DejaVu", "B", 8.5)
-        self.set_text_color(*NAVY)
+        self.set_font("Sans", "B", 8.5)
+        self.set_text_color(*INK)
         self.multi_cell(0, 4.4, f"Graphique {self.exhibit_no} : {title}", new_x="LMARGIN", new_y="NEXT")
         self.ln(0.5)
         if isinstance(fig, str):
@@ -322,24 +337,27 @@ class Note(FPDF):
             fig.write_image(path, width=w_px, height=h_px, scale=2)
             self.image(path, w=self.w - 36)
             os.unlink(path)
-        self.set_font("DejaVu", "", 6.8)
+        self.set_font("Sans", "", 6.8)
         self.set_text_color(*MUTED)
         self.multi_cell(0, 3.4, f"Source : {source}.", new_x="LMARGIN", new_y="NEXT")
         self.ln(2.5)
 
-    def table(self, header, rows, widths, size=7.6, zebra=True, bold_first=True, aligns=None):
+    def table(self, header, rows, widths, size=7.6, zebra=False, bold_first=True, aligns=None):
         self.need(6 + 5.2 * len(rows))
         aligns = aligns or ["L"] * len(header)
-        self.set_fill_color(*NAVY)
-        self.set_text_color(255, 255, 255)
-        self.set_font("DejaVu", "B", size)
+        self.set_text_color(*INK)
+        self.set_font("Sans", "B", size)
         nh = max(
             len(self.multi_cell(w - 1.5, 3.6, h, dry_run=True, output="LINES"))
             for h, w in zip(header, widths, strict=True)
         )
         hh = 3.6 * nh + 2
         y0 = self.get_y()
-        self.rect(18, y0, sum(widths), hh, style="F")
+        self.set_draw_color(*INK)
+        self.set_line_width(0.4)
+        self.line(18, y0, 18 + sum(widths), y0)
+        self.set_line_width(0.2)
+        self.line(18, y0 + hh, 18 + sum(widths), y0 + hh)
         x = 18
         for h, w, a in zip(header, widths, aligns, strict=True):
             self.set_xy(x + 0.8, y0 + 1)
@@ -350,49 +368,49 @@ class Note(FPDF):
             # row height from the tallest wrapped cell (first column is bold)
             nl = 1
             for j, (c, w) in enumerate(zip(r, widths, strict=True)):
-                self.set_font("DejaVu", "B" if (bold_first and j == 0) else "", size)
+                self.set_font("Sans", "B" if (bold_first and j == 0) else "", size)
                 nl = max(nl, len(self.multi_cell(w - 1.5, 3.7, str(c), dry_run=True, output="LINES")))
             hrow = 3.7 * nl + 1.6
             self.need(hrow + 1)
             y0 = self.get_y()
             if zebra and k % 2 == 1:
-                self.set_fill_color(*TINT)
+                self.set_fill_color(245, 245, 245)
                 self.rect(18, y0, sum(widths), hrow, style="F")
             x = 18
             for j, (c, w, a) in enumerate(zip(r, widths, aligns, strict=True)):
                 self.set_xy(x + 0.8, y0 + 0.8)
-                self.set_font("DejaVu", "B" if (bold_first and j == 0) else "", size)
-                self.set_text_color(*(NAVY if (bold_first and j == 0) else INK))
+                self.set_font("Sans", "B" if (bold_first and j == 0) else "", size)
+                self.set_text_color(*INK)
                 self.multi_cell(w - 1.5, 3.7, str(c), align=a)
                 x += w
             self.set_y(y0 + hrow)
-            self.set_draw_color(*RULE)
-            self.set_line_width(0.15)
+            last = k == len(rows) - 1
+            self.set_draw_color(*(INK if last else HAIR))
+            self.set_line_width(0.4 if last else 0.15)
             self.line(18, self.get_y(), 18 + sum(widths), self.get_y())
         self.ln(2)
 
     def tiles(self, items):
-        """Big-number tiles (Guide to the Markets style): value, label, context line."""
+        """Key figures on a thin rule: value, label, context line."""
         n = len(items)
         gap_ = 3
         w = (self.w - 36 - gap_ * (n - 1)) / n
         y = self.get_y()
         for k, (val, lab, ctx) in enumerate(items):
             x = 18 + k * (w + gap_)
-            self.set_fill_color(*TINT)
-            self.rect(x, y, w, 23, style="F")
-            self.set_fill_color(*RUST)
-            self.rect(x, y, w, 0.9, style="F")
-            self.set_xy(x + 2.5, y + 2.6)
-            self.set_font("DejaVu", "B", 15)
-            self.set_text_color(*NAVY)
+            self.set_draw_color(*INK)
+            self.set_line_width(0.4)
+            self.line(x, y, x + w, y)
+            self.set_xy(x, y + 2.6)
+            self.set_font("Serif", "B", 17)
+            self.set_text_color(*INK)
             self.cell(w - 5, 7, val)
-            self.set_xy(x + 2.5, y + 10.2)
-            self.set_font("DejaVu", "B", 6.8)
+            self.set_xy(x, y + 10.2)
+            self.set_font("Sans", "B", 6.8)
             self.set_text_color(*INK)
             self.multi_cell(w - 5, 3.2, lab.upper())
-            self.set_xy(x + 2.5, y + 17.2)
-            self.set_font("DejaVu", "", 6.5)
+            self.set_xy(x, y + 17.2)
+            self.set_font("Sans", "", 6.5)
             self.set_text_color(*MUTED)
             self.multi_cell(w - 5, 3, ctx)
         self.set_y(y + 27)
@@ -406,7 +424,7 @@ SCRATCH.mkdir(parents=True, exist_ok=True)
 def theme(fig, ytitle="", height=430, legend=True):
     fig.update_layout(
         template="none",
-        font={"family": "DejaVu Sans, Arial", "size": 13, "color": "#212529"},
+        font={"family": "Liberation Sans, Arial", "size": 13, "color": "#111111"},
         paper_bgcolor="white",
         plot_bgcolor="white",
         margin={"l": 55, "r": 70, "t": 30, "b": 35},
@@ -415,8 +433,8 @@ def theme(fig, ytitle="", height=430, legend=True):
         legend={"orientation": "h", "x": 0, "y": 1.08, "font": {"size": 12}, "bgcolor": "rgba(0,0,0,0)"},
         hovermode="x unified",
     )
-    fig.update_xaxes(showgrid=False, linecolor="#8a939c", ticks="outside", tickcolor="#8a939c")
-    fig.update_yaxes(gridcolor="#e6e9ee", zeroline=False, title_text=ytitle, title_font={"size": 12})
+    fig.update_xaxes(showgrid=False, linecolor="#111111", ticks="outside", tickcolor="#111111")
+    fig.update_yaxes(gridcolor="#e4e4e4", zeroline=False, title_text=ytitle, title_font={"size": 12})
     return fig
 
 
@@ -431,7 +449,7 @@ def end_labels(fig, series: dict, fmt="{:.1f} %", colors=None):
             showarrow=False,
             xanchor="left",
             xshift=6,
-            font={"size": 12, "color": (colors or [])[k] if colors else "#1f3a5f"},
+            font={"size": 12, "color": (colors or [])[k] if colors else "#002855"},
         )
 
 
@@ -453,7 +471,7 @@ def lines_fig(df, colors, ytitle, label_fmt="{:.1f} %", hline=None, height=430, 
             )
         )
     if hline is not None:
-        fig.add_hline(y=hline, line_dash="dot", line_color="#8a939c", line_width=1.2)
+        fig.add_hline(y=hline, line_dash="dot", line_color="#8c8c8c", line_width=1.2)
     end_labels(fig, {c: df[c] for c in df.columns}, label_fmt, colors)
     return theme(fig, ytitle, height)
 
@@ -470,7 +488,7 @@ infl_df = pd.concat(
 ).loc["2020-01-01":]
 fig_infl = lines_fig(
     infl_df,
-    [HEX["navy"], HEX["sky"], HEX["rust"], HEX["sand"]],
+    [HEX["blue"], HEX["blue"], HEX["steel"], HEX["steel"]],
     "% sur un an",
     hline=2.0,
     dash={"États-Unis, sous-jacente": "dash", "Zone euro, sous-jacente": "dash"},
@@ -482,12 +500,12 @@ fig_infl.add_annotation(
     showarrow=False,
     yshift=-10,
     xanchor="right",
-    font={"size": 11, "color": "#8a939c"},
+    font={"size": 11, "color": "#8c8c8c"},
 )
 
 # 2. Brent
 brent_w = get_series("DCOILBRENTEU").resample("W-FRI").last().loc["2021-01-01":].to_frame("Brent")
-fig_brent = lines_fig(brent_w, [HEX["navy"]], "USD par baril", label_fmt="{:.0f} $", height=330)
+fig_brent = lines_fig(brent_w, [HEX["blue"]], "USD par baril", label_fmt="{:.0f} $", height=330)
 fig_brent.update_layout(showlegend=False)
 peak = brent_w["Brent"].loc["2026-01-01":].idxmax()
 fig_brent.add_annotation(
@@ -498,18 +516,18 @@ fig_brent.add_annotation(
     arrowhead=0,
     ax=-120,
     ay=-10,
-    font={"size": 11, "color": "#c8553d"},
-    arrowcolor="#c8553d",
+    font={"size": 11, "color": "#3a3a3a"},
+    arrowcolor="#3a3a3a",
 )
 
 # 3. Fed : où se situe le marché
 FOMC_SEP = 4.1  # médiane du FOMC pour fin 2026 (projections de septembre 2026) — source externe citée
 anchors = [
-    ("Taux effectif\naujourd'hui", K["dff"], HEX["grey"]),
-    ("Nos scénarios\n(médiane, 4 trim.)", K["model_med"], HEX["sky"]),
-    ("FOMC\n(médiane fin 2026)", FOMC_SEP, HEX["teal"]),
-    ("Marché\n(dans 12 mois)", K["priced"], HEX["navy"]),
-    ("Règle de Taylor\n(r* = 0,75 %)", K["taylor"], HEX["rust"]),
+    ("Taux effectif\naujourd'hui", K["dff"], HEX["light"]),
+    ("Nos scénarios\n(médiane, 4 trim.)", K["model_med"], HEX["blue"]),
+    ("FOMC\n(médiane fin 2026)", FOMC_SEP, HEX["grey"]),
+    ("Marché\n(dans 12 mois)", K["priced"], HEX["dark"]),
+    ("Règle de Taylor\n(r* = 0,75 %)", K["taylor"], HEX["light"]),
 ]
 fig_fed = go.Figure(
     go.Bar(
@@ -535,7 +553,7 @@ rates = pd.concat(
     },
     axis=1,
 ).loc["2021-01-01":]
-fig_rates = lines_fig(rates, [HEX["navy"], HEX["rust"], HEX["teal"]], "%", label_fmt="{:.2f} %", height=360)
+fig_rates = lines_fig(rates, [HEX["blue"], HEX["steel"], HEX["grey"]], "%", label_fmt="{:.2f} %", height=360)
 
 # 5. décomposition du 10 ans
 dec = (
@@ -553,7 +571,7 @@ dec = (
     .loc["2021-01-01":]
 )
 fig_dec = lines_fig(
-    dec, [HEX["navy"], HEX["rust"], HEX["teal"], HEX["gold"]], "%", label_fmt="{:.2f} %", height=400
+    dec, [HEX["blue"], HEX["steel"], HEX["grey"], HEX["oxblood"]], "%", label_fmt="{:.2f} %", height=400
 )
 
 # 6. écarts souverains
@@ -562,7 +580,7 @@ sov_m = sov.loc["2021-01-01":].rename(
 )
 fig_sov = lines_fig(
     sov_m,
-    [HEX["navy"], HEX["rust"], HEX["gold"]],
+    [HEX["blue"], HEX["steel"], HEX["grey"]],
     "points de base vs Bund",
     label_fmt="{:.0f} pb",
     height=340,
@@ -579,9 +597,9 @@ fig_corr = go.Figure(
             "symmetric": False,
             "array": sbr_plot["upper"] - sbr_plot["corr"],
             "arrayminus": sbr_plot["corr"] - sbr_plot["lower"],
-            "color": "#8a939c",
+            "color": "#8c8c8c",
         },
-        marker_color=[HEX["sky"], HEX["sky"], HEX["rust"]],
+        marker_color=[HEX["light"], HEX["light"], HEX["blue"]],
         text=[frs(x, 2) for x in sbr_plot["corr"]],
         textposition="outside",
         width=0.55,
@@ -589,7 +607,7 @@ fig_corr = go.Figure(
 )
 theme(fig_corr, "corrélation", 340, legend=False)
 fig_corr.update_layout(margin={"b": 60})
-fig_corr.add_hline(y=0, line_color="#8a939c", line_width=1)
+fig_corr.add_hline(y=0, line_color="#8c8c8c", line_width=1)
 fig_corr.update_yaxes(range=[-0.8, 1.0])
 
 # 8. éventail du taux directeur
@@ -598,8 +616,8 @@ hist_ff = get_series("DFF").resample("MS").mean().loc["2022-01-01":]
 fig_fan = go.Figure()
 xs = [hist_ff.index[-1], *q.index]
 for lo, hi, col, lab in (
-    (0.05, 0.95, "rgba(31,58,95,0.13)", "90 % des trajectoires"),
-    (0.16, 0.84, "rgba(31,58,95,0.28)", "68 % des trajectoires"),
+    (0.05, 0.95, "rgba(0,40,85,0.10)", "90 % des trajectoires"),
+    (0.16, 0.84, "rgba(0,40,85,0.24)", "68 % des trajectoires"),
 ):
     ys_hi = [float(hist_ff.iloc[-1]), *q[hi]]
     ys_lo = [float(hist_ff.iloc[-1]), *q[lo]]
@@ -630,7 +648,7 @@ fig_fan.add_trace(
         y=[float(hist_ff.iloc[-1]), *q[0.5]],
         name="Médiane des scénarios",
         mode="lines",
-        line={"color": HEX["navy"], "width": 2.6},
+        line={"color": HEX["blue"], "width": 2.6},
     )
 )
 t12 = hist_ff.index[-1] + pd.DateOffset(months=12)
@@ -640,10 +658,10 @@ fig_fan.add_trace(
         y=[K["priced"]],
         mode="markers+text",
         name="Marché (12 mois)",
-        marker={"color": HEX["rust"], "size": 11, "symbol": "diamond"},
+        marker={"color": HEX["dark"], "size": 11, "symbol": "diamond"},
         text=[fr(K["priced"], 2) + " %"],
         textposition="top center",
-        textfont={"color": HEX["rust"], "size": 12},
+        textfont={"color": HEX["dark"], "size": 12},
     )
 )
 fig_fan.add_trace(
@@ -652,7 +670,7 @@ fig_fan.add_trace(
         y=[FOMC_SEP],
         mode="markers",
         name="FOMC (fin 2026)",
-        marker={"color": HEX["teal"], "size": 10, "symbol": "square"},
+        marker={"color": HEX["grey"], "size": 10, "symbol": "square"},
     )
 )
 theme(fig_fan, "%", 380)
@@ -673,19 +691,25 @@ OUR_W = {
 n = Note()
 n.add_page()
 # ---------------------------------------------------------------- couverture
-n.set_fill_color(*NAVY)
-n.rect(0, 0, n.w, 62, style="F")
 n.set_xy(18, 12)
-n.set_font("DejaVu", "B", 8)
-n.set_text_color(200, 212, 228)
-n.cell(0, 4, f"MACRO TIGHTENING MONITOR  ·  NOTE DE RECHERCHE  ·  {DATE_FR.upper()}")
-n.set_xy(18, 20)
-n.set_font("DejaVu", "B", 21)
-n.set_text_color(255, 255, 255)
-n.multi_cell(n.w - 36, 9, "Une dernière hausse, pas un nouveau cycle", new_x="LMARGIN", new_y="NEXT")
+n.set_font("Sans", "B", 7.5)
+n.set_text_color(*BLUE)
+n.cell(0, 4, "MACRO TIGHTENING MONITOR  ·  NOTE DE RECHERCHE")
 n.set_x(18)
-n.set_font("DejaVu", "", 10.5)
-n.set_text_color(214, 224, 236)
+n.set_text_color(*MUTED)
+n.set_font("Sans", "", 7.5)
+n.cell(0, 4, DATE_FR, align="R")
+n.set_draw_color(*INK)
+n.set_line_width(0.6)
+n.line(18, 18, n.w - 18, 18)
+n.set_xy(18, 23)
+n.set_font("Serif", "B", 24)
+n.set_text_color(*INK)
+n.multi_cell(n.w - 36, 10, "Une dernière hausse, pas un nouveau cycle", new_x="LMARGIN", new_y="NEXT")
+n.ln(1)
+n.set_x(18)
+n.set_font("Serif", "", 11.5)
+n.set_text_color(*MUTED)
 n.multi_cell(
     n.w - 36,
     5.2,
@@ -694,10 +718,14 @@ n.multi_cell(
     new_x="LMARGIN",
     new_y="NEXT",
 )
-n.set_y(68)
+n.ln(3)
+n.set_draw_color(*HAIR)
+n.set_line_width(0.25)
+n.line(18, n.get_y(), n.w - 18, n.get_y())
+n.ln(4)
 n.cover = False
-n.set_font("DejaVu", "B", 7.5)
-n.set_text_color(*RUST)
+n.set_font("Sans", "B", 7.5)
+n.set_text_color(*BLUE)
 n.cell(0, 4, "POINTS CLÉS", new_x="LMARGIN", new_y="NEXT")
 n.ln(1)
 n.rich(
@@ -728,8 +756,8 @@ n.tiles(
         (f"{fr(K['oat'], 0)} pb", "Écart OAT-Bund", f"Italie : {fr(K['btp'], 0)} pb"),
     ]
 )
-n.set_font("DejaVu", "B", 7.5)
-n.set_text_color(*RUST)
+n.set_font("Sans", "B", 7.5)
+n.set_text_color(*BLUE)
 n.cell(0, 4, "NOS VUES EN UN COUP D'ŒIL", new_x="LMARGIN", new_y="NEXT")
 n.ln(1)
 n.table(
