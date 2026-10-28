@@ -25,6 +25,7 @@ def test_series_live(spec):
             last = last + (pd.offsets.MonthEnd(0) if spec.freq == "M" else pd.offsets.QuarterEnd(0))
         age = (pd.Timestamp(dt.date.today()) - last).days
         row |= {
+            "answered_by": df.attrs.get("source", spec.source),
             "n": len(df),
             "last_obs": df["date"].max().date(),
             "age_days": age,
@@ -36,6 +37,9 @@ def test_series_live(spec):
         row["ok"] = True
     except Exception as exc:  # recorded for the report, then re-raised
         row["error"] = f"{type(exc).__name__}: {exc}"
+        if spec.optional:
+            row["skipped"] = "optional series: models degrade gracefully without it"
+            pytest.skip(f"optional series unavailable: {row['error']}")
         raise
     finally:
         RESULTS.append(row)

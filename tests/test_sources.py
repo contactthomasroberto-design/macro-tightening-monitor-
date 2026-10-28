@@ -50,11 +50,11 @@ def test_fred_vintage_without_key_is_explicit(monkeypatch):
 
 
 def test_ecb_csv():
-    csv = "KEY,FREQ,TIME_PERIOD,OBS_VALUE\nICP.M.U2,M,2024-01,125.1\nICP.M.U2,M,2024-02,125.9\n"
+    csv = "KEY,FREQ,TIME_PERIOD,OBS_VALUE\nFM.D,D,2024-01-02,4.0\nFM.D,D,2024-01-03,4.0\n"
     with patch.object(sources, "get", return_value=FakeResp(text=csv)) as g:
-        df = sources.fetch_ecb(catalogue().get("EA_HICP"))
-    assert g.call_args.args[0].endswith("/ICP/M.U2.N.000000.4.INX")
-    assert df["date"].tolist() == [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-02-01")]
+        df = sources.fetch_ecb(catalogue().get("EA_DFR"))
+    assert g.call_args.args[0].endswith("/FM/D.U2.EUR.4F.KR.DFR.LEV")
+    assert df["date"].tolist() == [pd.Timestamp("2024-01-02"), pd.Timestamp("2024-01-03")]
 
 
 def test_yahoo_chart():
@@ -88,41 +88,78 @@ def test_cftc_net_positions():
     rows = [
         {
             "report_date_as_yyyy_mm_dd": "2024-01-02T00:00:00.000",
-            "market_and_exchange_names": "UST 10Y NOTE - CBOT",
-            "lev_money_positions_long_all": "500",
-            "lev_money_positions_short_all": "1500",
+            "lev_money_positions_long": "500",
+            "lev_money_positions_short": "1500",
         },
         {
             "report_date_as_yyyy_mm_dd": "2024-01-09T00:00:00.000",
-            "market_and_exchange_names": "UST 10Y NOTE - CBOT",
-            "lev_money_positions_long_all": "600",
-            "lev_money_positions_short_all": "1400",
+            "lev_money_positions_long": "600",
+            "lev_money_positions_short": "1400",
         },
     ]
-    with patch.object(sources, "get", return_value=FakeResp(js=rows)):
+    with patch.object(sources, "get", return_value=FakeResp(js=rows)) as g:
         df = sources.fetch_cftc(catalogue().get("TFF_UST10_LEV"))
     assert df["value"].tolist() == [-1000.0, -800.0]
+    assert "cftc_contract_market_code='043602'" in g.call_args.args[1]["$where"]
 
 
-def test_spf_four_quarter_average():
+def _jsonstat(times, values):
+    return {
+        "dimension": {"time": {"category": {"index": {t: i for i, t in enumerate(times)}}}},
+        "value": {str(i): v for i, v in enumerate(values) if v is not None},
+    }
+
+
+def test_eurostat_hicp_jsonstat():
+    js = _jsonstat(["2025-01", "2025-02", "2025-03"], [99.0, None, 100.5])
+    with patch.object(sources, "get", return_value=FakeResp(js=js)):
+        df = sources.fetch_eurostat(catalogue().get("EA_HICP"))
+    assert df["date"].tolist() == [pd.Timestamp("2025-01-01"), pd.Timestamp("2025-03-01")]
+    assert df["value"].tolist() == [99.0, 100.5]
+
+
+def test_eurostat_technical_recession():
+    # q/q: Q2 -, Q3 -, Q4 +, Q1 - (isolated): only Q2-Q3 2020 are a technical recession
+    js = _jsonstat(["2020-Q1", "2020-Q2", "2020-Q3", "2020-Q4", "2021-Q1"], [100, 99, 98, 99, 98.5])
+    with patch.object(sources, "get", return_value=FakeResp(js=js)):
+        df = sources.fetch_eurostat(catalogue().get("EUROREC")).set_index("date")["value"]
+    assert df.index[0] == pd.Timestamp("2020-01-01") and df.index[-1] == pd.Timestamp("2021-03-01")
+    assert df[df == 1].index.tolist() == list(pd.date_range("2020-04-01", "2020-09-01", freq="MS"))
+
+
+def test_bis_csv():
+    text = "FREQ,REF_AREA,TIME_PERIOD,OBS_VALUE\nM,JP,2024-01,105.1\nM,JP,2024-02,105.3\n"
+    with patch.object(sources, "get", return_value=FakeResp(text=text)):
+        df = sources.fetch_bis(catalogue().get("JP_CPI"))
+    assert df["value"].tolist() == [105.1, 105.3]
+
+
+def test_spf_growth_four_quarter_and_current():
     buf = io.BytesIO()
     df = pd.DataFrame(
-        {
-            "YEAR": [2024],
-            "QUARTER": [1],
-            "CPI1": [3.0],
-            "CPI2": [3.0],
-            "CPI3": [2.0],
-            "CPI4": [2.0],
-            "CPI5": [2.0],
-            "CPI6": [2.0],
-        }
+        {"YEAR": [2024], "QUARTER": [1], "drgdp2": [1.0], **{f"drgdp{k}": [2.0] for k in range(3, 7)}}
     )
     with pd.ExcelWriter(buf) as xw:
-        df.to_excel(xw, sheet_name="CPI", index=False)
-    out = sources._parse_spf(buf.getvalue(), "CPI:4q-ahead")
-    assert out["value"].iloc[0] == pytest.approx(2.0)
-    assert out["date"].iloc[0] == pd.Timestamp("2024-01-01")
+        df.to_excel(xw, sheet_name="RGDP", index=False)
+    four = sources._parse_spf_growth(buf.getvalue(), "RGDP:4q")
+    cq = sources._parse_spf_growth(buf.getvalue(), "RGDP:cq")
+    assert four["value"].iloc[0] == pytest.approx(2.0)
+    assert cq["value"].iloc[0] == 1.0
+    assert four["date"].iloc[0] == pd.Timestamp("2024-01-01")
+
+
+def test_fallback_source_used_when_primary_fails():
+    spec = catalogue().get("SPX")
+    fred = pd.DataFrame({"date": pd.to_datetime(["2024-01-02"]), "value": [4700.0], "vintage": [None]})
+    with (
+        patch.dict(
+            sources.FETCHERS,
+            {"yahoo": lambda s, v: (_ for _ in ()).throw(SourceError("429")), "fred": lambda s, v: fred},
+        ),
+    ):
+        df = sources.fetch(spec)
+    assert df["value"].tolist() == [4700.0]
+    assert "fallback" in df.attrs["source"]
 
 
 def test_research_file_manual_drop(tmp_path, monkeypatch):
@@ -134,8 +171,8 @@ def test_research_file_manual_drop(tmp_path, monkeypatch):
 
 def test_research_file_without_url_explains(tmp_path, monkeypatch):
     monkeypatch.setattr(sources, "MANUAL_DIR", tmp_path)
-    with pytest.raises(SourceError, match="data/manual/FCIG_1Y.csv"):
-        sources.fetch_research_file(catalogue().get("FCIG_1Y"))
+    with pytest.raises(SourceError, match="data/manual/CIE.csv"):
+        sources.fetch_research_file(catalogue().get("CIE"))
 
 
 def test_http_error_raises_sourceerror():

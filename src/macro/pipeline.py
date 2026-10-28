@@ -438,15 +438,19 @@ def transmission_bundle(force: bool = False) -> dict:
             "2Y yield": get_series("DGS2"),
             "10Y yield": get_series("DGS10"),
             "S&P 500": spx,
-            "Euro Stoxx 50": get_series("SX5E"),
-            "Semiconductors (SOX)": get_series("SOX"),
+            "Euro Stoxx 50": try_series("SX5E"),
+            "Semiconductors (SOX)": try_series("SOX"),
             "Broad dollar": get_series("DTWEXBGS"),
         }
+        prices = {k: v for k, v in prices.items() if v is not None}  # optional Yahoo series may be missing
         kinds = {k: ("yield" if "yield" in k else "price") for k in prices}
         es = {t: tr.event_study(prices, kinds, events.index[events["type"] == t]) for t in ("hike", "cut")}
         # weekly returns and real-yield / breakeven changes
         w = lambda s: s.resample("W-FRI").last()  # noqa: E731
-        assets = {"S&P 500": spx, "Semiconductors (SOX)": get_series("SOX")}
+        assets = {"S&P 500": spx}
+        sox = try_series("SOX")
+        if sox is not None:
+            assets["Semiconductors (SOX)"] = sox
         ai = ai_basket()
         if ai is not None:
             assets["AI leaders (equal weight)"] = ai

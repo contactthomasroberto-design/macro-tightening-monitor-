@@ -555,9 +555,9 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
         88 + 4 * us["gap"] - 2.5 * (np.nan_to_num(head_yoy, nan=3) - 2) - 8 * stress + gen.normal(0, 3, n)
     )
     out["GACDFSA066MSFRBPHI"] = M(5 + 9 * us["gap"] + 25 * np.r_[0, np.diff(us["gap"])] + gen.normal(0, 8, n))
-    out["GACDINA066MSFRBNY"] = M(
-        3 + 8 * us["gap"] + 20 * np.r_[0, np.diff(us["gap"])] + gen.normal(0, 9, n)
-    ).loc["2001-07-01":]
+    out["BACTSAMFRBDAL"] = M(3 + 8 * us["gap"] + 20 * np.r_[0, np.diff(us["gap"])] + gen.normal(0, 9, n)).loc[
+        "2001-07-01":
+    ]
     out["USREC"] = M(_recession_indicator(us["gap"]))
 
     # ---------------------------------------------------------------- euro area (from 1999)

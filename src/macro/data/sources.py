@@ -34,11 +34,11 @@ CFTC_TFF = "https://publicreporting.cftc.gov/resource/gpe5-46if.json"  # TFF fut
 RESEARCH_FILES: dict[str, dict] = {
     "HLW": {
         "url": "https://www.newyorkfed.org/medialibrary/media/research/economists/williams/data/Holston_Laubach_Williams_current_estimates.xlsx",
-        "kind": "excel",
+        "kind": "hlw",
     },
     "LW": {
         "url": "https://www.newyorkfed.org/medialibrary/media/research/economists/williams/data/Laubach_Williams_current_estimates.xlsx",
-        "kind": "excel",
+        "kind": "lw",
     },
     "GSCPI": {
         "url": "https://www.newyorkfed.org/medialibrary/research/interactives/gscpi/downloads/gscpi_data.xlsx",
@@ -48,11 +48,18 @@ RESEARCH_FILES: dict[str, dict] = {
         "url": "https://www.newyorkfed.org/medialibrary/media/research/data_indicators/ACMTermPremium.xls",
         "kind": "excel",
     },
-    "CIE": {"url": None, "kind": "manual"},  # Fed Board CIE: download page, no stable file URL known
-    "FCIG": {"url": None, "kind": "manual"},  # Fed Board FCI-G: download page, no stable file URL known
-    "SPF": {
+    "CIE": {"url": None, "kind": "manual"},  # Fed Board CIE: no stable file URL found (checked 2026-10-28)
+    "FCIG_1Y": {
+        "url": "https://www.federalreserve.gov/econres/notes/feds-notes/fci_g_public_monthly_1yr.csv",
+        "kind": "csv",
+    },
+    "SPF_GROWTH": {
         "url": "https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/historical-data/meangrowth.xlsx",
-        "kind": "excel",
+        "kind": "spf_growth",
+    },
+    "SPF_INFL": {
+        "url": "https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/historical-data/inflation.xlsx",
+        "kind": "spf_infl",
     },
 }
 
@@ -148,25 +155,80 @@ def fetch_yahoo(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
 def fetch_cftc(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
     """CFTC Traders in Financial Futures (futures only), net = long - short for a trader group.
 
-    source_id = 'TFF:<market name substring>:<group>' with group in
-    {lev_money, asset_mgr, dealer, other_rept}. Dates are the Tuesday reference dates.
+    source_id = 'TFF:<cftc_contract_market_code>:<group>' with group in {lev_money, asset_mgr,
+    dealer, other_rept}. The contract code is stable across contract renamings (e.g. the February
+    2022 renames such as '10-YEAR U.S. TREASURY NOTES' -> 'UST 10Y NOTE'). Dates are Tuesdays.
     """
-    _, market, group = spec.source_id.split(":")
+    _, code, group = spec.source_id.split(":")
     params = {
-        "$where": f"upper(market_and_exchange_names) like '%{market.upper()}%'",
-        "$select": f"report_date_as_yyyy_mm_dd,market_and_exchange_names,{group}_positions_long_all,{group}_positions_short_all",
+        "$where": f"cftc_contract_market_code='{code}'",
+        "$select": f"report_date_as_yyyy_mm_dd,{group}_positions_long,{group}_positions_short",
         "$limit": 50000,
         "$order": "report_date_as_yyyy_mm_dd",
     }
-    rows = get(CFTC_TFF, params).json()
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(get(CFTC_TFF, params).json())
     if df.empty:
-        raise SourceError(f"no CFTC rows for {market}")
-    # A substring can match several contracts (e.g. 'ULTRA'); keep the most frequent exact name.
-    name = df["market_and_exchange_names"].value_counts().index[0]
-    df = df[df["market_and_exchange_names"] == name]
-    net = pd.to_numeric(df[f"{group}_positions_long_all"]) - pd.to_numeric(df[f"{group}_positions_short_all"])
+        raise SourceError(f"no CFTC rows for contract {code}")
+    net = pd.to_numeric(df[f"{group}_positions_long"]) - pd.to_numeric(df[f"{group}_positions_short"])
     return _tidy(df["report_date_as_yyyy_mm_dd"], net)
+
+
+# ------------------------------------------------------------------------------------ Eurostat / BIS
+EUROSTAT_API = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data"
+BIS_API = "https://stats.bis.org/api/v1/data"
+
+
+def _jsonstat_series(js: dict) -> pd.Series:
+    """One-dimensional JSON-stat answer (all other dimensions filtered to one value) -> Series by time."""
+    if "error" in js:
+        raise SourceError(f"Eurostat error: {js['error']}")
+    times = js["dimension"]["time"]["category"]["index"]
+    pos = {v: k for k, v in times.items()}
+    vals = {pos[int(i)]: v for i, v in js.get("value", {}).items()}
+    return pd.Series(vals).sort_index()
+
+
+def _eurostat_period(labels: pd.Index) -> pd.DatetimeIndex:
+    lab = labels.astype(str)
+    if lab.str.contains("Q").any():
+        return pd.PeriodIndex(lab.str.replace("-Q", "Q"), freq="Q").to_timestamp()
+    return pd.to_datetime(lab)
+
+
+def fetch_eurostat(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
+    """Eurostat dissemination API (JSON-stat).
+
+    'prc_hicp_minr:<geo>:<unit>:<coicop18>'  HICP (ECOICOP v2), monthly index.
+    'techrec:namq_10_gdp:<geo>:<unit>:<s_adj>:<na_item>'  technical-recession indicator derived from
+        quarterly real GDP: a quarter is in recession when it belongs to a run of two or more
+        consecutive quarter-on-quarter declines; expanded to the three months of each quarter.
+    """
+    parts = spec.source_id.split(":")
+    if parts[0] == "techrec":
+        _, ds, geo, unit, sadj, item = parts
+        js = get(f"{EUROSTAT_API}/{ds}", {"geo": geo, "unit": unit, "s_adj": sadj, "na_item": item}).json()
+        gdp = _jsonstat_series(js)
+        gdp.index = _eurostat_period(gdp.index)
+        neg = (gdp.diff() < 0).astype(int)
+        run = neg.groupby((neg != neg.shift()).cumsum()).transform("sum") * neg
+        rec_q = (run >= 2).astype(float)
+        months = pd.date_range(rec_q.index[0], rec_q.index[-1] + pd.offsets.QuarterEnd(0), freq="MS")
+        rec_m = rec_q.reindex(months, method="ffill")
+        return _tidy(rec_m.index, rec_m.to_numpy())
+    ds, geo, unit, coicop = parts
+    js = get(f"{EUROSTAT_API}/{ds}", {"geo": geo, "unit": unit, "coicop18": coicop}).json()
+    sr = _jsonstat_series(js)
+    return _tidy(_eurostat_period(sr.index), sr.to_numpy())
+
+
+def fetch_bis(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
+    """BIS statistics SDMX REST, csv. source_id = '<dataflow>:<key>'."""
+    flow, key = spec.source_id.split(":", 1)
+    text = get(f"{BIS_API}/{flow}/{key}/all", {"format": "csv"}).text
+    df = pd.read_csv(io.StringIO(text))
+    if "TIME_PERIOD" not in df or "OBS_VALUE" not in df:
+        raise SourceError(f"unexpected BIS csv columns: {list(df.columns)[:8]}")
+    return _tidy(pd.to_datetime(df["TIME_PERIOD"].astype(str)), df["OBS_VALUE"])
 
 
 # ------------------------------------------------------------------------------------ research files
@@ -204,41 +266,72 @@ def fetch_research_file(spec: SeriesSpec, vintage: str | None = None) -> pd.Data
     meta = RESEARCH_FILES.get(file_key)
     if not meta or not meta["url"]:
         raise SourceError(f"{spec.id}: no scripted download; place data/manual/{spec.id}.csv (date,value)")
-    content = get(meta["url"]).content
-    if file_key == "SPF":
-        return _parse_spf(content, column)
-    return _excel_column(content, column)
+    resp = get(meta["url"])
+    kind = meta["kind"]
+    if kind == "csv":
+        df = pd.read_csv(io.StringIO(resp.text))
+        return _tidy(df[df.columns[0]], df[column])
+    if kind == "hlw":
+        return _parse_rstar(resp.content, "HLW Estimates", "Natural Rate (r*)", column)
+    if kind == "lw":
+        return _parse_rstar(resp.content, "data", "One-Sided Estimates", "rstar")
+    if kind == "spf_growth":
+        return _parse_spf_growth(resp.content, column)
+    if kind == "spf_infl":
+        return _parse_spf_infl(resp.content, column)
+    return _excel_column(resp.content, column)
 
 
-def _parse_spf(content: bytes, column: str) -> pd.DataFrame:
-    """SPF mean growth file: one sheet per variable, columns YEAR, QUARTER, <VAR>1..<VAR>6.
+def _parse_rstar(content: bytes, sheet: str, block: str, column: str) -> pd.DataFrame:
+    """NY Fed r* workbooks: a header row names column blocks (e.g. 'Natural Rate (r*)'), the next row
+    names the columns inside each block (US / Canada / Euro Area, or rstar / g / z). Dates in column 0."""
+    raw = pd.read_excel(io.BytesIO(content), sheet_name=sheet, header=None)
+    for r in range(min(15, len(raw))):
+        row = raw.iloc[r].astype(str).str.strip()
+        hits = [j for j, v in enumerate(row) if v == block]
+        if not hits:
+            continue
+        sub = raw.iloc[r + 1].astype(str).str.strip()
+        j = next((k for k in range(hits[0], raw.shape[1]) if sub.iloc[k] == column), None)
+        if j is None:
+            break
+        body = raw.iloc[r + 2 :]
+        dates = pd.to_datetime(body.iloc[:, 0], errors="coerce")
+        return _tidy(dates, body.iloc[:, j])
+    raise SourceError(f"block {block!r} / column {column!r} not found in sheet {sheet!r}")
 
-    <VAR>2 is the current-quarter forecast; the 4-quarter-ahead average annualised growth is the
-    geometric mean of <VAR>3..<VAR>6 (quarter-on-quarter annualised rates).
-    'SPF:CPI10' reads the 10-year expectation sheet when present.
-    """
-    parts = column.split(":")
-    var = parts[0]
-    xl = pd.read_excel(io.BytesIO(content), sheet_name=None)
-    if var not in xl:
-        raise SourceError(f"SPF sheet {var} not found (sheets: {list(xl)[:10]})")
-    df = xl[var]
-    dates = pd.PeriodIndex.from_fields(
+
+def _spf_dates(df: pd.DataFrame) -> pd.DatetimeIndex:
+    return pd.PeriodIndex.from_fields(
         year=df["YEAR"].astype(int), quarter=df["QUARTER"].astype(int), freq="Q"
     ).to_timestamp()
-    if var == "CPI10":
-        return _tidy(dates, df["CPI10"])
-    if len(parts) > 1 and parts[1] == "cq":  # current-quarter forecast, e.g. RGDP2
-        return _tidy(dates, df[f"{var}2"])
-    cols = [f"{var}{k}" for k in range(3, 7)]
-    g = df[cols].apply(pd.to_numeric, errors="coerce")
-    four_q = 100 * (np.prod(1 + g / 100, axis=1) ** (1 / 4) - 1)
-    return _tidy(dates, four_q)
+
+
+def _parse_spf_growth(content: bytes, column: str) -> pd.DataFrame:
+    """SPF meanGrowth.xlsx: one sheet per variable, columns d<var>2..d<var>6 = annualised q/q growth
+    forecasts for the current quarter (2) and the next four (3..6).
+    '<VAR>:cq' -> current quarter; '<VAR>:4q' -> geometric mean of quarters 3..6."""
+    var, what = column.split(":")
+    xl = pd.read_excel(io.BytesIO(content), sheet_name=var)
+    d = f"d{var.lower()}"
+    dates = _spf_dates(xl)
+    if what == "cq":
+        return _tidy(dates, xl[f"{d}2"])
+    g = xl[[f"{d}{k}" for k in range(3, 7)]].apply(pd.to_numeric, errors="coerce")
+    return _tidy(dates, 100 * (np.prod(1 + g / 100, axis=1) ** (1 / 4) - 1))
+
+
+def _parse_spf_infl(content: bytes, column: str) -> pd.DataFrame:
+    """SPF Inflation.xlsx (sheet INFLATION): INFCPI1YR, INFCPI10YR, INFPGDP1YR (median forecasts)."""
+    xl = pd.read_excel(io.BytesIO(content), sheet_name="INFLATION")
+    return _tidy(_spf_dates(xl), xl[column])
 
 
 FETCHERS: dict[str, Callable[[SeriesSpec, str | None], pd.DataFrame]] = {
     "fred": fetch_fred,
     "ecb": fetch_ecb,
+    "eurostat": fetch_eurostat,
+    "bis": fetch_bis,
     "yahoo": fetch_yahoo,
     "cftc": fetch_cftc,
     "nyfed_files": fetch_research_file,
@@ -247,8 +340,38 @@ FETCHERS: dict[str, Callable[[SeriesSpec, str | None], pd.DataFrame]] = {
 }
 
 
+def _normalise_dates(df: pd.DataFrame, freq: str) -> pd.DataFrame:
+    """Monthly and quarterly observations are dated at period start throughout the project
+    (some sources date them at period end, e.g. the FCI-G csv)."""
+    if freq in ("M", "Q"):
+        df = df.copy()
+        df["date"] = df["date"].dt.to_period(freq).dt.to_timestamp()
+        df = df.drop_duplicates("date", keep="last")
+    return df
+
+
 def fetch(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
-    return FETCHERS[spec.source](spec, vintage)
+    """Primary source; on failure, the catalogue fallback (if any). The returned frame records which
+    source answered in df.attrs['source']."""
+    try:
+        df = FETCHERS[spec.source](spec, vintage)
+        df.attrs["source"] = spec.source
+    except (SourceError, ValueError, KeyError) as exc:
+        if not spec.fallback:
+            raise
+        log.warning("%s: primary source failed (%s); using fallback %s", spec.id, exc, spec.fallback)
+        fb = spec.model_copy(
+            update={
+                "source": spec.fallback["source"],
+                "source_id": spec.fallback["source_id"],
+                "fallback": None,
+            }
+        )
+        df = FETCHERS[fb.source](fb, vintage)
+        df.attrs["source"] = f"{fb.source} (fallback for {spec.source})"
+    out = _normalise_dates(df, spec.freq)
+    out.attrs = df.attrs
+    return out
 
 
 __all__ = ["fetch", "fetch_alfred_all_vintages", "SourceError", "MANUAL_DIR", "Path"]

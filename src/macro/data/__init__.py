@@ -143,6 +143,8 @@ def source_label(*ids: str) -> str:
     names = {
         "fred": "FRED",
         "ecb": "ECB Data Portal",
+        "eurostat": "Eurostat",
+        "bis": "BIS",
         "yahoo": "Yahoo Finance",
         "cftc": "CFTC TFF",
         "nyfed_files": "NY Fed",
