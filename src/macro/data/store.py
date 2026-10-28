@@ -124,6 +124,24 @@ class Store:
             )
         return len(rows)
 
+    def set_data_version(self, version: int) -> None:
+        with self._conn() as c:
+            c.execute(
+                "INSERT INTO meta VALUES ('data_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (str(int(version)),),
+            )
+
+    def latest_frame(self) -> pd.DataFrame:
+        """All latest-vintage observations (series_id, date, value, source, fetched_at)."""
+        with self._conn() as c:
+            return pd.read_sql_query(
+                "SELECT series_id, date, value, source, fetched_at FROM observations WHERE vintage_date=''", c
+            )
+
+    def is_empty(self) -> bool:
+        with self._conn() as c:
+            return c.execute("SELECT 1 FROM observations LIMIT 1").fetchone() is None
+
     def data_version(self) -> int:
         """Incremented whenever observations change (not when an unchanged series is re-checked):
         model results are cached against it."""
