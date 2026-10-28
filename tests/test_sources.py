@@ -250,3 +250,20 @@ def test_market_priced_prefers_fresh_series(monkeypatch):
     monkeypatch.setattr(panels, "try_series", lambda sid: stale)
     assert panels.market_priced("fed", {"value": 3.0})["value"] == 3.0
     assert panels.market_priced("ecb", None) is None
+
+
+def test_yahoo_circuit_breaker_after_rate_limit(monkeypatch):
+    monkeypatch.setattr(sources, "_yahoo_blocked_until", None)
+    calls = []
+
+    def rate_limited(url, params=None):
+        calls.append(url)
+        raise SourceError(f"HTTP 429 for {url}")
+
+    with patch.object(sources, "get", side_effect=rate_limited):
+        with pytest.raises(SourceError, match="429"):
+            sources.fetch_yahoo(catalogue().get("SOX"))
+        with pytest.raises(SourceError, match="paused"):
+            sources.fetch_yahoo(catalogue().get("NVDA"))
+    assert len(calls) == 1  # the second series did not hit Yahoo
+    monkeypatch.setattr(sources, "_yahoo_blocked_until", None)
