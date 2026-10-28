@@ -41,17 +41,18 @@ def _autorefresh():
     (MACRO_REFRESH_HOURS, default 3). Started once per server process."""
     import os
 
-    from macro import autorefresh, warmstart
+    from macro import autorefresh
 
-    warmstart.restore_if_empty()  # computed results from the daily snapshot: no cold start
     return autorefresh.start_background(float(os.environ.get("MACRO_REFRESH_HOURS", "3")))
 
 
 def _serve_stale_results() -> None:
-    """Pages show the last computed results at once; the background refresh replaces them."""
-    from macro import results
+    """Pages show the last computed results at once; the background refresh replaces them. A new
+    daily snapshot in the repository (computed results) is adopted on the next run, restart or not."""
+    from macro import results, warmstart
 
     results.SERVE_STALE = True
+    warmstart.apply_snapshot()
 
 
 _serve_stale_results()
