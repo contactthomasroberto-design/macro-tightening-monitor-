@@ -28,9 +28,12 @@ def session() -> requests.Session:
         retry = Retry(
             total=4,
             backoff_factor=2.0,  # 0, 2, 4, 8 s
-            status_forcelist=(429, 500, 502, 503, 504),
+            # 429 (rate limit) is not retried: waiting out a Retry-After header blocked whole pages
+            # for minutes; the catalogue fallback or the cached copy is used instead.
+            status_forcelist=(500, 502, 503, 504),
             allowed_methods=("GET",),
             raise_on_status=False,
+            respect_retry_after_header=False,
         )
         s.mount("https://", HTTPAdapter(max_retries=retry))
         s.mount("http://", HTTPAdapter(max_retries=retry))

@@ -183,6 +183,20 @@ class Store:
                 "SELECT * FROM fetch_log ORDER BY fetched_at DESC LIMIT ?", c, params=(limit,)
             )
 
+    def failed_recently(self, series_id: str, within: dt.timedelta, now: dt.datetime | None = None) -> bool:
+        """True when the latest fetch attempt failed less than `within` ago (negative cache: a source
+        that just refused is not asked again by every page that needs the series)."""
+        with self._conn() as c:
+            r = c.execute(
+                "SELECT fetched_at, ok FROM fetch_log WHERE series_id=? ORDER BY rowid DESC LIMIT 1",
+                (series_id,),
+            ).fetchone()
+        if not r or r[1]:
+            return False
+        t = dt.datetime.fromisoformat(r[0])
+        t = t if t.tzinfo else t.replace(tzinfo=dt.UTC)
+        return (now or dt.datetime.now(dt.UTC)) - t < within
+
     def last_failure(self, series_id: str) -> tuple[str, str] | None:
         with self._conn() as c:
             r = c.execute(
