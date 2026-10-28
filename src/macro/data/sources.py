@@ -141,12 +141,27 @@ def fetch_ecb(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------------------------ Yahoo
+YAHOO_PAUSE = pd.Timedelta(hours=1)
+_yahoo_blocked_until: pd.Timestamp | None = None
+
+
 def fetch_yahoo(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
     """Yahoo chart API, daily closes (adjusted if available). Personal-use terms.
 
-    Explicit period1/period2: with range=max Yahoo silently downgrades the interval to 3 months."""
-    params = {"period1": 0, "period2": int(pd.Timestamp.now(tz="UTC").timestamp()), "interval": "1d"}
-    js = get(f"{YAHOO_API}/{spec.source_id}", params).json()
+    Explicit period1/period2: with range=max Yahoo silently downgrades the interval to 3 months.
+    Circuit breaker: after a rate-limit answer (HTTP 429) Yahoo is not asked again for an hour, so
+    the catalogue fallbacks answer at once (shared cloud IPs are often rate-limited)."""
+    global _yahoo_blocked_until
+    now = pd.Timestamp.now(tz="UTC")
+    if _yahoo_blocked_until is not None and now < _yahoo_blocked_until:
+        raise SourceError(f"Yahoo paused after a rate limit until {_yahoo_blocked_until:%H:%M} UTC")
+    params = {"period1": 0, "period2": int(now.timestamp()), "interval": "1d"}
+    try:
+        js = get(f"{YAHOO_API}/{spec.source_id}", params).json()
+    except SourceError as exc:
+        if "HTTP 429" in str(exc):
+            _yahoo_blocked_until = now + YAHOO_PAUSE
+        raise
     try:
         res = js["chart"]["result"][0]
         ts = res["timestamp"]
