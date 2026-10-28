@@ -118,3 +118,47 @@ def test_autorefresh_is_off_in_demo(monkeypatch):
     monkeypatch.setattr(autorefresh, "is_demo", lambda: True)
     assert autorefresh.refresh_and_warm() == {"skipped": "demo mode"}
     assert autorefresh.start_background() is None
+
+
+def test_failed_fetch_is_not_retried_for_an_hour(tmp_path, monkeypatch):
+    from macro import data as data_mod
+
+    st = Store(tmp_path / "n.sqlite")
+    df = pd.DataFrame({"date": pd.to_datetime(["2024-01-01"]), "value": [1.0], "vintage_date": pd.NaT})
+    st.write("SX5E", df, source="yahoo", fetched_at="2000-01-01T00:00:00")  # expired copy
+    st.log_fetch("SX5E", False, "HTTP 429")
+    assert st.failed_recently("SX5E", dt.timedelta(hours=1))
+    assert not st.failed_recently(
+        "SX5E", dt.timedelta(hours=1), now=dt.datetime.now(dt.UTC) + dt.timedelta(hours=2)
+    )
+    calls = []
+    monkeypatch.setattr(data_mod, "store", lambda: st)
+    monkeypatch.setattr(data_mod, "is_demo", lambda: False)
+    monkeypatch.setattr(data_mod, "refresh_series", lambda sid, s=None: calls.append(sid) or (False, "429"))
+    s = data_mod.get_series("SX5E")
+    assert calls == [] and s.tolist() == [1.0] and s.attrs["stale"]
+    data_mod.get_series("SX5E", refresh=True)  # an explicit refresh still asks the source
+    assert calls == ["SX5E"]
+
+
+def test_load_or_compute_runs_once_under_concurrency(tmp_path, monkeypatch):
+    import threading
+    import time
+
+    from macro import results
+
+    monkeypatch.setattr(results, "_dir", lambda: tmp_path)
+    monkeypatch.setattr(results, "_fingerprint", lambda name: "fp")
+    n = []
+
+    def slow():
+        n.append(1)
+        time.sleep(0.3)
+        return 42
+
+    ts = [threading.Thread(target=lambda: results.load_or_compute("x:y", slow)) for _ in range(4)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join()
+    assert len(n) == 1 and results.load_or_compute("x:y", slow) == 42

@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import pickle
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -52,7 +53,23 @@ def _fingerprint(name: str) -> str:
     return hashlib.sha1(f"{name}|{mode()}|{version}|{data_v}|{code_hash()}".encode()).hexdigest()[:16]
 
 
+_LOCKS: dict[str, threading.RLock] = {}
+_LOCKS_GUARD = threading.Lock()
+
+
+def _lock(name: str) -> threading.RLock:
+    with _LOCKS_GUARD:
+        return _LOCKS.setdefault(name, threading.RLock())
+
+
 def load_or_compute(name: str, fn: Callable[[], Any], force: bool = False) -> Any:
+    """One computation per result at a time in a process: dashboard sessions and the background
+    refresh thread asking for the same bundle wait for the first one instead of duplicating it."""
+    with _lock(name):
+        return _load_or_compute(name, fn, force)
+
+
+def _load_or_compute(name: str, fn: Callable[[], Any], force: bool) -> Any:
     path = _dir() / f"{name.replace(':', '__')}.pkl"
     fp = _fingerprint(name)
     if path.exists() and not force:

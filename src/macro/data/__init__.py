@@ -13,6 +13,7 @@ Every returned Series carries provenance in `.attrs`: source, fetched_at, stale,
 
 from __future__ import annotations
 
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -25,6 +26,7 @@ from macro.data.vintages import LATEST_VINTAGE_LABEL, truncate_as_of
 from macro.utils import is_demo
 
 log = logging.getLogger("macro.data")
+RETRY_AFTER_FAILURE = dt.timedelta(hours=1)  # negative cache after a failed fetch
 
 
 class DataUnavailable(RuntimeError):
@@ -105,8 +107,11 @@ def get_series(series_id: str, vintage: str | None = None, as_of=None, refresh: 
     else:
         stale = False
         if refresh or not st.is_fresh(series_id, spec.freq):
-            ok, _ = refresh_series(series_id, st)
-            stale = not ok
+            if not refresh and st.failed_recently(series_id, RETRY_AFTER_FAILURE):
+                stale = True  # the source refused less than an hour ago: use the cache, do not re-ask
+            else:
+                ok, _ = refresh_series(series_id, st)
+                stale = not ok
         s = st.read(series_id)
         if s.empty:
             raise DataUnavailable(f"{series_id}: source failed and no cached copy")
