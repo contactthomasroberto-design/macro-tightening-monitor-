@@ -13,6 +13,7 @@ import pandas as pd
 
 from macro.config import catalogue
 from macro.data import get_series, try_series
+from macro.data.health import reference_today
 from macro.utils import to_monthly
 
 INFLATION_IDS = {
@@ -136,8 +137,30 @@ POLICY_IDS: dict[str, dict[str, Any]] = {
         "y2": "EA_YC_2Y",
         "rstar": ["HLW_RSTAR_EA"],
     },
-    "boj": {"rate": "JP_POLICY", "infl": "JP_CPI", "infl_label": "CPI all items", "rstar": []},
+    "boj": {"rate": "JP_POLICY", "infl": "JP_CPI", "infl_label": "CPI all items", "y2": "JP_2Y", "rstar": []},
 }
+
+# Live market-priced 12-month-ahead policy rate, by bank (only the Fed has a free, published one)
+PRICED_SERIES = {"fed": "FED_PRICED_12M"}
+
+
+def market_priced(bank: str, assumption: dict | None = None, max_age_days: int = 10) -> dict | None:
+    """12-month-ahead priced policy rate as a market_pricing-style entry {value, source, as_of}.
+
+    A fresh published series (Atlanta Fed tracker for the Fed) wins over the hand-entered value in
+    config/assumptions.yaml, which goes stale; otherwise the assumption is returned unchanged."""
+    sid = PRICED_SERIES.get(bank)
+    s = try_series(sid) if sid else None
+    if s is not None and not s.dropna().empty:
+        last = s.dropna().index[-1]
+        if (pd.Timestamp(reference_today()) - last).days <= max_age_days:
+            return {
+                "value": float(s.dropna().iloc[-1]),
+                "unit": "percent",
+                "source": "Atlanta Fed Market Probability Tracker (SOFR options, risk-neutral mean)",
+                "as_of": last.date().isoformat(),
+            }
+    return assumption
 
 
 def policy_panel(bank: str) -> dict:

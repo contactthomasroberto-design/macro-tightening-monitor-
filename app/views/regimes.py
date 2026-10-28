@@ -2,7 +2,16 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from components import chart, footer, header, scenario_controls, show_status, sidebar_controls, theme
+from components import (
+    CACHE_TTL,
+    chart,
+    footer,
+    header,
+    scenario_controls,
+    show_status,
+    sidebar_controls,
+    theme,
+)
 from macro import plotting as pl
 from macro.data import source_label, try_series
 from macro.pipeline import build_views, regime_bundle
@@ -16,12 +25,12 @@ weights = scenario_controls()
 th = theme()
 
 
-@st.cache_resource(show_spinner="Estimating regimes (first run only)…")
+@st.cache_resource(ttl=CACHE_TTL, show_spinner="Estimating regimes (first run only)…")
 def _regimes():
     return regime_bundle()
 
 
-@st.cache_data(show_spinner="Assembling views…")
+@st.cache_data(ttl=CACHE_TTL, show_spinner="Assembling views…")
 def _views(w: tuple):
     return build_views(dict(w))
 

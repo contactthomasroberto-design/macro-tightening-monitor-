@@ -34,7 +34,7 @@ GROWTH_SPEC: dict[str, tuple[str, str]] = {
     "ICSA": ("dlog", "labor"),
     "UMCSENT": ("diff", "surveys"),
     "GACDFSA066MSFRBPHI": ("level", "surveys"),
-    "GACDINA066MSFRBNY": ("level", "surveys"),
+    "BACTSAMFRBDAL": ("level", "surveys"),
     "INDPRO": ("dlog", "production"),
     "RSAFS": ("dlog", "consumption"),
     "PCEC96": ("dlog", "consumption"),

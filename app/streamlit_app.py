@@ -14,6 +14,20 @@ for p in (ROOT / "src", ROOT / "app"):
 
 st.set_page_config(page_title="Macro Tightening Monitor", page_icon="📉", layout="wide")
 
+
+@st.cache_resource
+def _autorefresh():
+    """Live mode: refresh expired data and recompute models in a background thread, every few hours
+    (MACRO_REFRESH_HOURS, default 3). Started once per server process."""
+    import os
+
+    from macro import autorefresh
+
+    return autorefresh.start_background(float(os.environ.get("MACRO_REFRESH_HOURS", "3")))
+
+
+_autorefresh()
+
 PAGES_DIR = Path(__file__).parent / "views"
 
 # (file, title, icon) — order is the navigation order. Pages are added milestone by milestone.
@@ -29,6 +43,7 @@ PAGES = [
     ("positioning.py", "Positioning", "🧲"),
     ("scenarios.py", "Scenarios and fans", "🌪️"),
     ("regimes.py", "Regime and views", "🧭"),
+    ("history.py", "Historical cycles", "📜"),
     ("track_record.py", "Track record", "🎯"),
     ("data_health.py", "Data health", "🩺"),
     ("model_cards.py", "Model cards", "📇"),

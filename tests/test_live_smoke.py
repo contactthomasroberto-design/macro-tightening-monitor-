@@ -25,6 +25,7 @@ def test_series_live(spec):
             last = last + (pd.offsets.MonthEnd(0) if spec.freq == "M" else pd.offsets.QuarterEnd(0))
         age = (pd.Timestamp(dt.date.today()) - last).days
         row |= {
+            "answered_by": df.attrs.get("source", spec.source),
             "n": len(df),
             "last_obs": df["date"].max().date(),
             "age_days": age,
@@ -32,10 +33,16 @@ def test_series_live(spec):
         }
         assert len(df) > 10, "too few observations"
         assert df["value"].notna().all()
+        if spec.freq in ("D", "W"):
+            gap = df["date"].diff().dt.days.median()
+            assert gap <= (4 if spec.freq == "D" else 8), f"{spec.freq} series with median gap {gap} days"
         assert age <= row["max_age_days"], f"stale: last obs {row['last_obs']} ({age} days)"
         row["ok"] = True
     except Exception as exc:  # recorded for the report, then re-raised
         row["error"] = f"{type(exc).__name__}: {exc}"
+        if spec.optional:
+            row["skipped"] = "optional series: models degrade gracefully without it"
+            pytest.skip(f"optional series unavailable: {row['error']}")
         raise
     finally:
         RESULTS.append(row)

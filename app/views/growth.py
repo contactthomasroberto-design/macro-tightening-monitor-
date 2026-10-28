@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from components import chart, footer, header, result_meta, show_status, sidebar_controls, theme
+from components import CACHE_TTL, chart, footer, header, result_meta, show_status, sidebar_controls, theme
 from macro import plotting as pl
 from macro.data import source_label, try_series
 from macro.growth import GROWTH_SPEC
@@ -18,7 +18,8 @@ th = theme()
 
 
 @st.cache_resource(
-    show_spinner="Running nowcast, Growth-at-Risk and recession models (first run takes ~2 minutes)…"
+    ttl=CACHE_TTL,
+    show_spinner="Running nowcast, Growth-at-Risk and recession models (first run takes ~2 minutes)…",
 )
 def _bundle():
     return growth_bundle()
@@ -40,6 +41,22 @@ st.caption(
     "Mixed-frequency dynamic factor model (statsmodels DynamicFactorMQ; factors Global, Soft, Nominal, Labor), "
     f"{len(GROWTH_SPEC)} monthly series plus quarterly GDP, data published by {as_of} (release lags applied)."
 )
+ext = b.get("external_nowcasts") or {}
+if ext:
+    parts = []
+    if "Atlanta Fed GDPNow" in ext:
+        parts.append(f"Atlanta Fed GDPNow for {nc['target']}: {ext['Atlanta Fed GDPNow']:.1f}%")
+    if "WEI week" in ext:
+        parts.append(
+            f"Weekly Economic Index: {ext['Weekly Economic Index (y/y, latest week)']:.2f}% y/y "
+            f"(week of {ext['WEI week']})"
+        )
+    st.caption(
+        "External benchmarks (published, not inputs to this model): "
+        + "; ".join(parts)
+        + ". "
+        + source_label("GDPNOW", "WEI")
+    )
 
 w = b["weekly"]
 news_cols = [c for c in w.columns if c.startswith("news: ")]

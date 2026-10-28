@@ -555,9 +555,9 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
         88 + 4 * us["gap"] - 2.5 * (np.nan_to_num(head_yoy, nan=3) - 2) - 8 * stress + gen.normal(0, 3, n)
     )
     out["GACDFSA066MSFRBPHI"] = M(5 + 9 * us["gap"] + 25 * np.r_[0, np.diff(us["gap"])] + gen.normal(0, 8, n))
-    out["GACDINA066MSFRBNY"] = M(
-        3 + 8 * us["gap"] + 20 * np.r_[0, np.diff(us["gap"])] + gen.normal(0, 9, n)
-    ).loc["2001-07-01":]
+    out["BACTSAMFRBDAL"] = M(3 + 8 * us["gap"] + 20 * np.r_[0, np.diff(us["gap"])] + gen.normal(0, 9, n)).loc[
+        "2001-07-01":
+    ]
     out["USREC"] = M(_recession_indicator(us["gap"]))
 
     # ---------------------------------------------------------------- euro area (from 1999)
@@ -643,6 +643,22 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
     )
     jpy_carry = diff_us_jp.reindex(tues, method="ffill").to_numpy()
     out["TFF_JPY_LEV"] = W(-25000 * (jpy_carry - np.nanmean(jpy_carry)) - 20000 + _ar1(nt, 0.93, 15000, gen))
+
+    # ---------------------------------------------------------------- fresher sources (2026-10)
+    # separate stream so that adding series does not change the draws of the series above
+    g2 = np.random.default_rng(seed + 1)
+    out["JP_10Y"] = _daily_level(M(jp["y10Y"]), g2, 0.03).clip(lower=-0.2)
+    out["JP_2Y"] = _daily_level(M(0.7 * jp["pol"] + 0.3 * jp["y10Y"]), g2, 0.02).clip(lower=-0.3)
+    out["JP_CALL_D"] = (_policy_daily(jp_pol_m, "JP") + _ar1(len(_bdays()), 0.5, 0.005, g2)).loc[
+        "1998-01-05":
+    ]
+    out["SOFR"] = (out["DFF"] - 0.02 + _ar1(len(_bdays()), 0.5, 0.01, g2)).loc["2018-04-03":]
+    out["EA_ESTR"] = (out["EA_DFR"] - 0.09).loc["2019-10-01":]
+    out["FED_PRICED_12M"] = _daily_level(M(us["y2Y"]) - 0.1, g2, 0.04).loc["2023-03-29":]
+    gq2 = 400 * np.log(out["GDPC1"]).diff()
+    out["GDPNOW"] = (gq2 + g2.normal(0, 0.7, len(gq2))).loc["2011-07-01":].dropna()
+    wei = (100 * np.log(M(gdp_m)).diff(12)).dropna()
+    out["WEI"] = _weekly(_daily_level(wei, g2, 0.2), "W-SAT").loc["2008-01-05":]
 
     for sid, s in out.items():
         s.name = sid

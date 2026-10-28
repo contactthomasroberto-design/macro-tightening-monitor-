@@ -11,6 +11,8 @@ Release lag = days between the end of the reference period and first publication
 | `DFEDTARU` | US | D | fred | `DFEDTARU` | percent | 0 |  | Fed funds target range upper limit | FRED; public domain unless noted by the original source |
 | `DGS3MO` | US | D | fred | `DGS3MO` | percent | 1 |  | 3-month Treasury constant maturity | FRED; public domain unless noted by the original source |
 | `DGS2` | US | D | fred | `DGS2` | percent | 1 |  | 2-year Treasury constant maturity | FRED; public domain unless noted by the original source |
+| `SOFR` | US | D | fred | `SOFR` | percent | 1 |  | Secured overnight financing rate (NY Fed via FRED) | FRED; public domain unless noted by the original source |
+| `FED_PRICED_12M` | US | D | atlanta_fed | `MPT:12m` | percent | 1 |  | Market-priced 3-month average fed funds rate 12 months ahead (mean of the risk-neutral distribution from options on 3-month SOFR, Atlanta Fed Market Probability Tracker; interpolated between quarterly reference periods) | Federal Reserve Bank of Atlanta; cite source |
 | `DGS5` | US | D | fred | `DGS5` | percent | 1 |  | 5-year Treasury constant maturity | FRED; public domain unless noted by the original source |
 | `DGS10` | US | D | fred | `DGS10` | percent | 1 |  | 10-year Treasury constant maturity | FRED; public domain unless noted by the original source |
 | `DGS30` | US | D | fred | `DGS30` | percent | 1 |  | 30-year Treasury constant maturity | FRED; public domain unless noted by the original source |
@@ -20,7 +22,7 @@ Release lag = days between the end of the reference period and first publication
 | `T10YIE` | US | D | fred | `T10YIE` | percent | 1 |  | 10-year breakeven inflation | FRED; public domain unless noted by the original source |
 | `T5YIFR` | US | D | fred | `T5YIFR` | percent | 1 |  | 5y5y forward inflation expectation | FRED; public domain unless noted by the original source |
 | `THREEFYTP10` | US | D | fred | `THREEFYTP10` | percent | 7 | yes | Kim-Wright 10Y term premium (Fed Board) | FRED; public domain unless noted by the original source |
-| `ACMTP10` | US | D | nyfed_files | `ACMTermPremium.xls:ACMTP10` | percent | 7 | yes | ACM 10Y term premium (NY Fed); not on FRED as of writing | NY Fed research series; cite source |
+| `ACMTP10` | US | D | nyfed_files | `ACMTermPremium.xls:ACMTP10` | percent | 35 |  | ACM 10Y term premium (NY Fed, monthly file update) | NY Fed research series; cite source |
 | `MORTGAGE30US` | US | W | fred | `MORTGAGE30US` | percent | 1 |  | 30-year fixed mortgage rate (Freddie Mac) | FRED; public domain unless noted by the original source |
 | `BAMLC0A4CBBBEY` | US | D | fred | `BAMLC0A4CBBBEY` | percent | 1 | yes | ICE BofA BBB corporate effective yield | ICE BofA via FRED: copyrighted, FRED may truncate history; do not redistribute raw data |
 | `DBAA` | US | D | fred | `DBAA` | percent | 1 |  | Moody's seasoned Baa corporate bond yield (long-history substitute for the ICE BBB yield) | Moody's via FRED; cite source |
@@ -52,6 +54,8 @@ Release lag = days between the end of the reference period and first publication
 | `PAYEMS` | US | M | fred | `PAYEMS` | thousands | 7 |  | Nonfarm payrolls | FRED; public domain unless noted by the original source |
 | `ICSA` | US | W | fred | `ICSA` | claims | 5 |  | Initial jobless claims | FRED; public domain unless noted by the original source |
 | `GDPC1` | US | Q | fred | `GDPC1` | billions chained USD SAAR | 30 |  | Real GDP | FRED; public domain unless noted by the original source |
+| `GDPNOW` | US | Q | fred | `GDPNOW` | percent q/q SAAR | 0 |  | Atlanta Fed GDPNow, latest nowcast for each quarter (external benchmark for the DFM nowcast) | FRED; public domain unless noted by the original source |
+| `WEI` | US | W | fred | `WEI` | percent y/y scaled to GDP | 5 |  | Weekly Economic Index (Lewis-Mertens-Stock, Dallas Fed via FRED) | FRED; public domain unless noted by the original source |
 | `GDPPOT` | US | Q | fred | `GDPPOT` | billions chained USD | 0 |  | CBO real potential GDP (projection series) | FRED; public domain unless noted by the original source |
 | `INDPRO` | US | M | fred | `INDPRO` | index | 16 |  | Industrial production | FRED; public domain unless noted by the original source |
 | `RSAFS` | US | M | fred | `RSAFS` | millions USD | 15 |  | Advance retail sales | FRED; public domain unless noted by the original source |
@@ -60,15 +64,16 @@ Release lag = days between the end of the reference period and first publication
 | `BOPTEXP` | US | M | fred | `BOPTEXP` | millions USD | 35 |  | Exports of goods and services | FRED; public domain unless noted by the original source |
 | `UMCSENT` | US | M | fred | `UMCSENT` | index | 0 |  | University of Michigan consumer sentiment | U. Michigan via FRED; cite source |
 | `GACDFSA066MSFRBPHI` | US | M | fred | `GACDFSA066MSFRBPHI` | diffusion index | 0 | yes | Philadelphia Fed manufacturing current activity | FRED; public domain unless noted by the original source |
-| `GACDINA066MSFRBNY` | US | M | fred | `GACDINA066MSFRBNY` | diffusion index | 0 | yes | Empire State manufacturing current activity | FRED; public domain unless noted by the original source |
+| `BACTSAMFRBDAL` | US | M | fred | `BACTSAMFRBDAL` | diffusion index | 0 |  | Dallas Fed Texas manufacturing outlook, current general business activity (replaces the Empire State survey, no longer on FRED) | FRED; public domain unless noted by the original source |
 | `USREC` | US | M | fred | `USREC` | 0/1 | 0 |  | NBER recession indicator (dated with long lags by NBER) | FRED; public domain unless noted by the original source |
 | `EA_DFR` | EA | D | ecb | `FM.D.U2.EUR.4F.KR.DFR.LEV` | percent | 0 |  | ECB deposit facility rate | ECB Data Portal: reuse allowed with source attribution |
-| `EA_HICP` | EA | M | ecb | `ICP.M.U2.N.000000.4.INX` | index NSA | 17 |  | HICP overall index | ECB Data Portal: reuse allowed with source attribution |
-| `EA_HICP_CORE` | EA | M | ecb | `ICP.M.U2.N.XEF000.4.INX` | index NSA | 17 |  | HICP excl. energy | ECB Data Portal: reuse allowed with source attribution |
-| `EA_HICP_ENERGY` | EA | M | ecb | `ICP.M.U2.N.NRGY00.4.INX` | index NSA | 17 |  | HICP energy | ECB Data Portal: reuse allowed with source attribution |
-| `EA_HICP_FOOD` | EA | M | ecb | `ICP.M.U2.N.FOOD00.4.INX` | index NSA | 17 |  | HICP food incl. alcohol and tobacco | ECB Data Portal: reuse allowed with source attribution |
-| `EA_HICP_SERV` | EA | M | ecb | `ICP.M.U2.N.SERV00.4.INX` | index NSA | 17 |  | HICP services | ECB Data Portal: reuse allowed with source attribution |
-| `EA_HICP_NEIG` | EA | M | ecb | `ICP.M.U2.N.IGXE00.4.INX` | index NSA | 17 |  | HICP non-energy industrial goods | ECB Data Portal: reuse allowed with source attribution |
+| `EA_ESTR` | EA | D | ecb | `EST.B.EU000A2X2A25.WT` | percent | 1 |  | Euro short-term rate (volume-weighted trimmed mean) | ECB Data Portal: reuse allowed with source attribution |
+| `EA_HICP` | EA | M | eurostat | `prc_hicp_minr:EA:I25:TOTAL` | index 2025=100 (ECOICOP v2) | 17 |  | HICP overall index | Eurostat; reuse allowed with source attribution |
+| `EA_HICP_CORE` | EA | M | eurostat | `prc_hicp_minr:EA:I25:TOT_X_NRG_FOOD` | index 2025=100 (ECOICOP v2) | 17 |  | HICP excl. energy | Eurostat; reuse allowed with source attribution |
+| `EA_HICP_ENERGY` | EA | M | eurostat | `prc_hicp_minr:EA:I25:NRG` | index 2025=100 (ECOICOP v2) | 17 |  | HICP energy | Eurostat; reuse allowed with source attribution |
+| `EA_HICP_FOOD` | EA | M | eurostat | `prc_hicp_minr:EA:I25:FOOD` | index 2025=100 (ECOICOP v2) | 17 |  | HICP food incl. alcohol and tobacco | Eurostat; reuse allowed with source attribution |
+| `EA_HICP_SERV` | EA | M | eurostat | `prc_hicp_minr:EA:I25:SERV` | index 2025=100 (ECOICOP v2) | 17 |  | HICP services | Eurostat; reuse allowed with source attribution |
+| `EA_HICP_NEIG` | EA | M | eurostat | `prc_hicp_minr:EA:I25:IGD_NNRG` | index 2025=100 (ECOICOP v2) | 17 |  | HICP non-energy industrial goods | Eurostat; reuse allowed with source attribution |
 | `EA_YC_2Y` | EA | D | ecb | `YC.B.U2.EUR.4F.G_N_A.SV_C_YM.SR_2Y` | percent | 1 |  | AAA euro area govt spot rate 2Y | ECB Data Portal: reuse allowed with source attribution |
 | `EA_YC_10Y` | EA | D | ecb | `YC.B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y` | percent | 1 |  | AAA euro area govt spot rate 10Y | ECB Data Portal: reuse allowed with source attribution |
 | `DE_10Y` | EA | M | ecb | `IRS.M.DE.L.L40.CI.0000.EUR.N.Z` | percent | 10 | yes | Germany 10Y long-term interest rate (convergence criterion) | ECB Data Portal: reuse allowed with source attribution |
@@ -76,10 +81,12 @@ Release lag = days between the end of the reference period and first publication
 | `IT_10Y` | EA | M | ecb | `IRS.M.IT.L.L40.CI.0000.EUR.N.Z` | percent | 10 | yes | Italy 10Y long-term interest rate | ECB Data Portal: reuse allowed with source attribution |
 | `ES_10Y` | EA | M | ecb | `IRS.M.ES.L.L40.CI.0000.EUR.N.Z` | percent | 10 | yes | Spain 10Y long-term interest rate | ECB Data Portal: reuse allowed with source attribution |
 | `EA_UNRATE` | EA | M | ecb | `LFSI.M.I9.S.UNEHRT.TOTAL0.15_74.T` | percent | 32 | yes | Euro area unemployment rate (country group code may change with enlargement) | ECB Data Portal: reuse allowed with source attribution |
-| `EUROREC` | EA | M | fred | `EUROREC` | 0/1 | 0 | yes | OECD-based euro area recession indicator | FRED; public domain unless noted by the original source |
-| `JP_POLICY` | JP | M | fred | `IRSTCI01JPM156N` | percent | 30 | yes | Japan call money rate (OECD MEI; may be stale | FRED; public domain unless noted by the original source |
-| `JP_CPI` | JP | M | fred | `JPNCPIALLMINMEI` | index | 30 | yes | Japan CPI all items (OECD MEI; may be stale | FRED; public domain unless noted by the original source |
-| `JP_10Y` | JP | M | fred | `IRLTLT01JPM156N` | percent | 30 | yes | Japan 10Y government bond yield (OECD MEI) | FRED; public domain unless noted by the original source |
+| `EUROREC` | EA | M | eurostat | `techrec:namq_10_gdp:EA:CLV10_MEUR:SCA:B1GQ` | 0/1 | 135 |  | Euro area technical recession indicator (two or more consecutive quarters of falling real GDP, Eurostat); replaces the discontinued OECD-based EUROREC. Lag 135 days = first month of a quarter to its GDP release (quarter end + ~45 days), conservative for all three months | Eurostat; derived indicator |
+| `JP_POLICY` | JP | M | boj | `FM02:STRACLUCON` | percent | 1 |  | Japan uncollateralised overnight call rate, monthly average (Bank of Japan API; replaces the OECD MEI copy on FRED) | Bank of Japan; cite source |
+| `JP_CPI` | JP | M | bis | `WS_LONG_CPI:M.JP.628` | index 2010=100 | 60 |  | Japan CPI all items (BIS long CPI series; replaces the discontinued OECD MEI series on FRED; BIS republishes national CPI with a ~2-month delay) | BIS statistics; cite source |
+| `JP_10Y` | JP | D | mof | `JGB:10Y` | percent | 1 |  | Japan 10Y JGB benchmark yield, daily (Ministry of Finance; replaces the monthly OECD MEI copy on FRED) | Japan MOF; cite source |
+| `JP_2Y` | JP | D | mof | `JGB:2Y` | percent | 1 |  | Japan 2Y JGB benchmark yield, daily (Ministry of Finance) | Japan MOF; cite source |
+| `JP_CALL_D` | JP | D | boj | `FM01:STRDCLUCON` | percent | 1 |  | Japan uncollateralised overnight call rate, daily (Bank of Japan API) | Bank of Japan; cite source |
 | `SPX` | US | D | yahoo | `^GSPC` | index | 1 |  | S&P 500 | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `SX5E` | EA | D | yahoo | `^STOXX50E` | index | 1 |  | Euro Stoxx 50 | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `N225` | JP | D | yahoo | `^N225` | index | 1 |  | Nikkei 225 | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
@@ -96,20 +103,20 @@ Release lag = days between the end of the reference period and first publication
 | `DXY` | US | D | yahoo | `DX-Y.NYB` | index | 1 |  | ICE US dollar index | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `BRENT_FUT` | GLOBAL | D | yahoo | `BZ=F` | USD per barrel | 1 |  | Brent front-month future | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
 | `GOLD_FUT` | GLOBAL | D | yahoo | `GC=F` | USD per oz | 1 |  | Gold front-month future | Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute |
-| `HLW_RSTAR_US` | US | Q | nyfed_files | `HLW:rstar_us` | percent | 90 | yes | Holston-Laubach-Williams r* US (one-sided) | NY Fed research series; not an official forecast |
-| `HLW_RSTAR_EA` | EA | Q | nyfed_files | `HLW:rstar_ea` | percent | 90 | yes | Holston-Laubach-Williams r* euro area | NY Fed research series; not an official forecast |
-| `LW_RSTAR_US` | US | Q | nyfed_files | `LW:rstar_us` | percent | 90 | yes | Laubach-Williams r* US (one-sided) | NY Fed research series; not an official forecast |
+| `HLW_RSTAR_US` | US | Q | nyfed_files | `HLW:US` | percent | 90 |  | Holston-Laubach-Williams r* US (one-sided) | NY Fed research series; not an official forecast |
+| `HLW_RSTAR_EA` | EA | Q | nyfed_files | `HLW:Euro Area` | percent | 90 |  | Holston-Laubach-Williams r* euro area | NY Fed research series; not an official forecast |
+| `LW_RSTAR_US` | US | Q | nyfed_files | `LW:US` | percent | 90 |  | Laubach-Williams r* US (one-sided) | NY Fed research series; not an official forecast |
 | `GSCPI` | GLOBAL | M | nyfed_files | `GSCPI:GSCPI` | standard deviations | 4 | yes | NY Fed Global Supply Chain Pressure Index | NY Fed research series; cite source |
 | `CIE` | US | Q | fed_board_files | `CIE:CIE` | percent | 20 | yes | Fed Board Index of Common Inflation Expectations | Fed Board research series; experimental, revised each update |
-| `FCIG_1Y` | US | M | fed_board_files | `FCIG:FCI-G (one-year lookback)` | percentage points of GDP growth | 30 | yes | Fed Board FCI-G one-year lookback | Fed Board research series; experimental |
-| `SPF_CPI_1Y` | US | Q | philly | `SPF:CPI:4q-ahead` | percent | 45 | yes | Philadelphia Fed SPF mean CPI inflation forecast | Philadelphia Fed; cite source |
-| `SPF_RGDP_1Y` | US | Q | philly | `SPF:RGDP:4q-ahead` | percent | 45 | yes | Philadelphia Fed SPF mean real GDP growth forecast | Philadelphia Fed; cite source |
-| `SPF_RGDP_CQ` | US | Q | philly | `SPF:RGDP:cq` | percent annualised q/q | 0 | yes | Philadelphia Fed SPF mean real GDP growth forecast for the survey quarter (RGDP2; survey released mid-quarter — availability treated as quarter end) | Philadelphia Fed; cite source |
-| `SPF_CPI10` | US | Q | philly | `SPF:CPI10` | percent | 45 | yes | Philadelphia Fed SPF 10-year CPI inflation expectation | Philadelphia Fed; cite source |
-| `TFF_UST10_LEV` | US | W | cftc | `TFF:10-YEAR U.S. TREASURY NOTES:lev_money` | contracts net | 3 | yes | Leveraged-fund net position | CFTC public data |
-| `TFF_UST10_AM` | US | W | cftc | `TFF:10-YEAR U.S. TREASURY NOTES:asset_mgr` | contracts net | 3 | yes | Asset-manager net position | CFTC public data |
-| `TFF_SOFR3M_LEV` | US | W | cftc | `TFF:SOFR-3M:lev_money` | contracts net | 3 | yes | Leveraged-fund net position | CFTC public data |
-| `TFF_ES_LEV` | US | W | cftc | `TFF:E-MINI S&P 500:lev_money` | contracts net | 3 | yes | Leveraged-fund net position | CFTC public data |
-| `TFF_ES_AM` | US | W | cftc | `TFF:E-MINI S&P 500:asset_mgr` | contracts net | 3 | yes | Asset-manager net position | CFTC public data |
-| `TFF_EUR_LEV` | GLOBAL | W | cftc | `TFF:EURO FX:lev_money` | contracts net | 3 | yes | Leveraged-fund net position | CFTC public data |
-| `TFF_JPY_LEV` | GLOBAL | W | cftc | `TFF:JAPANESE YEN:lev_money` | contracts net | 3 | yes | Leveraged-fund net position | CFTC public data |
+| `FCIG_1Y` | US | M | fed_board_files | `FCIG_1Y:FCI-G Index (one-year lookback)` | percentage points of GDP growth | 30 |  | Fed Board FCI-G one-year lookback | Fed Board research series; experimental |
+| `SPF_CPI_1Y` | US | Q | philly | `SPF_INFL:INFCPI1YR` | percent | 45 |  | Philadelphia Fed SPF median CPI inflation forecast | Philadelphia Fed; cite source |
+| `SPF_RGDP_1Y` | US | Q | philly | `SPF_GROWTH:RGDP:4q` | percent | 45 |  | Philadelphia Fed SPF mean real GDP growth forecast | Philadelphia Fed; cite source |
+| `SPF_RGDP_CQ` | US | Q | philly | `SPF_GROWTH:RGDP:cq` | percent annualised q/q | 0 |  | Philadelphia Fed SPF mean real GDP growth forecast for the survey quarter (RGDP2; survey released mid-quarter — availability treated as quarter end) | Philadelphia Fed; cite source |
+| `SPF_CPI10` | US | Q | philly | `SPF_INFL:INFCPI10YR` | percent | 45 |  | Philadelphia Fed SPF median 10-year CPI inflation expectation | Philadelphia Fed; cite source |
+| `TFF_UST10_LEV` | US | W | cftc | `TFF:043602:lev_money` | contracts net | 3 |  | Leveraged-fund net position | CFTC public data |
+| `TFF_UST10_AM` | US | W | cftc | `TFF:043602:asset_mgr` | contracts net | 3 |  | Asset-manager net position | CFTC public data |
+| `TFF_SOFR3M_LEV` | US | W | cftc | `TFF:134741:lev_money` | contracts net | 3 |  | Leveraged-fund net position | CFTC public data |
+| `TFF_ES_LEV` | US | W | cftc | `TFF:13874A:lev_money` | contracts net | 3 |  | Leveraged-fund net position | CFTC public data |
+| `TFF_ES_AM` | US | W | cftc | `TFF:13874A:asset_mgr` | contracts net | 3 |  | Asset-manager net position | CFTC public data |
+| `TFF_EUR_LEV` | GLOBAL | W | cftc | `TFF:099741:lev_money` | contracts net | 3 |  | Leveraged-fund net position | CFTC public data |
+| `TFF_JPY_LEV` | GLOBAL | W | cftc | `TFF:097741:lev_money` | contracts net | 3 |  | Leveraged-fund net position | CFTC public data |

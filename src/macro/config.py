@@ -18,7 +18,20 @@ ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = ROOT / "config"
 
 Freq = Literal["D", "W", "M", "Q"]
-Source = Literal["fred", "ecb", "yahoo", "nyfed_files", "fed_board_files", "philly", "cftc"]
+Source = Literal[
+    "fred",
+    "ecb",
+    "eurostat",
+    "bis",
+    "boj",
+    "mof",
+    "atlanta_fed",
+    "yahoo",
+    "nyfed_files",
+    "fed_board_files",
+    "philly",
+    "cftc",
+]
 
 
 class SeriesSpec(BaseModel):
@@ -33,6 +46,8 @@ class SeriesSpec(BaseModel):
     description: str
     verify: bool = False
     terms: str = ""
+    optional: bool = False  # models and pages degrade gracefully when it is unavailable
+    fallback: dict | None = None  # {source, source_id}: used when the primary source fails
 
 
 class Catalogue(BaseModel):

@@ -114,6 +114,7 @@ def main() -> int:
         print(f"    archived {n} GDP nowcast -> {archive.archive_path()}")
     sb = _step("scenarios and Monte Carlo", lambda: pipeline.scenario_bundle(force=args.force))
     _step("regimes", lambda: pipeline.regime_bundle(force=args.force))
+    _step("historical cycles (GMD)", lambda: pipeline.history_bundle(force=args.force))
     _step("views", lambda: pipeline.build_views(sb["base_weights"]))
     return 0
 

@@ -62,3 +62,59 @@ def test_truncate_uses_catalogue_lag():
     lag = 15  # CPIAUCSL in series.yaml
     out = truncate_as_of(s, pd.Timestamp("2024-02-29") + pd.Timedelta(days=lag - 1), series_id="CPIAUCSL")
     assert len(out) == 1
+
+
+def test_data_version_moves_only_when_content_changes(tmp_path):
+    st = Store(tmp_path / "v.sqlite")
+    assert st.data_version() == 0
+    df = pd.DataFrame(
+        {"date": pd.to_datetime(["2024-01-01", "2024-02-01"]), "value": [1.0, 2.0], "vintage_date": pd.NaT}
+    )
+    st.write("X", df, source="fred")
+    v1 = st.data_version()
+    assert v1 == 1
+    st.write("X", df, source="fred", fetched_at="2030-01-01T00:00:00")  # re-check, same numbers
+    assert st.data_version() == v1
+    assert st.last_fetched("X").year == 2030  # the re-check is still recorded
+    df2 = pd.concat(
+        [df, pd.DataFrame({"date": [pd.Timestamp("2024-03-01")], "value": [3.0], "vintage_date": pd.NaT})]
+    )
+    st.write("X", df2, source="fred")
+    assert st.data_version() == v1 + 1
+    st.write("X", df2.assign(value=[1.0, 2.5, 3.0]), source="fred")  # revision
+    assert st.data_version() == v1 + 2
+    assert st.read("X").tolist() == [1.0, 2.5, 3.0]
+
+
+def test_autorefresh_skips_fresh_series_and_reports(tmp_path, monkeypatch):
+    from macro import autorefresh
+    from macro import data as data_mod
+
+    st = Store(tmp_path / "a.sqlite")
+    monkeypatch.setattr(data_mod, "store", lambda: st)
+    monkeypatch.setattr(autorefresh, "STATUS_PATH", tmp_path / "status.json")
+    monkeypatch.setattr(autorefresh, "is_demo", lambda: False)
+    calls = []
+
+    def fake_refresh(sid, st_=None):
+        calls.append(sid)
+        df = pd.DataFrame({"date": pd.to_datetime(["2024-01-01"]), "value": [1.0], "vintage_date": pd.NaT})
+        st.write(sid, df, source="test")
+        return (sid != "DGS10", "ok" if sid != "DGS10" else "HTTP 500")
+
+    monkeypatch.setattr(data_mod, "refresh_series", fake_refresh)
+    out = autorefresh.refresh_and_warm(warm=False)
+    assert out["checked"] == len(calls) > 50
+    assert out["failed"] == {"DGS10": "HTTP 500"} and out["data_changed"]
+    calls.clear()
+    out2 = autorefresh.refresh_and_warm(warm=False)  # everything fresh now: nothing fetched
+    assert calls == [] and out2["checked"] == 0 and not out2["data_changed"]
+    assert autorefresh.read_status()["finished"]
+
+
+def test_autorefresh_is_off_in_demo(monkeypatch):
+    from macro import autorefresh
+
+    monkeypatch.setattr(autorefresh, "is_demo", lambda: True)
+    assert autorefresh.refresh_and_warm() == {"skipped": "demo mode"}
+    assert autorefresh.start_background() is None

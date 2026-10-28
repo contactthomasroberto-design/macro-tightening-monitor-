@@ -3,7 +3,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from components import chart, footer, header, result_meta, show_status, sidebar_controls, theme
+from components import CACHE_TTL, chart, footer, header, result_meta, show_status, sidebar_controls, theme
+from macro import panels
 from macro import plotting as pl
 from macro import policy as pol
 from macro.config import assumptions
@@ -20,12 +21,12 @@ bank = st.radio("Central bank", ["fed", "ecb", "boj"], horizontal=True, format_f
 color = pl.ENTITY[bank]
 
 
-@st.cache_resource(show_spinner="Estimating reaction functions (first run only)…")
+@st.cache_resource(ttl=CACHE_TTL, show_spinner="Estimating reaction functions (first run only)…")
 def _bundle(b: str):
     return policy_bundle(b)
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_resource(ttl=CACHE_TTL, show_spinner=False)
 def _cross():
     return cross_bank_bundle()
 
@@ -142,7 +143,7 @@ chart(fig, real, key=f"real_{bank}")
 
 # ------------------------------------------------------------------ priced vs prescribed
 st.subheader("Priced vs prescribed")
-mp = assumptions()["market_pricing"].get(f"{bank}_terminal_rate")
+mp = panels.market_priced(bank, assumptions()["market_pricing"].get(f"{bank}_terminal_rate"))
 if cur["y2"] is not None or (mp and mp.get("value") is not None):
     priced, priced_src = pol.priced_rate_proxy(cur["y2"] if cur["y2"] is not None else np.nan, cur["i"], mp)
     presc = {}

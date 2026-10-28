@@ -1,9 +1,11 @@
 name: refresh
-# Weekly live refresh: data, models, forecast archive, reports (as workflow artifacts).
+# Daily live refresh (weekdays): data, models, forecast archive, README summary and figures; the
+# weekly monitor on Mondays, the monthly view in the first week. A push to main also makes Streamlit
+# Community Cloud redeploy, so the online dashboard starts from the new numbers.
 # Secrets: FRED_API_KEY (optional; enables ALFRED vintages). Never echoed.
 on:
   schedule:
-    - cron: "17 7 * * 1"   # Mondays 07:17 UTC
+    - cron: "17 5 * * 1-5"   # weekdays 05:17 UTC, after the US and Asian overnight releases
   workflow_dispatch:
 permissions:
   contents: write
@@ -38,11 +40,12 @@ jobs:
         run: python scripts/run_all.py
       - name: Evaluate the archive (track record)
         run: python scripts/evaluate_archive.py
-      - name: Weekly monitor
-        run: python scripts/weekly_monitor.py
+      - name: Weekly monitor (Mondays, or manual runs)
+        run: |
+          if [ "$(date +%u)" = "1" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then python scripts/weekly_monitor.py; fi
       - name: Monthly view (first Monday of the month, or manual runs)
         run: |
-          if [ "$(date +%d)" -le 7 ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then python scripts/monthly_view.py; fi
+          if { [ "$(date +%d)" -le 7 ] && [ "$(date +%u)" = "1" ]; } || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then python scripts/monthly_view.py; fi
       - name: LinkedIn figures (also copied to docs/figures for the README)
         run: python scripts/export_figures.py
       - name: README executive summary
@@ -61,6 +64,6 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add archive/forecasts.csv README.md docs/figures
           if ! git diff --cached --quiet; then
-            git commit -m "chore(archive): weekly forecast archive, README summary and figures"
+            git commit -m "chore(archive): daily forecast archive, README summary and figures"
             git push
           fi

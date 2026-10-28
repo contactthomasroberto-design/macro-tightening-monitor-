@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-from components import chart, footer, header, show_status, sidebar_controls, theme
+from components import CACHE_TTL, chart, footer, header, show_status, sidebar_controls, theme
 from macro import plotting as pl
 from macro.data import source_label
 from macro.pipeline import positioning_bundle
@@ -14,7 +14,7 @@ ctl = sidebar_controls()
 th = theme()
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_resource(ttl=CACHE_TTL, show_spinner=False)
 def _bundle():
     return positioning_bundle()
 

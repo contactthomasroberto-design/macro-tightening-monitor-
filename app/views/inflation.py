@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-from components import chart, footer, header, result_meta, show_status, theme
+from components import CACHE_TTL, chart, footer, header, result_meta, show_status, theme
 from macro import plotting as pl
 from macro.data import source_label, try_series
 from macro.inflation import MODEL_LABELS
@@ -14,7 +14,7 @@ th = theme()
 region = st.radio("Region", ["US", "EA", "JP"], horizontal=True, key="infl_region")
 
 
-@st.cache_resource(show_spinner="Running inflation models (first run only)…")
+@st.cache_resource(ttl=CACHE_TTL, show_spinner="Running inflation models (first run only)…")
 def _bundle(r: str):
     return inflation_bundle(r)
 

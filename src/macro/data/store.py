@@ -40,6 +40,10 @@ CREATE TABLE IF NOT EXISTS observations (
     PRIMARY KEY (series_id, date, vintage_date)
 );
 CREATE INDEX IF NOT EXISTS ix_obs_series ON observations(series_id, vintage_date);
+CREATE TABLE IF NOT EXISTS meta (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
 CREATE TABLE IF NOT EXISTS fetch_log (
     series_id TEXT NOT NULL,
     fetched_at TEXT NOT NULL,
@@ -70,7 +74,7 @@ class Store:
 
     @contextmanager
     def _conn(self):
-        conn = sqlite3.connect(self.path)
+        conn = sqlite3.connect(self.path, timeout=60)  # the dashboard refreshes in a background thread
         try:
             yield conn
             conn.commit()
@@ -94,10 +98,38 @@ class Store:
             )
         )
         with self._conn() as c:
+            latest = (vint == "").all()
+            if latest:
+                old = c.execute(
+                    "SELECT date, value FROM observations WHERE series_id=? AND vintage_date='' ORDER BY date",
+                    (series_id,),
+                ).fetchall()
+                new = sorted((r[1], r[2]) for r in rows)
+                if len(old) == len(new) and all(
+                    a[0] == b[0] and (a[1] == b[1] or (a[1] != a[1] and b[1] != b[1]))
+                    for a, b in zip(old, new, strict=True)
+                ):
+                    # unchanged content: only record that it was checked (no new data version)
+                    c.execute(
+                        "UPDATE observations SET fetched_at=?, source=? WHERE series_id=? AND vintage_date=''",
+                        (fetched_at, source, series_id),
+                    )
+                    return len(rows)
             if (vint == "").any():
                 c.execute("DELETE FROM observations WHERE series_id=? AND vintage_date=''", (series_id,))
             c.executemany("INSERT OR REPLACE INTO observations VALUES (?,?,?,?,?,?)", rows)
+            c.execute(
+                "INSERT INTO meta VALUES ('data_version', '1') "
+                "ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + 1"
+            )
         return len(rows)
+
+    def data_version(self) -> int:
+        """Incremented whenever observations change (not when an unchanged series is re-checked):
+        model results are cached against it."""
+        with self._conn() as c:
+            r = c.execute("SELECT value FROM meta WHERE key='data_version'").fetchone()
+        return int(r[0]) if r else 0
 
     def log_fetch(self, series_id: str, ok: bool, message: str = "") -> None:
         with self._conn() as c:
