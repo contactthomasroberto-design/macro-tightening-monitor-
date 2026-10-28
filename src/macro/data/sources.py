@@ -138,8 +138,11 @@ def fetch_ecb(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
 
 # ------------------------------------------------------------------------------------ Yahoo
 def fetch_yahoo(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
-    """Yahoo chart API, daily closes (adjusted if available). Personal-use terms."""
-    js = get(f"{YAHOO_API}/{spec.source_id}", {"range": "max", "interval": "1d"}).json()
+    """Yahoo chart API, daily closes (adjusted if available). Personal-use terms.
+
+    Explicit period1/period2: with range=max Yahoo silently downgrades the interval to 3 months."""
+    params = {"period1": 0, "period2": int(pd.Timestamp.now(tz="UTC").timestamp()), "interval": "1d"}
+    js = get(f"{YAHOO_API}/{spec.source_id}", params).json()
     try:
         res = js["chart"]["result"][0]
         ts = res["timestamp"]
@@ -147,6 +150,9 @@ def fetch_yahoo(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
         close = (ind.get("adjclose") or [{}])[0].get("adjclose") or ind["quote"][0]["close"]
     except (KeyError, IndexError, TypeError) as exc:
         raise SourceError(f"unexpected Yahoo payload for {spec.source_id}") from exc
+    granularity = res.get("meta", {}).get("dataGranularity", "1d")
+    if granularity != "1d":
+        raise SourceError(f"Yahoo returned {granularity} data for {spec.source_id}, expected 1d")
     dates = pd.to_datetime(ts, unit="s").normalize()
     return _tidy(dates, np.array(close, dtype=float))
 
