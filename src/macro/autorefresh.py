@@ -3,7 +3,7 @@
 `refresh_and_warm()` fetches every catalogue series that is due (`macro.data.schedule`: polled every
 10 to 30 minutes around its expected release, at the slow TTL otherwise), then recomputes the light
 model bundles whose input series changed (`LIGHT`: inflation, policy rules, financial conditions,
-curves, transmission, positioning, regimes; a few seconds to a minute each, under 300 MB). The heavy
+curves, transmission, positioning, regimes, markets; a few seconds to a minute each, under 300 MB). The heavy
 bundles (dynamic factor nowcast, scenarios, views) come from the snapshot computed by GitHub Actions
 (macro.warmstart), unless MACRO_BACKGROUND_MODELS=1 (a server with enough memory).
 `start_background()` runs it in a daemon thread every `interval_minutes` (one thread per process);
@@ -103,6 +103,7 @@ def light_bundles() -> list[tuple[str, Callable]]:
         ("transmission", p.transmission_bundle),
         ("positioning", p.positioning_bundle),
         ("regimes", p.regime_bundle),
+        ("markets", p.markets_bundle),
     ]
     return steps
 
@@ -123,6 +124,7 @@ def _bundles() -> list[tuple[str, Callable]]:
         ("growth and recession", p.growth_bundle),
         ("scenarios", p.scenario_bundle),
         ("regimes", p.regime_bundle),
+        ("markets", p.markets_bundle),
         ("historical cycles", p.history_bundle),
         ("views", lambda: p.build_views(p.scenario_bundle()["base_weights"])),
     ]

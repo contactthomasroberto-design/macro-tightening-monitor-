@@ -595,6 +595,106 @@ def positioning_bundle(force: bool = False) -> dict:
     return load_or_compute("positioning:all", compute, force=force)
 
 
+# (label, y id, y kind, x: (id_a, id_b or None for a single series), x kind)
+MARKET_BETAS = [
+    ("EUR/USD vs 2Y differential (euro area AAA minus US)", "EURUSD", "price", ("EA_YC_2Y", "DGS2"), "yield"),
+    ("USD/JPY vs 2Y differential (US minus Japan)", "USDJPY", "price", ("DGS2", "JP_2Y"), "yield"),
+    ("USD/JPY vs 10Y differential (US minus Japan)", "USDJPY", "price", ("DGS10", "JP_10Y"), "yield"),
+    ("Broad dollar vs US 2Y", "DTWEXBGS", "price", ("DGS2", None), "yield"),
+    ("Gold vs US 10Y real yield", "GOLD_FUT", "price", ("DFII10", None), "yield"),
+    ("US 10Y breakeven vs Brent", "T10YIE", "yield", ("BRENT_FUT", None), "price"),
+]
+
+
+def markets_bundle(force: bool = False) -> dict:
+    """Cross-asset monitor, stress index, regimes, correlations, sensitivities to rates and the
+    curve-implied recession probability (src/macro/markets.py; universe in config/markets.yaml)."""
+    from macro import markets as mk
+    from macro.config import markets_config
+
+    def compute() -> dict:
+        cfg = markets_config()
+        assets = [mk.Asset(a.id, a.name, a.cls, a.kind, a.risk) for a in cfg.assets]
+        ids = {a.id for a in assets} | set(cfg.stress.components) | {"T10Y3M", "USREC"}
+        ids |= {i for *_, (xa, xb), _ in MARKET_BETAS for i in (xa, xb) if i} | {
+            y for _, y, *_ in MARKET_BETAS
+        }
+        ids |= {p.a for p in mk.CORR_PAIRS} | {p.b for p in mk.CORR_PAIRS}
+        data = {i: s for i in sorted(ids) if (s := try_series(i)) is not None and not s.dropna().empty}
+
+        dash = mk.dashboard(data, assets)
+        stress = mk.stress_index(
+            {c: data[c] for c in cfg.stress.components if c in data},
+            cfg.stress.window_days,
+            cfg.stress.min_days,
+        )
+        bench = {k: s for k in ("STLFSI4", "NFCI") if (s := try_series(k)) is not None}
+        stress_check = mk.benchmark_correlations(stress.value, bench) if stress.value is not None else None
+
+        regime = mk.quadrant_regimes(data["SPX"], data["DGS10"])
+        fwd_assets = {
+            name: (data[i], kind)
+            for name, i, kind in (
+                ("S&P 500", "SPX", "price"),
+                ("US 10Y yield", "DGS10", "yield"),
+                ("US dollar (broad)", "DTWEXBGS", "price"),
+                ("Gold", "GOLD_FUT", "price"),
+                ("US HY OAS", "BAMLH0A0HYM2", "spread"),
+            )
+            if i in data
+        }
+        corrs = {
+            p.name: mk.rolling_correlation(data[p.a], p.kind_a, data[p.b], p.kind_b, 63, p.sign_a, p.sign_b)
+            for p in mk.CORR_PAIRS
+            if p.a in data and p.b in data
+        }
+        betas = {}
+        for label, yid, ykind, (xa, xb), xkind in MARKET_BETAS:
+            if yid not in data or xa not in data or (xb and xb not in data):
+                continue
+            x = mk.business_daily(data[xa]) - mk.business_daily(data[xb]) if xb else data[xa]
+            betas[label] = mk.change_beta(data[yid], ykind, x.dropna(), xkind)
+        vrp = None
+        if "VIX" in data and "SPX" in data:
+            rv = mk.realized_vol(mk.business_daily(data["SPX"]), "price", 21)
+            vrp = pd.concat(
+                {"VIX (implied, 1M)": mk.business_daily(data["VIX"]), "S&P 500 realised 1M": rv}, axis=1
+            )
+        move_rv = None
+        if "MOVE" in data and "DGS10" in data:
+            move_rv = pd.concat(
+                {
+                    "MOVE (implied, 1M)": mk.business_daily(data["MOVE"]),
+                    "US 10Y realised 1M (bp/yr)": mk.realized_vol(
+                        mk.business_daily(data["DGS10"]), "yield", 21
+                    ),
+                },
+                axis=1,
+            )
+        probit = mk.curve_recession_probit(data["T10Y3M"], data["USREC"]) if "T10Y3M" in data else None
+        last = max(s.dropna().index[-1] for s in data.values())
+        return {
+            "dashboard": dash,
+            "stress": stress,
+            "stress_check": stress_check,
+            "regime": regime,
+            "regime_spells": mk.regime_spells(regime) if not regime.empty else None,
+            "regime_forward": mk.regime_forward_moves(regime, fwd_assets),
+            "correlations": corrs,
+            "correlation_table": mk.correlation_table(corrs),
+            "betas": betas,
+            "vol_premium": vrp,
+            "rates_vol": move_rv,
+            "curve_recession": probit,
+            "levels": {
+                k: data[k] for k in ("SPX", "DGS10", "BAMLH0A0HYM2", "BAMLC0A0CM", "VIX", "MOVE") if k in data
+            },
+            "as_of": last,
+        }
+
+    return load_or_compute("markets:all", compute, force=force)
+
+
 def scenario_bundle(force: bool = False, n_per: int = 10_000) -> dict:
     """Quarterly US engine, Monte Carlo per scenario (mixed later with the user's probabilities)."""
     from macro.config import scenarios as load_scenarios

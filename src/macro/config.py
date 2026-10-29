@@ -120,6 +120,35 @@ class Calendar(BaseModel):
         return sorted(v, key=lambda e: e.date)
 
 
+class MarketAsset(BaseModel):
+    id: str
+    name: str
+    cls: Literal["Rates", "Credit", "Volatility", "FX", "Equities", "Commodities"]
+    kind: Literal["yield", "spread", "price", "vol"]
+    risk: Literal[-1, 0, 1]
+
+
+class StressSpec(BaseModel):
+    components: list[str]
+    window_days: int = Field(gt=0)
+    min_days: int = Field(gt=0)
+
+
+class MarketsConfig(BaseModel):
+    assets: list[MarketAsset]
+    stress: StressSpec
+
+    @model_validator(mode="after")
+    def _known_ids(self) -> MarketsConfig:
+        known = set(catalogue().ids)
+        unknown = [a.id for a in self.assets if a.id not in known] + [
+            c for c in self.stress.components if c not in known
+        ]
+        if unknown:
+            raise ValueError(f"markets.yaml uses ids missing from series.yaml: {unknown}")
+        return self
+
+
 def _read(name: str) -> dict:
     with open(CONFIG_DIR / name, encoding="utf-8") as fh:
         return yaml.safe_load(fh)
@@ -135,6 +164,11 @@ def catalogue() -> Catalogue:
 def assumptions() -> dict:
     """Assumptions are kept as a plain dict: the dashboard edits them in place (copy first)."""
     return _read("assumptions.yaml")
+
+
+@lru_cache(maxsize=1)
+def markets_config() -> MarketsConfig:
+    return MarketsConfig(**_read("markets.yaml"))
 
 
 def scenarios() -> ScenarioSet:

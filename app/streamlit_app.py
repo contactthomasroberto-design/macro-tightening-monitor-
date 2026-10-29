@@ -21,10 +21,11 @@ def _purge_stale_modules() -> None:
     files = [f for d in (ROOT / "src" / "macro", ROOT / "app") for f in d.rglob("*.py")]
     sig = hash(tuple(sorted((str(f), f.stat().st_mtime_ns) for f in files)))
     prev = getattr(sys, "_mtm_code_signature", None)
-    loaded = "components" in sys.modules or "macro" in sys.modules
+    app_modules = {f.stem for f in (ROOT / "app").glob("*.py")} - {"streamlit_app"}
+    loaded = "macro" in sys.modules or any(m in sys.modules for m in app_modules)
     if (prev is None and loaded) or (prev is not None and prev != sig):
         for name in list(sys.modules):
-            if name in ("components", "macro") or name.startswith("macro."):
+            if name in app_modules or name == "macro" or name.startswith("macro."):
                 del sys.modules[name]
         st.cache_data.clear()
         st.cache_resource.clear()
@@ -69,27 +70,33 @@ _autorefresh()
 
 PAGES_DIR = Path(__file__).parent / "views"
 
-# Navigation sections: (section, [(file, title), ...]) — order is the navigation order.
+# Navigation: two top-level tabs, Macro and Markets, plus Governance. (section, [(file, title), ...]).
 SECTIONS = [
-    ("Monitor", [("overview.py", "Overview"), ("calendar.py", "Calendar and releases")]),
     (
-        "Models",
+        "Macro",
         [
+            ("overview.py", "Overview"),
+            ("calendar.py", "Calendar and releases"),
             ("inflation.py", "Inflation"),
             ("policy.py", "Monetary policy"),
-            ("fincond.py", "Financial conditions"),
-            ("curves.py", "Yield curves and term premium"),
             ("growth.py", "Growth and recession risk"),
-            ("transmission.py", "Transmission"),
-            ("positioning.py", "Positioning"),
+            ("scenarios.py", "Scenarios and fan charts"),
+            ("regimes.py", "Macro regime and views"),
+            ("history.py", "Historical cycles"),
         ],
     ),
     (
-        "Outlook",
+        "Markets",
         [
-            ("scenarios.py", "Scenarios and fan charts"),
-            ("regimes.py", "Regime and views"),
-            ("history.py", "Historical cycles"),
+            ("markets_monitor.py", "Cross-asset monitor"),
+            ("curves.py", "Rates and curves"),
+            ("markets_credit_vol.py", "Credit and volatility"),
+            ("markets_fx_commodities.py", "FX and commodities"),
+            ("markets_regimes.py", "Cross-asset regimes"),
+            ("markets_priced.py", "Priced against our models"),
+            ("fincond.py", "Financial conditions"),
+            ("transmission.py", "Transmission"),
+            ("positioning.py", "Positioning"),
         ],
     ),
     (
@@ -113,7 +120,7 @@ def build_navigation():
         ]
         for section, ps in SECTIONS
     }
-    return st.navigation(nav, expanded=True)
+    return st.navigation(nav, position="top")  # one menu per section: Macro, Markets, Governance
 
 
 page = build_navigation()
