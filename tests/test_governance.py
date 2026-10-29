@@ -13,6 +13,7 @@ IMPLEMENTED = [
     "transmission",
     "positioning",
     "history",
+    "markets",
 ]  # extended milestone by milestone
 
 

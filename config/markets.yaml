@@ -1,0 +1,48 @@
+# Cross-asset universe for the Markets tab (src/macro/markets.py).
+#
+# Every id is a catalogue series (config/series.yaml): no data source here, only how to measure moves.
+#   kind  yield   level in %, changes in basis points
+#         spread  level in percentage points, changes in basis points
+#         price   changes as log returns in %
+#         vol     volatility index, changes in index points
+#   risk  +1 when a rise means more risk aversion (spreads, volatility, the dollar), -1 when a rise
+#         means less (equities), 0 when the sign is ambiguous (yields, oil, gold). Used only to colour
+#         the stress reading of a move, never to recommend anything.
+assets:
+  # ---------------------------------------------------------------- rates
+  - {id: DGS2, name: US 2Y, cls: Rates, kind: yield, risk: 0}
+  - {id: DGS10, name: US 10Y, cls: Rates, kind: yield, risk: 0}
+  - {id: DFII10, name: US 10Y real (TIPS), cls: Rates, kind: yield, risk: 0}
+  - {id: T10YIE, name: US 10Y breakeven, cls: Rates, kind: yield, risk: 0}
+  - {id: T10Y2Y, name: US 2s10s slope, cls: Rates, kind: spread, risk: 0}
+  - {id: EA_YC_2Y, name: Euro area 2Y (AAA), cls: Rates, kind: yield, risk: 0}
+  - {id: EA_YC_10Y, name: Euro area 10Y (AAA), cls: Rates, kind: yield, risk: 0}
+  - {id: JP_2Y, name: Japan 2Y, cls: Rates, kind: yield, risk: 0}
+  - {id: JP_10Y, name: Japan 10Y, cls: Rates, kind: yield, risk: 0}
+  # ---------------------------------------------------------------- credit
+  - {id: BAMLC0A0CM, name: US IG OAS, cls: Credit, kind: spread, risk: 1}
+  - {id: BAA10Y, name: US Baa minus 10Y Treasury, cls: Credit, kind: spread, risk: 1}
+  - {id: BAMLH0A0HYM2, name: US HY OAS, cls: Credit, kind: spread, risk: 1}
+  # ---------------------------------------------------------------- volatility
+  - {id: VIX, name: VIX (equity vol), cls: Volatility, kind: vol, risk: 1}
+  - {id: MOVE, name: MOVE (rates vol), cls: Volatility, kind: vol, risk: 1}
+  # ---------------------------------------------------------------- FX
+  - {id: DTWEXBGS, name: US dollar (broad), cls: FX, kind: price, risk: 1}
+  - {id: EURUSD, name: EUR/USD, cls: FX, kind: price, risk: 0}
+  - {id: USDJPY, name: USD/JPY, cls: FX, kind: price, risk: 0}
+  # ---------------------------------------------------------------- equities
+  - {id: SPX, name: S&P 500, cls: Equities, kind: price, risk: -1}
+  - {id: SX5E, name: Euro Stoxx 50, cls: Equities, kind: price, risk: -1}
+  - {id: N225, name: Nikkei 225, cls: Equities, kind: price, risk: -1}
+  - {id: SOX, name: Semiconductors (SOX), cls: Equities, kind: price, risk: -1}
+  # ---------------------------------------------------------------- commodities
+  - {id: BRENT_FUT, name: Brent (front month), cls: Commodities, kind: price, risk: 0}
+  - {id: GOLD_FUT, name: Gold (front month), cls: Commodities, kind: price, risk: 0}
+
+# Composite stress index: equal-weighted rolling z-scores (no look-ahead). Components need a long
+# history: the ICE BofA option-adjusted spreads are left out because FRED serves only their last three
+# years; Moody's Baa minus the 10-year Treasury (from 1986) stands for credit.
+stress:
+  components: [VIX, MOVE, BAA10Y]
+  window_days: 1260   # 5 years of business days
+  min_days: 504       # 2 years before a z-score is reported

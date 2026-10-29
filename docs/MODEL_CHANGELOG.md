@@ -24,3 +24,4 @@ in the next window and are logged with that effective date.
 | 2026-10 | history | 0.1.0 | Initial version (Global Macro Database cycles, base rates, current position) | New module | — |
 | 2026-11 | policy | 0.1.1 | Fed priced path from the Atlanta Fed Market Probability Tracker when fresh (else the dated assumption, else the 2Y yield); BoJ priced proxy from the MOF 2Y JGB yield; JP policy rate from the BoJ API | Fresher, published market pricing | — |
 | 2026-11 | curves | 0.1.1 | Japan 10Y daily from the MOF instead of the monthly OECD series | Freshness | — |
+| 2026-11 | markets | 0.1.0 | Initial version: cross-asset monitor, stress index, regimes, correlations, sensitivities, curve recession probit | Markets tab | — |

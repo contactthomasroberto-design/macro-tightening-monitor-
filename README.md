@@ -98,6 +98,19 @@ Equations are in [`docs/methodology.md`](docs/methodology.md); each model has a 
 - **Scenarios, fans and views.** A quarterly engine with 10,000 Monte Carlo paths per scenario,
   BoE-style two-piece-normal fans, market mapping, reverse stress test; regimes (2×2 and Markov
   switching); scorecard, priced vs model and a market-confirmation check.
+- **Markets** (`src/macro/markets.py`, universe in `config/markets.yaml`; the dashboard's Markets tab):
+  - cross-asset monitor: moves in quoting units, each 1-month move in standard deviations of its own
+    history, level and realised-volatility percentiles, staleness flags;
+  - stress index: rolling 5-year z-scores of VIX, MOVE and Moody's Baa-10Y, validated against the
+    St. Louis Fed and Chicago Fed indices;
+  - cross-asset regimes from the signs of 3-month equity returns and 10-year yield changes, with
+    average next-month moves and t-statistics corrected for overlapping windows;
+  - rolling correlations (stock-bond, dollar, yen, oil-breakevens, gold-real yields);
+  - sensitivities of FX, gold and breakevens to rate differentials and oil, estimated on weekly
+    changes with Newey-West errors, splitting each 13-week move into explained and unexplained parts;
+  - the Estrella-Mishkin probit of recession on the 10Y-3M spread;
+  - a "priced against our models" page for policy rates, inflation compensation, recession and growth.
+  Investing.com is not used: its terms forbid automated extraction.
 
 ## 6. Results
 
