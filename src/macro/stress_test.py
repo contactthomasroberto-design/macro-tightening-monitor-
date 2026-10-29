@@ -16,6 +16,8 @@ Pure functions; the bundle is `pipeline.stress_bundle`.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import numpy as np
 import pandas as pd
 
@@ -35,7 +37,7 @@ EPISODES = [
 ]
 
 
-def weekly_changes(series: dict[str, pd.Series], kinds: dict[str, str]) -> pd.DataFrame:
+def weekly_changes(series: Mapping[str, pd.Series], kinds: Mapping[str, str]) -> pd.DataFrame:
     """Friday-to-Friday changes in quoting units for every series."""
     out = {}
     for k, s in series.items():
@@ -163,7 +165,9 @@ def coverage_backtest(
     return {"pooled": pooled, "by_asset": by, "n": len(df)}
 
 
-def episode_moves(series: dict[str, pd.Series], kinds: dict[str, str], episodes=EPISODES) -> pd.DataFrame:
+def episode_moves(
+    series: Mapping[str, pd.Series], kinds: Mapping[str, str], episodes=EPISODES
+) -> pd.DataFrame:
     """Move of every asset over every episode (start close to end close), in quoting units."""
     out = {}
     for name, a, b, _ in episodes:
