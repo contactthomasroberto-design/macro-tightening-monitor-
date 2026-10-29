@@ -40,66 +40,76 @@ def _views(w: tuple):
 
 
 v = _views(tuple(sorted(weights.items())))
-src_dates = {
-    k: as_of_label(try_series(k))
-    for k in ("DFF", "CPIAUCSL", "EA_DFR", "EA_HICP", "JP_POLICY", "DGS10", "SPX")
-}
-st.caption("As of (per source): " + " · ".join(f"{k} {d}" for k, d in src_dates.items()))
-overnight = {"SOFR": "SOFR", "€STR": "EA_ESTR", "Japan call rate": "JP_CALL_D"}
-on_txt = [
-    f"{lab} {s.dropna().iloc[-1]:.2f}% ({as_of_label(s)})"
-    for lab, sid in overnight.items()
-    if (s := try_series(sid)) is not None and not s.dropna().empty
-]
-if on_txt:
-    st.caption(
-        "Overnight rates (daily): " + " · ".join(on_txt) + ". " + source_label("SOFR", "EA_ESTR", "JP_CALL_D")
-    )
 fed_priced = panels.market_priced("fed")
-if fed_priced is not None:
-    st.caption(
-        f"Fed: market-priced 3-month average fed funds rate in 12 months {fed_priced['value']:.2f}% "
-        f"({fed_priced['source']}, {fed_priced['as_of']}). Risk-neutral: includes risk premia."
-    )
-stale = [k for k in stale_assumptions() if not (k == "fed_terminal_rate" and fed_priced is not None)]
-if stale:
-    st.warning(
-        f"Market-pricing assumptions missing or older than 30 days: {', '.join(stale)} (config/assumptions.yaml). "
-        "2-year yields are used as proxies.",
-    )
 
-st.subheader("Scorecard")
-sc = v["scorecard"]
-cols = st.columns(3)
-for col, bank in zip(cols, ["FED", "ECB", "BOJ"], strict=True):
-    with col:
-        st.markdown(f"### {bank}")
-        for _, r in sc[sc["bank"] == bank].iterrows():
-            txt = format_value(r["value"], r["unit"])
-            st.markdown(
-                status_chip(
-                    r["status"], f"{r['metric']}: **{txt}**" + (f" — {r['note']}" if r["note"] else "")
-                ),
-                unsafe_allow_html=True,
-            )
+tab = st.segmented_control(
+    "View",
+    ["Scorecard", "Commentary", "What changed", "Data notes"],
+    default="Scorecard",
+    key="ov_view",
+    label_visibility="collapsed",
+)
 
-st.subheader("Commentary")
-for c in v["comments"].values():
-    st.markdown(f"- {c}")
-st.markdown(f"- Model view for the Fed: **{v['view']}**. " + v["template"]["What is priced"])
+if tab in (None, "Scorecard"):
+    sc = v["scorecard"]
+    cols = st.columns(3)
+    for col, bank in zip(cols, ["FED", "ECB", "BOJ"], strict=True):
+        with col:
+            st.markdown(f"### {bank}")
+            for _, r in sc[sc["bank"] == bank].iterrows():
+                txt = format_value(r["value"], r["unit"])
+                st.markdown(
+                    status_chip(
+                        r["status"], f"{r['metric']}: **{txt}**" + (f" — {r['note']}" if r["note"] else "")
+                    ),
+                    unsafe_allow_html=True,
+                )
+    if not v["confirmation"].empty:
+        n_ok = int(v["confirmation"]["consistent"].sum())
+        show_status(
+            "good" if n_ok >= 4 else "warning",
+            f"Market confirmation: {n_ok}/{len(v['confirmation'])} signals consistent with the model view.",
+        )
 
-st.subheader("What changed since last week")
-ch = v["changes"].copy()
-ch["change"] = ch["change"].round(2)
-c1, c2 = st.columns([2, 1])
-c1.dataframe(ch, use_container_width=True)
-nc = v["nowcast_change"]
-c2.metric("GDP nowcast, weekly change", f"{nc:+.2f} pp" if nc == nc else "n/a (target quarter changed)")
-if not v["confirmation"].empty:
-    n_ok = int(v["confirmation"]["consistent"].sum())
-    show_status(
-        "good" if n_ok >= 4 else "warning",
-        f"Market confirmation: {n_ok}/{len(v['confirmation'])} signals consistent with the model view.",
-    )
-st.caption("Details on each page. Status colours always come with an icon and a label.")
+elif tab == "Commentary":
+    for c in v["comments"].values():
+        st.markdown(f"- {c}")
+    st.markdown(f"- Model view for the Fed: **{v['view']}**. " + v["template"]["What is priced"])
+    if fed_priced is not None:
+        st.caption(
+            f"Fed: market-priced 3-month average fed funds rate in 12 months {fed_priced['value']:.2f}% "
+            f"({fed_priced['source']}, {fed_priced['as_of']}). Risk-neutral: includes risk premia."
+        )
+
+elif tab == "What changed":
+    ch = v["changes"].copy()
+    ch["change"] = ch["change"].round(2)
+    c1, c2 = st.columns([2, 1])
+    c1.dataframe(ch, use_container_width=True)
+    nc = v["nowcast_change"]
+    c2.metric("GDP nowcast, weekly change", f"{nc:+.2f} pp" if nc == nc else "n/a (target quarter changed)")
+
+else:
+    src_dates = {
+        k: as_of_label(try_series(k))
+        for k in ("DFF", "CPIAUCSL", "EA_DFR", "EA_HICP", "JP_POLICY", "DGS10", "SPX")
+    }
+    st.markdown("**Latest observation by source:** " + " · ".join(f"{k} {d}" for k, d in src_dates.items()))
+    overnight = {"SOFR": "SOFR", "€STR": "EA_ESTR", "Japan call rate": "JP_CALL_D"}
+    on_txt = [
+        f"{lab} {s.dropna().iloc[-1]:.2f}% ({as_of_label(s)})"
+        for lab, sid in overnight.items()
+        if (s := try_series(sid)) is not None and not s.dropna().empty
+    ]
+    if on_txt:
+        st.markdown(
+            "**Overnight rates:** " + " · ".join(on_txt) + ". " + source_label("SOFR", "EA_ESTR", "JP_CALL_D")
+        )
+    stale = [k for k in stale_assumptions() if not (k == "fed_terminal_rate" and fed_priced is not None)]
+    if stale:
+        st.warning(
+            f"Market-pricing assumptions missing or older than 30 days: {', '.join(stale)} "
+            "(config/assumptions.yaml). 2-year yields are used as proxies."
+        )
+    st.caption("Status colours always come with a label. Details on each page.")
 footer()

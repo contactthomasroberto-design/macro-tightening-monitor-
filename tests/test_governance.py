@@ -14,6 +14,8 @@ IMPLEMENTED = [
     "positioning",
     "history",
     "markets",
+    "leading",
+    "stress_test",
 ]  # extended milestone by milestone
 
 

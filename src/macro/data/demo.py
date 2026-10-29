@@ -409,6 +409,12 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
     surprise_path = pd.Series(sp, index=days)
     out["DGS3MO"] = _daily_level(M(us["y3M"]), gen, 0.03).clip(lower=0.0)
     out["DGS2"] = (_daily_level(M(us["y2Y"]), gen, 0.05) + 0.6 * surprise_path).clip(lower=0.05)
+    # series added after the first release draw from their own generator: the shared stream (and every
+    # earlier demo series, pinned by tests/fixtures/demo_snapshot.json) stays unchanged
+    gen_new = np.random.default_rng(seed + 1000)
+    out["DGS1"] = (0.5 * out["DGS3MO"] + 0.5 * out["DGS2"] + gen_new.normal(0, 0.02, len(out["DGS2"]))).clip(
+        lower=0.0
+    )
     out["DGS5"] = (_daily_level(M(us["y5Y"]), gen, 0.06) + 0.4 * surprise_path).clip(lower=0.1)
     out["DGS10"] = (_daily_level(M(us["y10Y"]), gen, 0.06) + 0.25 * surprise_path).clip(lower=0.3)
     out["DGS30"] = (_daily_level(M(us["y30Y"]), gen, 0.06) + 0.15 * surprise_path).clip(lower=0.8)
@@ -616,6 +622,12 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
         - 0.2 * spx_ret.rolling(12).sum()
     )
     out["FCIG_1Y"] = fcig.dropna()
+    ebp = pd.Series(
+        -0.1 + 0.9 * stress_m.to_numpy() - 0.05 * gap_m.to_numpy() + gen_new.normal(0, 0.1, n), index=months
+    )
+    out["EBP"] = ebp
+    out["GZ_SPREAD"] = ebp + 1.4 + 0.3 * gen_new.normal(0, 0.1, n)
+    out["EBP_PROB"] = pd.Series(1 / (1 + np.exp(-(-2.2 + 2.0 * ebp.to_numpy()))), index=months)
     spf_cpi = 0.5 * np.nan_to_num(head_yoy, nan=3) + 0.5 * us["pie"] + gen.normal(0, 0.15, n)
     out["SPF_CPI_1Y"] = q(spf_cpi)
     gq = 400 * np.log(out["GDPC1"]).diff()

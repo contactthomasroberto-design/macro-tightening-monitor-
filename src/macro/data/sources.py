@@ -57,6 +57,10 @@ RESEARCH_FILES: dict[str, dict] = {
         "url": "https://www.federalreserve.gov/econres/notes/feds-notes/fci_g_public_monthly_1yr.csv",
         "kind": "csv",
     },
+    "EBP": {
+        "url": "https://www.federalreserve.gov/econres/notes/feds-notes/ebp_csv.csv",
+        "kind": "csv",
+    },
     "SPF_GROWTH": {
         "url": "https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/historical-data/meangrowth.xlsx",
         "kind": "spf_growth",

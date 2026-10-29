@@ -70,43 +70,33 @@ _autorefresh()
 
 PAGES_DIR = Path(__file__).parent / "views"
 
-# Navigation: two top-level tabs, Macro and Markets, plus Governance. (section, [(file, title), ...]).
+# Navigation: two top-level menus, Macro and Markets, plus Governance. Entries named sec_*.py are
+# section pages holding several sub-pages behind a segmented control (app/sections.py).
 SECTIONS = [
     (
         "Macro",
         [
             ("overview.py", "Overview"),
-            ("calendar.py", "Calendar and releases"),
             ("inflation.py", "Inflation"),
             ("policy.py", "Monetary policy"),
-            ("growth.py", "Growth and recession risk"),
-            ("scenarios.py", "Scenarios and fan charts"),
-            ("regimes.py", "Macro regime and views"),
-            ("history.py", "Historical cycles"),
+            ("sec_growth.py", "Growth and recession"),
+            ("sec_scenarios.py", "Scenarios"),
+            ("sec_history.py", "History and calendar"),
         ],
     ),
     (
         "Markets",
         [
-            ("markets_monitor.py", "Cross-asset monitor"),
-            ("curves.py", "Rates and curves"),
-            ("markets_credit_vol.py", "Credit and volatility"),
+            ("sec_monitor.py", "Monitor"),
+            ("sec_rates.py", "Rates"),
             ("markets_fx_commodities.py", "FX and commodities"),
-            ("markets_regimes.py", "Cross-asset regimes"),
+            ("sec_crossasset.py", "Cross-asset"),
+            ("stress_testing.py", "Stress testing"),
             ("markets_priced.py", "Priced against our models"),
-            ("fincond.py", "Financial conditions"),
-            ("transmission.py", "Transmission"),
             ("positioning.py", "Positioning"),
         ],
     ),
-    (
-        "Governance",
-        [
-            ("track_record.py", "Track record"),
-            ("data_health.py", "Data health"),
-            ("model_cards.py", "Model cards"),
-        ],
-    ),
+    ("Governance", [("sec_governance.py", "Governance")]),
 ]
 PAGES = [p for _, ps in SECTIONS for p in ps]
 

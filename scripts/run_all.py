@@ -115,6 +115,8 @@ def main() -> int:
     sb = _step("scenarios and Monte Carlo", lambda: pipeline.scenario_bundle(force=args.force))
     _step("regimes", lambda: pipeline.regime_bundle(force=args.force))
     _step("markets", lambda: pipeline.markets_bundle(force=args.force))
+    _step("recession signals", lambda: pipeline.leading_bundle(force=args.force))
+    _step("stress testing", lambda: pipeline.stress_bundle(force=args.force))
     _step("historical cycles (GMD)", lambda: pipeline.history_bundle(force=args.force))
     _step("views", lambda: pipeline.build_views(sb["base_weights"]))
     return 0
