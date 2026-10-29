@@ -111,6 +111,22 @@ Equations are in [`docs/methodology.md`](docs/methodology.md); each model has a 
   - the Estrella-Mishkin probit of recession on the 10Y-3M spread;
   - a "priced against our models" page for policy rates, inflation compensation, recession and growth.
   Investing.com is not used: its terms forbid automated extraction.
+- **Recession signals from markets** (`src/macro/leading.py`): five probits fixed in advance
+  (10Y-3M spread, a near-term forward spread proxy, the Fed Board's excess bond premium, and two
+  combinations), compared pseudo out of sample from 1990 (AUC, Brier, log score, block-bootstrap
+  intervals) and against the Fed Board's published EBP model.
+- **Stress testing** (`src/macro/stress_test.py`): conditional-normal cross-asset scenarios with an
+  out-of-sample calibration test, ten historical stress episodes with a similarity score for the
+  current move, and principal-component factors with a stability check.
+- **Scenario simulator**: user-defined oil, unemployment, inflation and term-premium paths through
+  the quarterly engine, against the configured scenario mix.
+- Methods, sources and what was left out: [`docs/methods_review.md`](docs/methods_review.md);
+  hypotheses written before estimation and their results: [`docs/research_log.md`](docs/research_log.md).
+
+The dashboard is organised in three menus: **Macro** (Overview, Inflation, Monetary policy, Growth and
+recession, Scenarios, History and calendar), **Markets** (Monitor, Rates, FX and commodities,
+Cross-asset, Stress testing, Priced against our models, Positioning) and **Governance**. Pages with
+several parts show them as sub-tabs; only the selected part is computed.
 
 ## 6. Results
 

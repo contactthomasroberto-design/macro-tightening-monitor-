@@ -41,7 +41,16 @@ _CSS = """
 """
 
 
+# A section page (app/sections.py) runs a sub-page inside itself: the sub-page's own header and footer
+# are then reduced to its subtitle, so a section shows one title, one badge and one footer.
+EMBEDDED = {"on": False}
+
+
 def header(title: str, subtitle: str | None = None) -> None:
+    if EMBEDDED["on"]:
+        if subtitle:
+            st.caption(subtitle)
+        return
     st.markdown(_CSS, unsafe_allow_html=True)
     if is_demo():
         st.error(f"**{SYNTHETIC_BANNER}**")
@@ -63,6 +72,8 @@ def header(title: str, subtitle: str | None = None) -> None:
 
 
 def footer(research_series: bool = False) -> None:
+    if EMBEDDED["on"]:
+        return
     st.divider()
     if research_series:
         st.caption(RESEARCH_SERIES_NOTE)
@@ -313,7 +324,7 @@ def release_banner(hours: int = 36) -> None:
         return
     checked = last_check()
     items = []
-    for _, r in rel.head(6).iterrows():
+    for _, r in rel.iterrows():
         try:
             spec = catalogue().get(r["series_id"])
             desc, freq = spec.description, spec.freq
@@ -325,9 +336,12 @@ def release_banner(hours: int = 36) -> None:
         if freq == "Q":
             period += str(pd.Timestamp(r["obs_date"]).quarter)
         when = pd.Timestamp(r["detected_at"]).strftime("%d %b %H:%M")
-        items.append(f"**{desc}** ({period}) at {when} UTC")
-    more = f" and {len(rel) - 6} more" if len(rel) > 6 else ""
-    st.caption(f"New data in the last {hours} hours: " + "; ".join(items) + more + f" · last check {checked}")
+        items.append(f"- **{desc}** ({period}), detected {when} UTC")
+    with st.popover(
+        f"New data in the last {hours} hours: {len(items)} release{'s' if len(items) > 1 else ''}"
+    ):
+        st.markdown("\n".join(items))
+        st.caption(f"Sources polled around their expected releases · last check {checked}")
 
 
 # Symbols the free widget serves (yield indices such as TVC:US10Y are not available to embeds, so

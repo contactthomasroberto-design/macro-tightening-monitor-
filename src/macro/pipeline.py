@@ -695,6 +695,71 @@ def markets_bundle(force: bool = False) -> dict:
     return load_or_compute("markets:all", compute, force=force)
 
 
+def leading_bundle(force: bool = False) -> dict:
+    """Market-based recession signals (spread, near-term forward spread, excess bond premium) with
+    pseudo-out-of-sample scores (src/macro/leading.py), against the Fed Board's published EBP model."""
+    from macro import leading as ld
+
+    def compute() -> dict:
+        X = ld.features(
+            get_series("DGS10"),
+            get_series("DGS3MO"),
+            get_series("DGS2"),
+            get_series("DGS1"),
+            get_series("EBP"),
+        )
+        y = ld.target_within(get_series("USREC"))
+        res = ld.suite(X, y)
+        res.pop("fits")
+        fed = try_series("EBP_PROB")
+        return {
+            **res,
+            "features": X,
+            "target": y,
+            "fed_ebp_prob": fed,
+            "usrec": get_series("USREC"),
+            "as_of": X.dropna(how="all").index[-1],
+        }
+
+    return load_or_compute("leading:US", compute, force=force)
+
+
+def stress_bundle(force: bool = False) -> dict:
+    """Cross-asset stress testing (src/macro/stress_test.py): weekly changes of the markets universe,
+    covariances for three windows, out-of-sample calibration, historical episodes and factors."""
+    from macro import stress_test as stt
+    from macro.config import markets_config
+
+    def compute() -> dict:
+        cfg = markets_config()
+        names = {a.id: a.name for a in cfg.assets}
+        kinds = {a.id: a.kind for a in cfg.assets}
+        data = {i: s for i in kinds if (s := try_series(i)) is not None and not s.dropna().empty}
+        W = stt.weekly_changes(data, kinds).loc["1990-01-01":]
+        core = get_series("CPILFESL").dropna()
+        hi_infl = ((core / core.shift(12) - 1) * 100 > 3.0).resample("W-FRI").ffill()
+        covs = {
+            "Last 2 years": stt.covariance(W.iloc[-104:]),
+            "Since 2000": stt.covariance(W.loc["2000-01-01":]),
+            "High-inflation weeks (US core CPI above 3%)": stt.covariance(W, mask=hi_infl),
+        }
+        moves = stt.episode_moves(data, kinds)
+        return {
+            "weekly": W,
+            "covariances": covs,
+            "coverage": stt.coverage_backtest(W),
+            "episodes": moves,
+            "analogs": stt.analogs(W, moves),
+            "factors": stt.pca_factors(W),
+            "names": names,
+            "kinds": kinds,
+            "hi_infl_weeks": int(hi_infl.reindex(W.index).fillna(False).astype(bool).sum()),
+            "as_of": W.dropna(how="all").index[-1],
+        }
+
+    return load_or_compute("stress_test:all", compute, force=force)
+
+
 def scenario_bundle(force: bool = False, n_per: int = 10_000) -> dict:
     """Quarterly US engine, Monte Carlo per scenario (mixed later with the user's probabilities)."""
     from macro.config import scenarios as load_scenarios
