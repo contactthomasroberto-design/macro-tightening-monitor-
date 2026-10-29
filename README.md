@@ -11,11 +11,11 @@ model archive (code, model cards, forecast archive, track record, changelog).
 ## 1. Executive summary
 
 <!-- SUMMARY:START -->
-_Generated 2026-10-28T19:42:40Z from data as of 2026-10-28 (git fb37c62). Educational research product. May be revised or discontinued. Not an official view of any central bank and not investment advice._
+_Generated 2026-10-29T09:14:54Z from data as of 2026-10-29 (git 9fdbe04). Educational research product. May be revised or discontinued. Not an official view of any central bank and not investment advice._
 
 - FED: core PCE inflation is 3.0% (+1.0 pp vs target); the policy rate (3.63%) is 1.33 pp below a Taylor (1993) prescription with r* at the middle of the 0.00-1.50% range.
 - ECB: HICP excl. energy and food inflation is 2.5% (+0.5 pp vs target); the policy rate (2.38%) is 2.07 pp below a Taylor (1993) prescription with r* at the middle of the 0.00-1.50% range.
-- BOJ: CPI all items inflation is 1.9% (-0.1 pp vs target); the policy rate (0.98%) is 1.62 pp below a Taylor (1993) prescription with r* at the middle of the 0.00-1.50% range.
+- BOJ: CPI all items inflation is 2.1% (+0.1 pp vs target); the policy rate (1.04%) is 1.85 pp below a Taylor (1993) prescription with r* at the middle of the 0.00-1.50% range.
 - The models imply further Fed tightening over the next four quarters (probability-weighted mean change +0.27 pp).
 - Priced policy rate in 12 months: 4.64% (Atlanta Fed Market Probability Tracker (SOFR options, risk-neutral mean) (as of 2026-10-26)); model median 4.00%.
 - GDP nowcast for 2026Q3: 2.6% annualised (68% band 0.7 to 4.6).
