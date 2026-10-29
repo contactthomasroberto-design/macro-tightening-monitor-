@@ -57,6 +57,7 @@ def header(title: str, subtitle: str | None = None) -> None:
         "Research product, not investment advice</span>",
         unsafe_allow_html=True,
     )
+    release_banner()
     if subtitle:
         st.markdown(subtitle)
 
@@ -224,3 +225,145 @@ def scenario_controls() -> dict[str, float]:
         if abs(tot - 1) > 1e-9:
             st.caption(f"Re-normalised (inputs summed to {tot:.2f}).")
     return w
+
+
+# ------------------------------------------------------------------ live pieces (auto-updating)
+LIVE_SERIES = [
+    # (label, series id, transform, unit)
+    ("Fed funds (effective)", "DFF", "level", "%"),
+    ("US 10Y", "DGS10", "level", "%"),
+    ("US CPI, y/y", "CPIAUCSL", "yoy", "%"),
+    ("Euro area HICP, y/y", "EA_HICP", "yoy", "%"),
+    ("ECB deposit rate", "EA_DFR", "level", "%"),
+    ("Brent spot (EIA)", "DCOILBRENTEU", "level", "$"),
+]
+
+
+def last_check() -> str:
+    """Time of the last background refresh, e.g. '29 Oct 08:53 UTC'."""
+    from macro.autorefresh import read_status
+
+    t = read_status().get("finished")
+    return pd.Timestamp(t).strftime("%d %b %H:%M UTC") if t else "pending"
+
+
+def _latest(series_id: str, transform: str) -> tuple[float, float, pd.Timestamp] | None:
+    """Last value, previous value and date, read from the local cache only (never waits on a source)."""
+    from macro.data import store
+
+    s = store().read(series_id).dropna()
+    if transform == "yoy":
+        s = (s / s.shift(12) - 1).mul(100).dropna()
+    if len(s) < 2:
+        return None
+    return float(s.iloc[-1]), float(s.iloc[-2]), s.index[-1]
+
+
+@st.fragment(run_every="5m")
+def live_strip() -> None:
+    """Key figures straight from the data cache, re-read every 5 minutes without reloading the page:
+    a release fetched by the background refresh shows up here within minutes."""
+    if is_demo():
+        return
+    cols = st.columns(len(LIVE_SERIES))
+    for col, (label, sid, tf, unit) in zip(cols, LIVE_SERIES, strict=True):
+        try:
+            v = _latest(sid, tf)
+        except Exception:
+            v = None
+        if v is None:
+            col.metric(label, "n/a")
+            continue
+        val, prev, d = v
+        fmt = "{:.0f}" if unit == "$" else "{:.2f}"
+        text = ("$" + fmt.format(val)) if unit == "$" else fmt.format(val) + "%"
+        col.metric(
+            label, text, f"{val - prev:+.2f}", delta_color="off", help=f"Last observation {d:%d %b %Y}"
+        )
+    st.caption(
+        "Figures re-read every 5 minutes; sources polled every 10 to 30 minutes around their expected "
+        f"releases · last check {last_check()}"
+    )
+
+
+def release_banner(hours: int = 36) -> None:
+    """New observations detected by the background refresh in the last `hours`."""
+    import datetime as dt
+
+    from macro.config import catalogue
+    from macro.data import store
+
+    if is_demo():
+        return
+    try:
+        rel = store().recent_releases(dt.datetime.now(dt.UTC) - dt.timedelta(hours=hours))
+    except Exception:
+        rel = pd.DataFrame()
+
+    def is_release(sid: str) -> bool:  # macro releases and policy rates, not daily market prices
+        try:
+            spec = catalogue().get(sid)
+        except KeyError:
+            return False
+        return spec.freq != "D" or spec.category == "policy"
+
+    if not rel.empty:
+        rel = rel[rel["series_id"].map(is_release)].drop_duplicates("series_id")
+    if rel.empty:
+        return
+    checked = last_check()
+    items = []
+    for _, r in rel.head(6).iterrows():
+        try:
+            spec = catalogue().get(r["series_id"])
+            desc, freq = spec.description, spec.freq
+        except KeyError:
+            desc, freq = r["series_id"], "D"
+        period = pd.Timestamp(r["obs_date"]).strftime(
+            {"M": "%b %Y", "Q": "%Y Q", "W": "week of %d %b"}.get(freq, "%d %b %Y")
+        )
+        if freq == "Q":
+            period += str(pd.Timestamp(r["obs_date"]).quarter)
+        when = pd.Timestamp(r["detected_at"]).strftime("%d %b %H:%M")
+        items.append(f"**{desc}** ({period}) at {when} UTC")
+    more = f" and {len(rel) - 6} more" if len(rel) > 6 else ""
+    st.caption(f"New data in the last {hours} hours: " + "; ".join(items) + more + f" · last check {checked}")
+
+
+# Symbols the free widget serves (yield indices such as TVC:US10Y are not available to embeds, so
+# bond prices are shown; yields are in the strip below, from FRED).
+TRADINGVIEW_SYMBOLS = [
+    ("OANDA:BCOUSD", "Brent"),
+    ("OANDA:USB10YUSD", "US 10Y note (price)"),
+    ("OANDA:DE10YBEUR", "Bund (price)"),
+    ("FX:USDJPY", "USD/JPY"),
+    ("FX:EURUSD", "EUR/USD"),
+    ("OANDA:XAUUSD", "Gold"),
+    ("OANDA:SPX500USD", "S&P 500"),
+    ("OANDA:EU50EUR", "Euro Stoxx 50"),
+    ("OANDA:JP225USD", "Nikkei 225"),
+    ("CAPITALCOM:VIX", "VIX"),
+]
+
+
+def tradingview_ticker() -> None:
+    """TradingView's free ticker-tape widget: near-real-time prices, display only (the models never
+    read them; TradingView data cannot be redistributed or used in calculations)."""
+    import json
+
+    import streamlit.components.v1 as components
+
+    cfg = {
+        "symbols": [{"proName": p, "title": t} for p, t in TRADINGVIEW_SYMBOLS],
+        "showSymbolLogo": False,
+        "isTransparent": True,
+        "displayMode": "compact",
+        "colorTheme": theme(),
+        "locale": "en",
+    }
+    components.html(
+        '<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>'
+        '<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/'
+        f'embed-widget-ticker-tape.js" async>{json.dumps(cfg)}</script></div>',
+        height=72,
+    )

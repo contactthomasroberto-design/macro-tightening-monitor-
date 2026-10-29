@@ -1,10 +1,14 @@
 """Keep the live dashboard current without anyone running a script.
 
-`refresh_and_warm()` re-downloads every catalogue series whose cache has expired (TTL by frequency in
-`data/store.py`: 12 hours for daily series, 2 days weekly, 3 days monthly, 7 days quarterly) and,
-when background models are on (MACRO_BACKGROUND_MODELS=1) and an observation changed, recomputes the
-model bundles. On the hosted app the models come from the daily snapshot (macro.warmstart) instead. `start_background()` runs it in a daemon thread every `interval_hours` (one thread per
-process). Status is written to data/cache/refresh_status.json for the Data health page.
+`refresh_and_warm()` fetches every catalogue series that is due (`macro.data.schedule`: polled every
+10 to 30 minutes around its expected release, at the slow TTL otherwise), then recomputes the light
+model bundles whose input series changed (`LIGHT`: inflation, policy rules, financial conditions,
+curves, transmission, positioning, regimes; a few seconds to a minute each, under 300 MB). The heavy
+bundles (dynamic factor nowcast, scenarios, views) come from the snapshot computed by GitHub Actions
+(macro.warmstart), unless MACRO_BACKGROUND_MODELS=1 (a server with enough memory).
+`start_background()` runs it in a daemon thread every `interval_minutes` (one thread per process);
+`ON_CHANGE` callbacks run after new data or results (the app clears its page caches). Status is
+written to data/cache/refresh_status.json for the Data health page.
 
 Forecast-archive writes are NOT done here: the archive is appended by `scripts/run_all.py` (the
 scheduled GitHub workflow), so that every archived forecast has a commit and a run record.
@@ -48,20 +52,59 @@ def read_status() -> dict:
         return {}
 
 
-def refresh_stale(ids: list[str] | None = None) -> dict[str, str]:
-    """Fetch every series whose cached copy has expired. Returns {id: 'ok' | error message}."""
-    from macro.data import refresh_series, store
+ON_CHANGE: list[Callable[[], None]] = []
+
+
+def refresh_due(
+    ids: list[str] | None = None, now: dt.datetime | None = None
+) -> tuple[dict[str, str], set[str]]:
+    """Fetch every series that is due. Returns ({id: 'ok' | error message}, ids whose content changed)."""
+    from macro.data import RETRY_AFTER_FAILURE, refresh_series, store
+    from macro.data.schedule import due
 
     st = store()
-    out: dict[str, str] = {}
+    state = st.latest_state()
+    todo = []
     for spec in catalogue().series:
         if ids is not None and spec.id not in ids:
             continue
-        if st.is_fresh(spec.id, spec.freq):
+        last_obs, last_fetched = state.get(spec.id, (None, None))
+        if not due(spec, last_obs, last_fetched, now):
             continue
-        ok, msg = refresh_series(spec.id, st)
-        out[spec.id] = "ok" if ok else msg
-    return out
+        if st.failed_recently(spec.id, RETRY_AFTER_FAILURE):
+            continue  # the source refused less than an hour ago
+        todo.append(spec.id)
+    before = st.content_hashes(todo)
+    out: dict[str, str] = {}
+    for sid in todo:
+        ok, msg = refresh_series(sid, st)
+        out[sid] = "ok" if ok else msg
+    after = st.content_hashes(todo)
+    return out, {sid for sid in todo if after.get(sid) != before.get(sid)}
+
+
+def refresh_stale(ids: list[str] | None = None) -> dict[str, str]:
+    """Fetch every series that is due (kept for scripts). Returns {id: 'ok' | error message}."""
+    return refresh_due(ids)[0]
+
+
+def light_bundles() -> list[tuple[str, Callable]]:
+    """Bundles cheap enough to recompute inside the hosted app (measured: < 1 min, < 300 MB each)."""
+    from macro import pipeline as p
+
+    steps: list[tuple[str, Callable]] = [
+        (f"inflation {r}", lambda r=r: p.inflation_bundle(r)) for r in ("US", "EA", "JP")
+    ]
+    steps += [(f"policy {b}", lambda b=b: p.policy_bundle(b)) for b in p.BANKS]
+    steps += [
+        ("policy cross-bank", p.cross_bank_bundle),
+        ("financial conditions", p.fincond_bundle),
+        ("curves", p.curves_bundle),
+        ("transmission", p.transmission_bundle),
+        ("positioning", p.positioning_bundle),
+        ("regimes", p.regime_bundle),
+    ]
+    return steps
 
 
 def _bundles() -> list[tuple[str, Callable]]:
@@ -94,9 +137,31 @@ def background_models() -> bool:
     return os.environ.get("MACRO_BACKGROUND_MODELS", "0") == "1"
 
 
-def refresh_and_warm(warm: bool | None = None) -> dict:
-    """One refresh cycle: expired data always; models only when `warm` (default: background_models()).
-    Never raises: failures are logged and written to the status file."""
+def _recompute(steps: list[tuple[str, Callable]]) -> tuple[list[str], dict[str, str]]:
+    """Bring each bundle up to date: only those whose stored result is no longer valid recompute.
+    Returns (stored results rewritten, errors by step)."""
+    from macro.results import _dir, fresh_results
+
+    def stamps() -> dict[str, int]:
+        return {f.stem.replace("__", ":"): f.stat().st_mtime_ns for f in _dir().glob("*.pkl")}
+
+    before = stamps()
+    errors = {}
+    for name, fn in steps:
+        try:
+            with fresh_results():
+                fn()
+        except Exception as exc:  # one module failing must not stop the others
+            errors[name] = f"{type(exc).__name__}: {exc}"[:300]
+            log.warning("recomputing %s failed: %s", name, exc)
+    after = stamps()
+    return sorted(k for k, t in after.items() if before.get(k) != t), errors
+
+
+def refresh_and_warm(warm: bool | None = None, light: bool = True) -> dict:
+    """One refresh cycle: due data always; then the light bundles whose inputs changed (`light`), and
+    every bundle when `warm` (default: background_models()). Never raises: failures are logged and
+    written to the status file."""
     if warm is None:
         warm = background_models()
     if is_demo():
@@ -104,34 +169,34 @@ def refresh_and_warm(warm: bool | None = None) -> dict:
     if not _LOCK.acquire(blocking=False):
         return {"skipped": "a refresh is already running"}
     try:
-        from macro.data import store
-
-        v0 = store().data_version()
         _write_status(running=True, started=_now())
-        res = refresh_stale()
+        res, changed_ids = refresh_due()
         failed = {k: v for k, v in res.items() if v != "ok"}
-        changed = store().data_version() != v0
+        recomputed: list[str] = []
         warm_errors: dict[str, str] = {}
-        if warm and (changed or read_status().get("warmed_version") != store().data_version()):
-            from macro.results import fresh_results
-
-            for name, fn in _bundles():
+        first = not read_status().get("light_checked")
+        if warm or (light and (changed_ids or first)):
+            recomputed, warm_errors = _recompute(_bundles() if warm else light_bundles())
+            _write_status(light_checked=_now())
+        if changed_ids or recomputed:
+            for cb in list(ON_CHANGE):
                 try:
-                    with fresh_results():
-                        fn()
-                except Exception as exc:  # one module failing must not stop the others
-                    warm_errors[name] = f"{type(exc).__name__}: {exc}"[:300]
-                    log.warning("warming %s failed: %s", name, exc)
-            _write_status(warmed_version=store().data_version())
+                    cb()
+                except Exception as exc:
+                    log.warning("on-change callback failed: %s", exc)
         summary = {
             "running": False,
             "finished": _now(),
             "checked": len(res),
             "updated_ok": len(res) - len(failed),
             "failed": failed,
-            "data_changed": changed,
+            "data_changed": bool(changed_ids),
+            "changed_series": sorted(changed_ids),
+            "recomputed": recomputed,
             "warm_errors": warm_errors,
         }
+        if changed_ids:
+            summary["last_data_change"] = _now()
         _write_status(**summary)
         return summary
     except Exception as exc:
@@ -142,8 +207,9 @@ def refresh_and_warm(warm: bool | None = None) -> dict:
         _LOCK.release()
 
 
-def start_background(interval_hours: float = 3.0) -> threading.Thread | None:
-    """Start the refresh loop once per process (no-op in demo mode or if already running)."""
+def start_background(interval_minutes: float = 10.0) -> threading.Thread | None:
+    """Start the refresh loop once per process (no-op in demo mode or if already running). Each cycle
+    is cheap when nothing is due: a few SQLite reads."""
     global _THREAD
     if is_demo():
         return None
@@ -156,7 +222,7 @@ def start_background(interval_hours: float = 3.0) -> threading.Thread | None:
     def loop() -> None:
         while True:
             refresh_and_warm()
-            time.sleep(interval_hours * 3600)
+            time.sleep(interval_minutes * 60)
 
     _THREAD = threading.Thread(target=loop, name="macro-autorefresh", daemon=True)
     _THREAD.start()

@@ -29,15 +29,17 @@ if not is_demo():
         n_fail = len(rs.get("failed") or {})
         show_status(
             "good" if not n_fail and not rs.get("warm_errors") else "warning",
-            f"Last automatic refresh {rs['finished']}: {rs.get('checked', 0)} expired series re-checked, "
-            f"{n_fail} failed; new data: {'yes' if rs.get('data_changed') else 'no'}. "
-            "Runs every few hours in the background; models are recomputed only when data changed.",
+            f"Last automatic refresh {rs['finished']}: {rs.get('checked', 0)} due series checked, "
+            f"{n_fail} failed; new data: {', '.join(rs.get('changed_series') or []) or 'none'}; "
+            f"results recomputed: {', '.join(rs.get('recomputed') or []) or 'none'}. "
+            "Runs every 10 minutes; series are polled around their expected releases, and only the "
+            "results whose inputs changed are recomputed.",
         )
         if rs.get("warm_errors"):
             st.caption(
                 "Model recomputation errors: " + "; ".join(f"{k}: {v}" for k, v in rs["warm_errors"].items())
             )
-    if st.button("Refresh now (expired series only)", disabled=bool(rs.get("running"))):
+    if st.button("Refresh now (due series only)", disabled=bool(rs.get("running"))):
         threading.Thread(target=autorefresh.refresh_and_warm, daemon=True).start()
         st.info("Refresh started in the background; reload this page in a few minutes.")
 

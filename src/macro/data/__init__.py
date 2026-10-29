@@ -23,6 +23,7 @@ from macro.data import demo, sources
 from macro.data.http import SourceError
 from macro.data.store import Store
 from macro.data.vintages import LATEST_VINTAGE_LABEL, truncate_as_of
+from macro.inputs import record as record_input
 from macro.utils import is_demo
 
 log = logging.getLogger("macro.data")
@@ -92,6 +93,7 @@ def get_series(series_id: str, vintage: str | None = None, as_of=None, refresh: 
     """
     spec = catalogue().get(series_id)
     st = store()
+    record_input(series_id)
     if is_demo():
         if st.last_fetched(series_id) is None:
             load_demo_into_store(st)

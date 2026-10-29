@@ -7,11 +7,17 @@ observations(series_id, date, value, vintage_date, source, fetched_at)
     a real date for ALFRED vintages. One latest-vintage snapshot is kept per series
     (replaced on refresh); ALFRED vintages are appended.
 fetch_log(series_id, fetched_at, ok, message)
+series_state(series_id, content_hash, last_date, changed_at)
+    hash of the latest-vintage content: model results are validated against the hashes of the
+    series they read (macro.results), so identical data gives identical keys on any machine.
+releases(series_id, obs_date, value, detected_at)
+    a new last observation found by a refresh (the dashboard's "new release" banner).
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import os
 import sqlite3
 from contextlib import contextmanager
@@ -44,6 +50,18 @@ CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT
 );
+CREATE TABLE IF NOT EXISTS series_state (
+    series_id TEXT PRIMARY KEY,
+    content_hash TEXT NOT NULL,
+    last_date TEXT,
+    changed_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS releases (
+    series_id TEXT NOT NULL,
+    obs_date TEXT NOT NULL,
+    value REAL,
+    detected_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS fetch_log (
     series_id TEXT NOT NULL,
     fetched_at TEXT NOT NULL,
@@ -63,6 +81,14 @@ def default_path() -> Path:
 
 def _now() -> str:
     return dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _content_hash(rows) -> str:
+    """Hash of sorted (date, value) pairs; NaN and NULL hash alike (SQLite stores NaN as NULL)."""
+    h = hashlib.sha1()
+    for d, v in rows:
+        h.update(f"{d}|{'nan' if v is None or v != v else repr(float(v))}\n".encode())
+    return h.hexdigest()[:16]
 
 
 class Store:
@@ -118,6 +144,16 @@ class Store:
             if (vint == "").any():
                 c.execute("DELETE FROM observations WHERE series_id=? AND vintage_date=''", (series_id,))
             c.executemany("INSERT OR REPLACE INTO observations VALUES (?,?,?,?,?,?)", rows)
+            if latest and rows:
+                now = _now()
+                c.execute(
+                    "INSERT OR REPLACE INTO series_state VALUES (?,?,?,?)",
+                    (series_id, _content_hash(new), new[-1][0], now),
+                )
+                if old and new[-1][0] > old[-1][0]:  # a new observation, not just a revision
+                    c.execute(
+                        "INSERT INTO releases VALUES (?,?,?,?)", (series_id, new[-1][0], new[-1][1], now)
+                    )
             c.execute(
                 "INSERT INTO meta VALUES ('data_version', '1') "
                 "ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + 1"
@@ -222,6 +258,47 @@ class Store:
                 (series_id,),
             ).fetchone()
         return (r[0], r[1]) if r and not r[2] else None
+
+    def content_hashes(self, ids) -> dict[str, str]:
+        """Latest-vintage content hash per series (computed and stored when missing)."""
+        ids = sorted(set(ids))
+        if not ids:
+            return {}
+        with self._conn() as c:
+            q = f"SELECT series_id, content_hash FROM series_state WHERE series_id IN ({','.join('?' * len(ids))})"
+            out = dict(c.execute(q, ids).fetchall())
+            for sid in ids:
+                if sid in out:
+                    continue
+                rows = c.execute(
+                    "SELECT date, value FROM observations WHERE series_id=? AND vintage_date='' ORDER BY date",
+                    (sid,),
+                ).fetchall()
+                out[sid] = _content_hash(rows) if rows else "missing"
+                if rows:
+                    c.execute(
+                        "INSERT OR REPLACE INTO series_state VALUES (?,?,?,?)",
+                        (sid, out[sid], rows[-1][0], _now()),
+                    )
+        return out
+
+    def latest_state(self) -> dict[str, tuple[str, dt.datetime]]:
+        """{series_id: (last observation date, last fetch time)} for every latest-vintage series."""
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT series_id, MAX(date), MAX(fetched_at) FROM observations WHERE vintage_date='' GROUP BY series_id"
+            ).fetchall()
+        return {r[0]: (r[1], dt.datetime.fromisoformat(r[2]).replace(tzinfo=dt.UTC)) for r in rows}
+
+    def recent_releases(self, since: dt.datetime) -> pd.DataFrame:
+        """New observations detected by refreshes since `since` (most recent first)."""
+        with self._conn() as c:
+            return pd.read_sql_query(
+                "SELECT series_id, obs_date, value, detected_at FROM releases WHERE detected_at>=? "
+                "ORDER BY detected_at DESC",
+                c,
+                params=(since.astimezone(dt.UTC).strftime("%Y-%m-%dT%H:%M:%S"),),
+            )
 
     def is_fresh(self, series_id: str, freq: str, now: dt.datetime | None = None) -> bool:
         lf = self.last_fetched(series_id)

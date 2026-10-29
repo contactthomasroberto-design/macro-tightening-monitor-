@@ -9,9 +9,10 @@ after its live run (`scripts/export_snapshot.py`) and commits it under `snapshot
 - `gmd.parquet`: the Global Macro Database extract used by the Historical cycles page
 - `manifest.json`: creation time, git hash and the store data version the results were computed on
 
-On start-up in live mode the app restores whatever is missing locally. The store's data version is
-set to the snapshot's, so the results match their fingerprints and load instantly; the background
-refresh then updates expired series and recomputes only what changed.
+On start-up in live mode the app restores whatever is missing locally. Results are validated against
+the content hashes of the series they read, so a result computed by GitHub Actions from the same data
+is valid here and loads instantly; the background refresh then polls for new releases and recomputes
+only the results whose inputs changed.
 
 The repository must stay private: the snapshot contains copies of third-party data.
 """
@@ -89,16 +90,24 @@ def _marker() -> Path:
     return ROOT / "data" / "cache" / "snapshot_applied.json"
 
 
-def _local_result_is_current(path: Path) -> bool:
-    """True when a local result was computed by the code now running (keep it over the snapshot's)."""
-    from macro.results import code_hash
+def _keep_local(target: Path, snap_bytes: bytes) -> bool:
+    """Keep the local result rather than the snapshot's when it is still valid for the local data, or
+    when it was computed by the running code more recently than the snapshot's (the dashboard
+    recomputes light models after a release; the snapshot may predate that release)."""
+    from macro import results
 
-    try:
-        with open(path, "rb") as fh:
-            stored = pickle.load(fh)
-        return len(stored) > 2 and stored[2].get("code") == code_hash()
-    except Exception:
+    name = target.stem.replace("__", ":")
+    if results.is_valid(name, target):
+        return True
+    local = results.read_meta(target)
+    if local.get("code") != results.code_hash():
         return False
+    try:
+        snap = pickle.loads(snap_bytes)
+        snap_meta = snap[2] if len(snap) > 2 else {}
+    except Exception:
+        return True
+    return str(local.get("computed", "")) > str(snap_meta.get("computed", ""))
 
 
 def apply_snapshot(src: Path = SNAPSHOT_DIR) -> dict:
@@ -109,7 +118,8 @@ def apply_snapshot(src: Path = SNAPSHOT_DIR) -> dict:
     - data: a series is written when the snapshot holds a newer fetch than the local cache; if the
       local cache holds nothing newer, the store takes the snapshot's data version, so the snapshot's
       results match their fingerprints exactly;
-    - results: a local result is replaced unless it was computed by the code now running;
+    - results: a local result is replaced unless it is still valid for the local data, or was computed
+      by the running code after the snapshot's;
     - GMD extract: copied when missing.
     """
     if mode() != "live" or not (src / "manifest.json").exists():
@@ -160,12 +170,16 @@ def _apply(src: Path, manifest: dict, marker: Path) -> dict:
                 if not (m.isfile() and m.name.endswith(".pkl") and "/" not in m.name):
                     continue
                 target = res / m.name
-                if target.exists() and _local_result_is_current(target):
-                    continue
                 data = tar.extractfile(m)
-                if data is not None:
-                    target.write_bytes(data.read())
-                    n += 1
+                if data is None:
+                    continue
+                payload = data.read()
+                if target.exists() and _keep_local(target, payload):
+                    continue
+                tmp = target.with_suffix(".tmp")
+                tmp.write_bytes(payload)
+                tmp.replace(target)
+                n += 1
         if n:
             done.append(f"results ({n})")
     gdir = _gmd_dir()
