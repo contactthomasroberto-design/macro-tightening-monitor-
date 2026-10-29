@@ -36,7 +36,8 @@ def _frame(values):
 def _snapshot(tmp_path, st, res, gmd):
     st.write("DGS10", _frame([1.0, 2.0]), source="fred", fetched_at="2026-10-28T05:20:00")
     st.write("UNRATE", _frame([4.0, 4.1]), source="fred", fetched_at="2026-10-28T05:21:00")
-    (res / "policy__fed.pkl").write_bytes(pickle.dumps(("fp-snap", {"x": "snapshot"}, {"code": code_hash()})))
+    snap_meta = {"code": code_hash(), "computed": "2026-10-28T06:00:00Z"}
+    (res / "policy__fed.pkl").write_bytes(pickle.dumps(("fp-snap", {"x": "snapshot"}, snap_meta)))
     pd.DataFrame({"ISO3": ["USA"], "year": [2020]}).to_parquet(gmd / "GMD_2026_09.parquet")
     st.set_data_version(50)  # distinctive, so tests can tell whether it was adopted
     snap = tmp_path / "snap"
@@ -84,10 +85,19 @@ def test_snapshot_replaces_outdated_results_but_keeps_current_ones_and_newer_dat
     assert st2.read("DGS10").tolist() == [1.0, 2.0]  # missing series added
     assert st2.data_version() != man["data_version"]  # local data differs: results served stale, refreshed
 
-    (res2 / "policy__fed.pkl").write_bytes(pickle.dumps(("fp-cur", {"x": "current"}, {"code": code_hash()})))
+    # same code, computed after the snapshot's (light recompute after a release): kept
+    later = {"code": code_hash(), "computed": "2026-10-28T15:00:00Z"}
+    (res2 / "policy__fed.pkl").write_bytes(pickle.dumps(("fp-cur", {"x": "recomputed"}, later)))
     (tmp_path / "running_marker.json").unlink()
     warmstart.apply_snapshot(snap)
-    assert pickle.loads((res2 / "policy__fed.pkl").read_bytes())[1] == {"x": "current"}  # current kept
+    assert pickle.loads((res2 / "policy__fed.pkl").read_bytes())[1] == {"x": "recomputed"}
+
+    # same code, computed before the snapshot's (yesterday's snapshot): replaced by the newer one
+    earlier = {"code": code_hash(), "computed": "2026-10-27T15:00:00Z"}
+    (res2 / "policy__fed.pkl").write_bytes(pickle.dumps(("fp-cur", {"x": "yesterday"}, earlier)))
+    (tmp_path / "running_marker.json").unlink()
+    warmstart.apply_snapshot(snap)
+    assert pickle.loads((res2 / "policy__fed.pkl").read_bytes())[1] == {"x": "snapshot"}
 
 
 def test_apply_never_raises_on_a_bad_snapshot(tmp_path, live_env):

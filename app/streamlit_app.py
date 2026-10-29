@@ -35,15 +35,23 @@ _purge_stale_modules()
 st.set_page_config(page_title="Macro Tightening Monitor", layout="wide")
 
 
+def _clear_page_caches() -> None:
+    st.cache_data.clear()
+    st.cache_resource.clear()
+
+
 @st.cache_resource
 def _autorefresh():
-    """Live mode: refresh expired data and recompute models in a background thread, every few hours
-    (MACRO_REFRESH_HOURS, default 3). Started once per server process."""
+    """Live mode: poll the sources for new releases and recompute the light models whose inputs
+    changed, in a background thread every MACRO_REFRESH_MINUTES (default 10). Started once per server
+    process. After new data, the page caches are cleared so the next page view shows it."""
     import os
 
     from macro import autorefresh
 
-    return autorefresh.start_background(float(os.environ.get("MACRO_REFRESH_HOURS", "3")))
+    if not any(getattr(cb, "__name__", "") == "_clear_page_caches" for cb in autorefresh.ON_CHANGE):
+        autorefresh.ON_CHANGE.append(_clear_page_caches)
+    return autorefresh.start_background(float(os.environ.get("MACRO_REFRESH_MINUTES", "10")))
 
 
 def _serve_stale_results() -> None:
@@ -52,7 +60,8 @@ def _serve_stale_results() -> None:
     from macro import results, warmstart
 
     results.SERVE_STALE = True
-    warmstart.apply_snapshot()
+    if warmstart.apply_snapshot().get("applied"):
+        _clear_page_caches()  # new results from the snapshot: page caches must not hide them
 
 
 _serve_stale_results()

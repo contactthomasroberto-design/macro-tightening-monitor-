@@ -157,15 +157,27 @@ dashboard flags entries older than 30 days.
 
 Numbers update themselves when new data is published:
 
-- **In the dashboard (live mode).** A background thread re-downloads every series whose cache has
-  expired (daily series after 12 hours, weekly after 2 days, monthly after 3 days, quarterly after 7
-  days), every 3 hours by default (`MACRO_REFRESH_HOURS`). Model results come from the daily
-  snapshot below; a local server with enough memory can also recompute them in the background when
-  an observation changed (`MACRO_BACKGROUND_MODELS=1`). The Data health page shows the last refresh
-  and has a "Refresh now" button.
-- **On GitHub (weekdays).** The `refresh` workflow runs every weekday at 14:17 UTC (after the 8:30 ET
-  US releases) and after every code change on `main`: data, models, forecast archive, track record,
-  README executive summary and figures; the weekly monitor on Mondays.
+- **In the dashboard (live mode).** A background thread runs every 10 minutes
+  (`MACRO_REFRESH_MINUTES`) and asks a source only when a new observation is due
+  (`src/macro/data/schedule.py`). The expected date of the next observation comes from the last one
+  and the release lag in `config/series.yaml`. Around that date the series is polled every 10 to 30
+  minutes until the new value appears; otherwise it is re-checked at the slow interval (daily series
+  12 hours, weekly 2 days, monthly 3 days, quarterly 7 days). A CPI or HICP print therefore reaches
+  the dashboard within minutes of its publication at the source (FRED can itself take up to an hour).
+- **Targeted recomputation.** Each stored model result records the series it read and their content
+  hashes (`src/macro/results.py`); a new release invalidates only the results that read it. The app
+  recomputes the light ones itself (inflation, policy rules, financial conditions, curves,
+  transmission, positioning, regimes: seconds each). The heavy ones (dynamic factor nowcast,
+  scenarios, views) come from the GitHub snapshot below, unless `MACRO_BACKGROUND_MODELS=1` on a
+  server with enough memory. The Overview's key figures re-read the data every 5 minutes without
+  reloading the page, and every page lists the releases detected in the last 36 hours. The Data
+  health page shows the last refresh and has a "Refresh now" button.
+- **On GitHub (weekdays).** The `refresh` workflow runs three times each weekday (10:47, 14:17 and
+  21:37 UTC, after the Japanese and euro-area releases, the 8:30 ET US releases and the US close) and
+  after every code change on `main`: data, models, forecast archive, track record, README executive
+  summary and figures; the weekly monitor on Mondays. GitHub can start scheduled runs late.
+- **Market ticker.** The Overview shows TradingView's free ticker widget (near-real-time prices).
+  It is display only: the models never read it.
 - **Warm start.** The same workflow writes `snapshot/live/`: the live data (~2 MB parquet) and the
   computed results. The hosted app adopts each new snapshot as soon as Streamlit pulls the commit, so
   it opens without recomputing any model. **This repository must stay private**: the snapshot holds

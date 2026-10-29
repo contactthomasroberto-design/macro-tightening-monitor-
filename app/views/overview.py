@@ -4,10 +4,12 @@ from components import (
     CACHE_TTL,
     footer,
     header,
+    live_strip,
     scenario_controls,
     show_status,
     sidebar_controls,
     status_chip,
+    tradingview_ticker,
 )
 from macro import panels
 from macro.config import stale_assumptions
@@ -21,6 +23,13 @@ header(
 )
 ctl = sidebar_controls()
 weights = scenario_controls()
+if st.sidebar.toggle(
+    "Market ticker (TradingView)",
+    value=True,
+    help="Near-real-time prices from TradingView's free widget. Display only: the models use public data.",
+):
+    tradingview_ticker()
+live_strip()
 
 
 @st.cache_data(

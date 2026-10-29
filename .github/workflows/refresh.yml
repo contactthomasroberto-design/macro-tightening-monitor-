@@ -1,11 +1,13 @@
 name: refresh
-# Daily live refresh (weekdays): data, models, forecast archive, README summary and figures; the
+# Live refresh three times each weekday: data, models, forecast archive, README summary and figures; the
 # weekly monitor on Mondays, the monthly view in the first week. A push to main also makes Streamlit
 # Community Cloud redeploy, so the online dashboard starts from the new numbers.
 # Secrets: FRED_API_KEY (optional; enables ALFRED vintages). Never echoed.
 on:
-  schedule:
-    - cron: "17 14 * * 1-5"   # weekdays 14:17 UTC: after Asian, European and 8:30 ET US releases
+  schedule:  # weekdays; GitHub can start scheduled runs late, the dashboard also polls on its own
+    - cron: "47 10 * * 1-5"   # 10:47 UTC: after Japanese (overnight) and euro-area 11:00 CET releases
+    - cron: "17 14 * * 1-5"   # 14:17 UTC: after 8:30 ET US releases (CPI, payrolls, GDP, PCE)
+    - cron: "37 21 * * 1-5"   # 21:37 UTC: after the US close and FRED's daily market updates
   workflow_dispatch:
   push:  # after a code change, rebuild the warm-start snapshot with the new code
     branches: [main]

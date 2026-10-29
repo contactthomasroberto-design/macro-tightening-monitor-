@@ -1,12 +1,20 @@
 """Disk cache of heavy model results, so dashboard pages load in seconds (BRIEF §7).
 
 `scripts/run_all.py` computes and stores every result; pages call `load_or_compute`, which
-returns the stored object if it was computed from the current data and model version, and
-computes it otherwise. Key = (name, mode, model version, data version of the store, code hash).
+returns the stored object if it is still valid, and computes it otherwise.
+
+A stored result is valid when
+- its fingerprint matches: (name, mode, model version, code hash, config hash), and
+- every series it read (recorded by `macro.inputs` during the computation) still has the content
+  hash it had then (`Store.content_hashes`).
+So a new CPI print invalidates the inflation and policy results that read CPI, not the yield-curve
+results; and a result computed elsewhere from identical data (the daily snapshot built by GitHub
+Actions) is valid locally.
 """
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import logging
 import pickle
@@ -15,6 +23,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from macro import inputs
 from macro.config import ROOT
 from macro.data.store import default_path
 from macro.utils import mode
@@ -39,18 +48,31 @@ def code_hash() -> str:
         h = hashlib.sha1()
         for f in sorted((ROOT / "src" / "macro").rglob("*.py")):
             h.update(f.read_bytes())
+        for f in sorted((ROOT / "config").glob("*.yaml")):
+            if f.name != "calendar.yaml":  # events only: no model reads them
+                h.update(f.read_bytes())
         _CODE_HASH = h.hexdigest()[:12]
     return _CODE_HASH
 
 
 def _fingerprint(name: str) -> str:
-    """Changes when the data content changes (store data version), the model version or the code."""
-    from macro.data.store import Store
-
-    db = default_path()
-    data_v = Store(db).data_version() if db.exists() else 0
+    """Changes with the model version, the code or the configuration (data is checked separately)."""
     version = MODEL_VERSIONS.get(name.split(":")[0], "0")
-    return hashlib.sha1(f"{name}|{mode()}|{version}|{data_v}|{code_hash()}".encode()).hexdigest()[:16]
+    return hashlib.sha1(f"{name}|{mode()}|{version}|{code_hash()}".encode()).hexdigest()[:16]
+
+
+def _hashes(ids) -> dict[str, str]:
+    from macro.data import store
+
+    return store().content_hashes(ids) if default_path().exists() else {}
+
+
+def inputs_current(meta: dict) -> bool:
+    """True when every input series still has the content it had when the result was computed."""
+    stored = meta.get("inputs")
+    if stored is None:  # computed before inputs were recorded
+        return False
+    return _hashes(stored) == stored if stored else True
 
 
 _LOCKS: dict[str, threading.RLock] = {}
@@ -90,6 +112,31 @@ def _meta(name: str) -> dict:
     return {"code": code_hash(), "mode": mode(), "version": MODEL_VERSIONS.get(name.split(":")[0], "0")}
 
 
+def _same_code(name: str, meta: dict) -> bool:
+    return all(meta.get(k) == v for k, v in _meta(name).items())
+
+
+def read_meta(path: Path) -> dict:
+    """Metadata of a stored result (empty when unreadable or written by an older version)."""
+    try:
+        with open(path, "rb") as fh:
+            stored = pickle.load(fh)
+        return stored[2] if len(stored) > 2 else {}
+    except Exception:
+        return {}
+
+
+def is_valid(name: str, path: Path) -> bool:
+    """True when the result stored at `path` would be returned without recomputing."""
+    try:
+        with open(path, "rb") as fh:
+            stored = pickle.load(fh)
+    except Exception:
+        return False
+    meta = stored[2] if len(stored) > 2 else {}
+    return stored[0] == _fingerprint(name) and inputs_current(meta)
+
+
 def _load_or_compute(name: str, fn: Callable[[], Any], force: bool) -> Any:
     path = _dir() / f"{name.replace(':', '__')}.pkl"
     fp = _fingerprint(name)
@@ -99,14 +146,24 @@ def _load_or_compute(name: str, fn: Callable[[], Any], force: bool) -> Any:
                 stored = pickle.load(fh)
             stored_fp, obj = stored[0], stored[1]
             stored_meta = stored[2] if len(stored) > 2 else {}
-            if stored_fp == fp:
+            if stored_fp == fp and inputs_current(stored_meta):
+                inputs.record(stored_meta.get("inputs") or ())
                 return obj
-            if SERVE_STALE and not getattr(_FRESH, "on", False) and stored_meta == _meta(name):
+            if SERVE_STALE and not getattr(_FRESH, "on", False) and _same_code(name, stored_meta):
                 log.info("serving %s computed from older data while it is refreshed", name)
+                inputs.record(stored_meta.get("inputs") or ())
                 return obj
         except (pickle.UnpicklingError, EOFError, AttributeError, ModuleNotFoundError) as exc:
             log.warning("discarding unreadable result cache %s: %s", path.name, exc)
-    obj = fn()
-    with open(path, "wb") as fh:
-        pickle.dump((fp, obj, _meta(name)), fh)
+    with inputs.recording() as used:
+        obj = fn()
+    inputs.record(used)  # a bundle computed inside another one feeds the outer bundle's inputs
+    meta = _meta(name) | {
+        "inputs": _hashes(used),
+        "computed": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    tmp = path.with_suffix(".tmp")
+    with open(tmp, "wb") as fh:
+        pickle.dump((fp, obj, meta), fh)
+    tmp.replace(path)  # atomic: a page never reads a half-written result
     return obj

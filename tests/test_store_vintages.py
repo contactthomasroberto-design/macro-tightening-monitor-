@@ -103,11 +103,11 @@ def test_autorefresh_skips_fresh_series_and_reports(tmp_path, monkeypatch):
         return (sid != "DGS10", "ok" if sid != "DGS10" else "HTTP 500")
 
     monkeypatch.setattr(data_mod, "refresh_series", fake_refresh)
-    out = autorefresh.refresh_and_warm(warm=False)
+    out = autorefresh.refresh_and_warm(warm=False, light=False)
     assert out["checked"] == len(calls) > 50
     assert out["failed"] == {"DGS10": "HTTP 500"} and out["data_changed"]
     calls.clear()
-    out2 = autorefresh.refresh_and_warm(warm=False)  # everything fresh now: nothing fetched
+    out2 = autorefresh.refresh_and_warm(warm=False, light=False)  # everything fresh now: nothing fetched
     assert calls == [] and out2["checked"] == 0 and not out2["data_changed"]
     assert autorefresh.read_status()["finished"]
 
