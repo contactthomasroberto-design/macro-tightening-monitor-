@@ -118,8 +118,11 @@ k[4].metric(
     delta_color="off",
 )
 st.caption(
-    "Base: the probability-weighted mix of the four configured scenarios (Scenarios page). Recession signal: "
-    "a Sahm-type rise of 0.5 pp in the two-quarter average unemployment rate. Market-pricing is not modelled here."
+    "Base: the probability-weighted mix of the four configured scenarios (Scenarios page), which include "
+    "disinflation and hard-landing shocks; with every slider at zero your scenario carries no shock beyond the "
+    "engine's own, so it differs from the base. Recession signal: a Sahm-type rise of 0.5 pp in the two-quarter "
+    "average unemployment rate on the simulated paths; it reacts to the engine's unemployment noise and reads "
+    "higher than the dedicated recession models (Growth and recession, Recession signals)."
 )
 
 # ------------------------------------------------------------------ fans

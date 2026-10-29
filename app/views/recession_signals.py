@@ -32,7 +32,7 @@ best = tab["AUC"].idxmax()
 cols = st.columns(len(tab) + 1)
 for c, (name, r) in zip(cols, tab.iterrows(), strict=False):
     c.metric(
-        name, f"{100 * r['probability now']:.0f}%", f"AUC {r['AUC']:.2f} out of sample", delta_color="off"
+        name, f"{100 * r['probability now']:.0f}%", f"OOS AUC {r['AUC']:.2f}", delta_color="off", help=name
     )
 fed = b["fed_ebp_prob"]
 if fed is not None and not fed.dropna().empty:

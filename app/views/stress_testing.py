@@ -120,10 +120,24 @@ if view in (None, "Conditional scenario"):
 elif view == "Historical episodes":
     an = b["analogs"]
     if not an.empty:
-        top = an.index[0]
+        an = an.assign(coverage=an["assets compared"].map(lambda n: "full" if n >= 15 else "partial"))
+        full = an[an["coverage"] == "full"]
+        partial = an[an["coverage"] == "partial"]
+        top = full.index[0] if not full.empty else an.index[0]
+        note = (
+            " Episodes before most series existed are compared on fewer assets and ranked apart: "
+            + ", ".join(
+                f"{i} ({r['similarity (correlation)']:+.2f} on {r['assets compared']} assets)"
+                for i, r in partial.iterrows()
+            )
+            + "."
+            if not partial.empty
+            else ""
+        )
         st.markdown(
-            f"**Closest past episode to the last 13 weeks: {top}** (correlation {an.iloc[0, 1]:+.2f} over "
-            f"{an.iloc[0, 2]} assets). Moves are scaled by each asset's typical weekly move and the episode length."
+            f"**Closest past episode to the last 13 weeks: {top}** (correlation "
+            f"{an.loc[top, 'similarity (correlation)']:+.2f} over {an.loc[top, 'assets compared']} assets). Moves "
+            "are scaled by each asset's typical weekly move and the episode length." + note
         )
         st.dataframe(an.style.format({"similarity (correlation)": "{:+.2f}"}), use_container_width=True)
     mv = b["episodes"].copy()
@@ -131,7 +145,7 @@ elif view == "Historical episodes":
     units = pd.Series({label(i): stt.unit_of(kinds[i]) for i in kinds})
     disp = mv.apply(lambda col: [fmt_move(v, units.get(i, "")) for i, v in col.items()])
     st.markdown(
-        "**Moves during each episode** (bp for yields and spreads, % for prices, points for VIX/MOVE)"
+        "**Moves during each episode** (bp for yields and spreads, log % for prices, points for VIX/MOVE)"
     )
     st.dataframe(disp, use_container_width=True, height=36 * (len(disp) + 1))
     st.caption(
@@ -151,14 +165,16 @@ else:
     load = f["loadings"].copy()
     load.index = [label(i) for i in load.index]
     tops = {
-        c: ", ".join(f"{i} {v:+.2f}" for i, v in load[c].abs().sort_values(ascending=False).head(4).items())
+        c: ", ".join(
+            f"{i} {load.loc[i, c]:+.2f}" for i in load[c].abs().sort_values(ascending=False).head(4).index
+        )
         for c in load
     }
     summary = pd.DataFrame(
         {
             "share of variance": ex,
             "half-sample stability (|cos|)": f["stability"],
-            "largest loadings (absolute)": pd.Series(tops),
+            "largest loadings": pd.Series(tops),
         }
     )
     st.dataframe(
@@ -185,7 +201,7 @@ else:
         fig,
         "Factor loadings",
         "Macro Tightening Monitor; weekly changes, standardised",
-        None,
+        f"{b['as_of']:%Y-%m-%d}",
         th,
         height=60 + 24 * len(load) + 120,
     )
