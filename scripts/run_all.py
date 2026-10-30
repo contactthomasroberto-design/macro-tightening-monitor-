@@ -12,6 +12,7 @@ import time
 
 import _bootstrap  # noqa: F401
 from macro import archive, pipeline
+from macro.config import ROOT
 from macro.utils import is_demo, run_metadata
 
 
@@ -117,6 +118,14 @@ def main() -> int:
     _step("markets", lambda: pipeline.markets_bundle(force=args.force))
     _step("recession signals", lambda: pipeline.leading_bundle(force=args.force))
     _step("stress testing", lambda: pipeline.stress_bundle(force=args.force))
+    _step("backtests against the market", lambda: pipeline.backtest_bundle(force=args.force))
+    book = _step("forecast book", lambda: pipeline.forecast_book_bundle(force=args.force))
+    if not args.no_archive and not is_demo() and not book["table"].empty:
+        from macro import forecast_book as fb
+
+        levels, _ = pipeline.forecast_book_inputs()
+        n = fb.append_archive(ROOT / "archive" / "forecast_book.csv", fb.archive_rows(book["table"], levels))
+        print(f"    archived {n} directional forecasts -> archive/forecast_book.csv")
     _step("historical cycles (GMD)", lambda: pipeline.history_bundle(force=args.force))
     _step("views", lambda: pipeline.build_views(sb["base_weights"]))
     return 0

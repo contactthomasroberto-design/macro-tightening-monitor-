@@ -106,6 +106,8 @@ def light_bundles() -> list[tuple[str, Callable]]:
         ("markets", p.markets_bundle),
         ("recession signals", p.leading_bundle),
         ("stress testing", p.stress_bundle),
+        ("backtests against the market", p.backtest_bundle),
+        ("forecast book", p.forecast_book_bundle),
     ]
     return steps
 
@@ -129,6 +131,8 @@ def _bundles() -> list[tuple[str, Callable]]:
         ("markets", p.markets_bundle),
         ("recession signals", p.leading_bundle),
         ("stress testing", p.stress_bundle),
+        ("backtests against the market", p.backtest_bundle),
+        ("forecast book", p.forecast_book_bundle),
         ("historical cycles", p.history_bundle),
         ("views", lambda: p.build_views(p.scenario_bundle()["base_weights"])),
     ]

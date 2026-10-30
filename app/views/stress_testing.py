@@ -48,6 +48,13 @@ if view in (None, "Conditional scenario"):
     weeks = c2.number_input("Over (weeks)", 1, 26, 4, key="st_weeks")
     window = c3.selectbox("Correlations estimated on", list(b["covariances"]), key="st_window")
     cov = b["covariances"][window]
+    dist = st.radio(
+        "Distribution",
+        ["Normal", f"Student-t (fat tails, {b['tail_dof']:.1f} degrees of freedom)"],
+        horizontal=True,
+        key="st_dist",
+    )
+    nu = None if dist == "Normal" else b["tail_dof"]
     shocks = dict(PRESETS[preset])
     if preset == "Custom":
         ids = [i for i in cov.index]
@@ -60,7 +67,9 @@ if view in (None, "Conditional scenario"):
     if not shocks:
         st.info("Choose at least one shocked asset.")
     else:
-        cd = stt.conditional(cov, shocks, float(weeks))
+        cd = stt.conditional(cov, shocks, float(weeks), nu=nu)
+        typical = np.sqrt(np.diag(cov.loc[cd.index, cd.index].to_numpy()) * float(weeks))
+        cd["move in typical moves"] = cd["expected move"] / typical
         cd.index = [label(i) for i in cd.index]
         units = {label(i): stt.unit_of(kinds[i]) for i in cov.index}
         order = cd["expected move"].abs().div(cd["68% high"] - cd["expected move"]).sort_values().index
@@ -106,14 +115,16 @@ if view in (None, "Conditional scenario"):
                 ),
                 use_container_width=True,
             )
-        cov_pool = b["coverage"]["pooled"]
-        if cov_pool:
+        cn, ct = b["coverage"]["pooled"], b["coverage_t"]["pooled"]
+        if cn:
             st.caption(
-                f"Out-of-sample check ({cov_pool['weeks']} weeks from {cov_pool['from']}, covariance from the previous "
-                f"2 years, conditioning on the S&P 500 and the US 10Y): {100 * cov_pool['inside ±1 s.d.']:.0f}% of "
-                f"realised moves fell inside the ±1 s.d. range (68% expected) and {100 * cov_pool['inside ±1.96 s.d.']:.0f}% "
-                "inside ±1.96 s.d. (95% expected). Assumes normal, independent weekly changes; real tails are fatter. "
-                f"High-inflation window: {b['hi_infl_weeks']} weeks since 1990."
+                f"Out-of-sample check ({cn['weeks']} weeks from {cn['from']}, covariance from the previous 2 years, "
+                f"conditioning on the S&P 500 and the US 10Y): normal bands held {100 * cn['inside 68% band']:.0f}% "
+                f"of realised moves in the 68% band and {100 * cn['inside 95% band']:.0f}% in the 95% band; Student-t "
+                f"bands {100 * ct['inside 68% band']:.0f}% and {100 * ct['inside 95% band']:.0f}%. Fat tails do not fix "
+                "the 95% band: the miss comes from correlations that shift, not from the shape of the distribution "
+                "(research log H23). 'Move in typical moves': the expected move divided by the asset's usual move "
+                f"over the same weeks. High-inflation window: {b['hi_infl_weeks']} weeks since 1990."
             )
 
 # ================================================================== episodes

@@ -101,8 +101,8 @@ def _weekly(n=900, seed=3):
 def test_coverage_is_calibrated_when_the_model_is_true():
     cov = stt.coverage_backtest(_weekly(), start="2008-01-01")
     p = cov["pooled"]
-    assert 0.63 < p["inside ±1 s.d."] < 0.73
-    assert 0.92 < p["inside ±1.96 s.d."] < 0.98
+    assert 0.63 < p["inside 68% band"] < 0.73
+    assert 0.92 < p["inside 95% band"] < 0.98
 
 
 def test_pca_finds_the_planted_common_factor():

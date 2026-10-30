@@ -120,10 +120,21 @@ Equations are in [`docs/methodology.md`](docs/methodology.md); each model has a 
   current move, and principal-component factors with a stability check.
 - **Scenario simulator**: user-defined oil, unemployment, inflation and term-premium paths through
   the quarterly engine, against the configured scenario mix.
+- **Against the market** (`src/macro/backtest.py`): the Fed policy rule against the 1-year Treasury
+  yield, and our inflation combination against the SPF median, with Diebold-Mariano and
+  forecast-encompassing tests. Result, stated plainly: the market beats the rule and the rule adds no
+  information to it; our inflation forecast ties the SPF.
+- **Forecast book** (`src/macro/forecast_book.py`): 13-week directional probabilities for eight market
+  variables from momentum, value and carry, scored out of sample and archived every week
+  (`archive/forecast_book.csv`) to be scored at maturity.
+- **Carry and roll-down** for the US curve and two currency pairs; **Student-t** stress scenarios as an
+  option; **signposts** (`config/signposts.yaml`) with an alert: a newly crossed threshold opens a GitHub
+  issue, which GitHub e-mails to the owner (`scripts/check_alerts.py`). The **Briefing** page gathers
+  signposts, moves, recession risk and the honest answer to "do the models beat the market?".
 - Methods, sources and what was left out: [`docs/methods_review.md`](docs/methods_review.md);
   hypotheses written before estimation and their results: [`docs/research_log.md`](docs/research_log.md).
 
-The dashboard is organised in three menus: **Macro** (Overview, Inflation, Monetary policy, Growth and
+The dashboard is organised in three menus: **Macro** (Briefing, Overview, Inflation, Monetary policy, Growth and
 recession, Scenarios, History and calendar), **Markets** (Monitor, Rates, FX and commodities,
 Cross-asset, Stress testing, Priced against our models, Positioning) and **Governance**. Pages with
 several parts show them as sub-tabs; only the selected part is computed.

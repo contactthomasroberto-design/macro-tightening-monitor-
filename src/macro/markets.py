@@ -482,3 +482,79 @@ def curve_recession_probit(spread: pd.Series, usrec: pd.Series, horizon: int = 1
             "target_month": prob.index[-1],
         },
     )
+
+
+# =========================================================================== carry and roll-down
+US_CURVE = {"DGS3MO": 0.25, "DGS1": 1.0, "DGS2": 2.0, "DGS5": 5.0, "DGS10": 10.0, "DGS30": 30.0}
+
+
+def _duration(y_pct: float, m: float) -> float:
+    """Modified duration of a par bond with semi-annual coupons (years)."""
+    y = y_pct / 100
+    if y <= 0:
+        return m
+    return (1 - (1 + y / 2) ** (-2 * m)) / y
+
+
+def rates_carry_roll(
+    curve: dict[float, float], vol_bp: dict[float, float], horizon: float = 0.25
+) -> pd.DataFrame:
+    """Carry and roll-down over `horizon` years for a long position in each tenor, in bp of yield.
+
+    carry: (y_m − y_cash) × horizon / duration, the yield cushion the coupon over cash provides;
+    roll-down: y_m − y_{m − horizon} (linear interpolation), the fall in yield from ageing along an
+    unchanged curve. Breakeven = carry + roll-down: how much the yield can rise over the horizon
+    before the position loses. Ratio to the realised volatility over the same horizon: carry per unit
+    of risk. Assumes an unchanged curve; it is what the curve pays, not a forecast."""
+    tenors = sorted(curve)
+    ys = [curve[t] for t in tenors]
+    cash = curve[tenors[0]]
+    rows = []
+    for m in tenors:
+        if m <= horizon:
+            continue
+        y = curve[m]
+        y_short = float(np.interp(m - horizon, tenors, ys))
+        dur = _duration(y, m)
+        carry = (y - cash) * 100 * horizon / dur
+        roll = (y - y_short) * 100
+        vol = vol_bp.get(m, np.nan) * np.sqrt(horizon)
+        rows.append(
+            {
+                "tenor (years)": m,
+                "yield (%)": y,
+                "carry (bp)": carry,
+                "roll-down (bp)": roll,
+                "breakeven (bp)": carry + roll,
+                "3-month vol (bp)": vol,
+                "breakeven / vol": (carry + roll) / vol if vol == vol and vol > 0 else np.nan,
+            }
+        )
+    return pd.DataFrame(rows).set_index("tenor (years)")
+
+
+def fx_carry(
+    pairs: dict[str, tuple[pd.Series, pd.Series, pd.Series, int]], horizon: float = 0.25
+) -> pd.DataFrame:
+    """Interest carry of holding the first currency against the second over `horizon` years, in %, and
+    per unit of realised volatility. pairs: name -> (fx level, rate of the held currency, rate of the
+    funding currency, sign: +1 if a rise in the quoted level is a gain for the holder)."""
+    rows = []
+    for name, (fx, r_hold, r_fund, sign) in pairs.items():
+        rh, rf = r_hold.dropna(), r_fund.dropna()
+        if rh.empty or rf.empty or fx.dropna().empty:
+            continue
+        carry = (float(rh.iloc[-1]) - float(rf.iloc[-1])) * horizon
+        vol = float(realized_vol(business_daily(fx), "price", 63).dropna().iloc[-1]) * np.sqrt(horizon)
+        rows.append(
+            {
+                "position": name,
+                "rate held (%)": float(rh.iloc[-1]),
+                "rate funded (%)": float(rf.iloc[-1]),
+                "3-month carry (%)": carry,
+                "3-month vol (%)": vol,
+                "carry / vol": carry / vol if vol > 0 else np.nan,
+                "sign": sign,
+            }
+        )
+    return pd.DataFrame(rows).set_index("position") if rows else pd.DataFrame()
