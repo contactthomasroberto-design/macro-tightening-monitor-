@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from macro import curves as cv
-from macro import fans, panels
+from macro import fans, panels, results
 from macro import fincond as fc
 from macro import growth as gr
 from macro import history as hist
@@ -632,17 +632,6 @@ def markets_bundle(force: bool = False) -> dict:
         stress_check = mk.benchmark_correlations(stress.value, bench) if stress.value is not None else None
 
         regime = mk.quadrant_regimes(data["SPX"], data["DGS10"])
-        fwd_assets = {
-            name: (data[i], kind)
-            for name, i, kind in (
-                ("S&P 500", "SPX", "price"),
-                ("US 10Y yield", "DGS10", "yield"),
-                ("US dollar (broad)", "DTWEXBGS", "price"),
-                ("Gold", "GOLD_FUT", "price"),
-                ("US HY OAS", "BAMLH0A0HYM2", "spread"),
-            )
-            if i in data
-        }
         corrs = {
             p.name: mk.rolling_correlation(data[p.a], p.kind_a, data[p.b], p.kind_b, 63, p.sign_a, p.sign_b)
             for p in mk.CORR_PAIRS
@@ -698,7 +687,6 @@ def markets_bundle(force: bool = False) -> dict:
             "stress_check": stress_check,
             "regime": regime,
             "regime_spells": mk.regime_spells(regime) if not regime.empty else None,
-            "regime_forward": mk.regime_forward_moves(regime, fwd_assets),
             "correlations": corrs,
             "correlation_table": mk.correlation_table(corrs),
             "betas": betas,
@@ -773,7 +761,6 @@ def stress_bundle(force: bool = False) -> dict:
             "coverage_t": stt.coverage_backtest(W, nu=nu),
             "episodes": moves,
             "analogs": stt.analogs(W, moves),
-            "factors": stt.pca_factors(W),
             "names": names,
             "kinds": kinds,
             "hi_infl_weeks": int(hi_infl.reindex(W.index).fillna(False).astype(bool).sum()),
@@ -781,6 +768,43 @@ def stress_bundle(force: bool = False) -> dict:
         }
 
     return load_or_compute("stress_test:all", compute, force=force)
+
+
+REALTIME_SERIES = ("PCEPILFE", "GDPC1", "GDPPOT")
+
+
+def _fed_realtime(pan: pd.DataFrame) -> dict | None:
+    """The Fed backtest with the rule fed real-time ALFRED vintages (research log H26). None until
+    the vintages are in the store (scripts/update_data.py --vintages, which needs FRED_API_KEY)."""
+    from macro import backtest as bt
+    from macro.data import store
+    from macro.utils import is_demo
+
+    if is_demo():
+        return None
+    st = store()
+    vints = {sid: pd.to_datetime(pd.Series(st.vintages(sid))) for sid in REALTIME_SERIES}
+    if any(v.empty for v in vints.values()):  # e.g. the app, whose snapshot carries no vintages
+        prev = results.previous("backtest:US")
+        return prev.get("fed_realtime") if isinstance(prev, dict) else None
+    cache: dict = {}
+
+    def vintage_of(sid: str, date: pd.Timestamp) -> pd.Series | None:
+        v = vints[sid][vints[sid] <= date]
+        if v.empty:
+            return None
+        key = (sid, v.iloc[-1])
+        if key not in cache:
+            cache[key] = st.read(sid, vintage=f"{v.iloc[-1]:%Y-%m-%d}")
+        return cache[key]
+
+    rule = bt.rule_forecasts_realtime(get_series("DFF"), get_series("DGS1"), vintage_of)
+    if rule.empty:
+        return None
+    return {
+        **bt.fed_backtest(pan, rule=rule),
+        "first vintage": {k: f"{v.iloc[0]:%Y-%m-%d}" for k, v in vints.items()},
+    }
 
 
 def backtest_bundle(force: bool = False) -> dict:
@@ -797,8 +821,26 @@ def backtest_bundle(force: bool = False) -> dict:
             get_series("DGS1"),
         )
         fed = bt.fed_backtest(pan)
-        infl = bt.inflation_vs_spf(inflation_bundle("US")["oos"]["forecasts"])
-        return {"fed": fed, "inflation": infl, "as_of": fed["forecasts"].index[-1]}
+        from macro import evaluation as ev
+
+        oos = inflation_bundle("US")["oos"]["forecasts"]
+        infl = bt.inflation_vs_spf(oos)
+        intervals = pd.DataFrame(
+            [
+                ev.interval_calibration(oos, m, h)
+                for m, h in (("COMB", 1), ("COMB", 6), ("COMB", 12), ("SPF", 12))
+            ]
+        )
+        c12 = oos[(oos["model"] == "COMB") & (oos["h"] == 12)].dropna(subset=["actual", "sigma"])
+        miss = c12[(c12["actual"] - c12["point"]).abs() > 1.96 * c12["sigma"]]
+        return {
+            "intervals": intervals,
+            "interval_misses": miss["origin"].dt.year.value_counts().sort_index(),
+            "fed": fed,
+            "fed_realtime": _fed_realtime(pan),
+            "inflation": infl,
+            "as_of": fed["forecasts"].index[-1],
+        }
 
     return load_or_compute("backtest:US", compute, force=force)
 

@@ -27,6 +27,7 @@ VINTAGE_SERIES = [
     "UNRATE",
     "PAYEMS",
     "GDPC1",
+    "GDPPOT",
     "INDPRO",
     "RSAFS",
     "PCEC96",
@@ -67,7 +68,12 @@ def main() -> int:
             )
         else:
             for sid in VINTAGE_SERIES:
-                df = sources.fetch_alfred_all_vintages(catalogue().get(sid))
+                try:
+                    df = sources.fetch_alfred_all_vintages(catalogue().get(sid))
+                except Exception as e:  # noqa: BLE001 - one failed series must not stop the refresh
+                    print(f"FAIL ALFRED {sid}: {e}")
+                    failures.append(f"ALFRED:{sid}")
+                    continue
                 st.write(sid, df, source="alfred")
                 print(f"ALFRED {sid}: {df['vintage_date'].nunique()} vintages")
     h = health_table(st)

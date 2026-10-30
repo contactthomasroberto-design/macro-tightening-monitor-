@@ -11,7 +11,7 @@ from markets_ui import NAVY, RED, fmt_move
 
 header(
     "Stress testing",
-    "What the rest of the market does if one asset moves, how past crises looked, and the common factors.",
+    "What the rest of the market does if one asset moves, and how past crises looked.",
 )
 ctl = sidebar_controls()
 th = theme()
@@ -27,7 +27,7 @@ names, kinds = b["names"], b["kinds"]
 label = lambda i: names.get(i, i)  # noqa: E731
 view = st.segmented_control(
     "View",
-    ["Conditional scenario", "Historical episodes", "Market factors"],
+    ["Conditional scenario", "Historical episodes"],
     default="Conditional scenario",
     key="stress_view",
 )
@@ -165,67 +165,4 @@ elif view == "Historical episodes":
         + ". Blank: the series did not exist yet."
     )
 
-# ================================================================== factors
-else:
-    f = b["factors"]
-    ex = f["explained"]
-    st.markdown(
-        f"Principal components of standardised weekly changes in {len(f['assets'])} assets over {f['weeks']} weeks "
-        f"(from {f['from']:%b %Y}). The first two factors explain {100 * ex.iloc[:2].sum():.0f}% of the variance."
-    )
-    load = f["loadings"].copy()
-    load.index = [label(i) for i in load.index]
-    tops = {
-        c: ", ".join(
-            f"{i} {load.loc[i, c]:+.2f}" for i in load[c].abs().sort_values(ascending=False).head(4).index
-        )
-        for c in load
-    }
-    summary = pd.DataFrame(
-        {
-            "share of variance": ex,
-            "half-sample stability (|cos|)": f["stability"],
-            "largest loadings": pd.Series(tops),
-        }
-    )
-    st.dataframe(
-        summary.style.format({"share of variance": "{:.0%}", "half-sample stability (|cos|)": "{:.2f}"}),
-        use_container_width=True,
-    )
-    st.caption(
-        f"Pre-registered expectation (research log H19): factor 1 would be risk-on/risk-off and stable. It is not: "
-        "factor 1 is a global rates-level factor and risk appetite is factor 2; with close shares of variance the two "
-        f"rotate between half-samples. The plane they span is stable (post hoc check: {f['plane_stability']:.2f}, 1 = identical)."
-    )
-    fig = go.Figure(
-        go.Heatmap(
-            z=load.to_numpy(),
-            x=list(load.columns),
-            y=list(load.index),
-            zmid=0,
-            colorscale=[[0, f"rgb{RED}"], [0.5, "white"], [1, f"rgb{NAVY}"]],
-            text=np.round(load.to_numpy(), 2),
-            texttemplate="%{text}",
-        )
-    )
-    pl.base_layout(
-        fig,
-        "Factor loadings",
-        "Macro Tightening Monitor; weekly changes, standardised",
-        f"{b['as_of']:%Y-%m-%d}",
-        th,
-        height=60 + 24 * len(load) + 120,
-    )
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-    sc = f["scores_13w"]
-    figs = pl.line_chart(
-        sc,
-        "Factor scores, cumulated over 13 weeks",
-        "Macro Tightening Monitor",
-        f"{sc.index[-1]:%Y-%m-%d}",
-        yaxis="standardised units",
-        theme=th,
-        hline=0,
-    )
-    st.plotly_chart(figs, use_container_width=True, config={"displaylogo": False})
 footer()

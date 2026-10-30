@@ -105,18 +105,4 @@ fig = pl.line_chart(
     theme=th,
 )
 chart(fig, r2, key="fx_r2")
-beta_df = pd.concat({k: r.extra["rolling_beta"] for k, r in betas.items()}, axis=1)
-with st.expander("Rolling betas"):
-    for k in beta_df:
-        fig = pl.line_chart(
-            beta_df[[k]],
-            k,
-            src,
-            betas[k].as_of,
-            yaxis=f"{betas[k].extra['unit_y']} per {betas[k].extra['unit_x']}",
-            theme=th,
-            hline=0,
-            height=300,
-        )
-        chart(fig, beta_df[[k]], key=f"beta_{k[:20]}")
 footer()

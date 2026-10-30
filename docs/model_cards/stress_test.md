@@ -9,8 +9,9 @@
 | Status | experimental |
 
 ## Purpose
-Consistent what-if scenarios across assets, replay of historical stress episodes, and the common
-factors behind cross-asset moves. Descriptive: no forecast of prices, no positions.
+Consistent what-if scenarios across assets and replay of historical stress episodes. Descriptive:
+no forecast of prices, no positions. The common-factor (PCA) view was removed from the app and the
+bundle on 2026-10-30 (no decision used it); `pca_factors` stays tested for research use.
 
 ## Inputs
 The Markets universe (`config/markets.yaml`, 23 series); US core CPI for the high-inflation window.

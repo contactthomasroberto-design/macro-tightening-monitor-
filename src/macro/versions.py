@@ -19,9 +19,9 @@ MODEL_VERSIONS: dict[str, str] = {
     "scenarios": "0.2.0",
     "regimes": "0.1.0",
     "history": "0.1.0",
-    "markets": "0.2.0",
+    "markets": "0.3.0",
     "leading": "0.1.0",
-    "stress_test": "0.2.0",
-    "backtest": "0.1.0",
+    "stress_test": "0.3.0",
+    "backtest": "0.2.0",
     "forecast_book": "0.1.0",
 }

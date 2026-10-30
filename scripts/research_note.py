@@ -169,6 +169,26 @@ pos = pipeline.positioning_bundle()["table"]
 K["am_ust_pct"] = float(pos.loc["Asset managers, 10Y Treasury (10Y equiv., contracts)", "percentile (3y)"])
 K["lev_eur_pct"] = float(pos.loc["Leveraged funds, euro FX (USD bn)", "percentile (3y)"])
 sr = v["scenario"]
+bt = pipeline.backtest_bundle()
+_fs, _ft = bt["fed"]["scores"], bt["fed"]["tests"]
+K["bt_mkt"], K["bt_rule"], K["bt_n"] = (
+    float(_fs.loc["market (1Y yield)", "RMSE"]),
+    float(_fs.loc["rule", "RMSE"]),
+    int(_fs.loc["rule", "n"]),
+)
+K["bt_b"], K["bt_p"] = float(_ft.loc["rule", "slope b"]), float(_ft.loc["rule", "p (b > 0)"])
+K["bt_side"] = float(_ft.loc["rule", "outcome on forecast's side"])
+_iv = bt["intervals"].set_index(["model", "h"])
+K["cov68"], K["cov95"] = (
+    float(_iv.loc[("COMB", 12), "coverage normal 68"]),
+    float(_iv.loc[("COMB", 12), "coverage normal 95"]),
+)
+_is = bt["inflation"]["scores"]
+K["spf_dm"] = float(bt["inflation"]["tests"].loc["our combination", "DM p"]) if not _is.empty else np.nan
+from macro import note_calls  # noqa: E402
+from macro.data import try_series  # noqa: E402
+
+calls = note_calls.evaluate(try_series, note_calls.load())
 hb = pipeline.history_bundle()
 sim = {k: hb["similar"][k] for k in ("USA", "DEU", "JPN")}
 cur = hb["current"]
@@ -713,8 +733,8 @@ n.set_text_color(*MUTED)
 n.multi_cell(
     n.w - 36,
     5.2,
-    "Le choc pétrolier justifie le resserrement synchronisé de la Fed, de la BCE et de la BoJ. Mais le marché "
-    "intègre déjà davantage que ce que nous jugeons probable pour la Fed.",
+    "Le choc pétrolier justifie le resserrement synchronisé de la Fed, de la BCE et de la BoJ. Pour la Fed, le prix "
+    "de marché est notre scénario central : depuis 1990, il prévoit mieux que nos règles.",
     new_x="LMARGIN",
     new_y="NEXT",
 )
@@ -735,10 +755,12 @@ n.rich(
     f"en rythme annualisé sur 3 mois, contre {fr(K['core'])} % sur un an.",
 )
 n.rich(
-    "Une dernière hausse de la Fed, pas un cycle.",
-    f"Nos scénarios placent le taux directeur à {fr(K['model_med'], 2)} % dans un an, proche de la médiane du FOMC "
-    f"({fr(FOMC_SEP, 1)} % fin 2026). Le marché ({fr(K['priced'], 2)} %, environ {fr(priced_hikes, 0)} hausses de plus) va "
-    "plus loin. Nous ne le suivrons que si l'inflation sous-jacente ne ralentit pas d'ici le premier trimestre.",
+    "Fed : le marché d'abord.",
+    f"Le marché intègre {fr(K['priced'], 2)} % dans un an, environ {fr(priced_hikes, 0)} hausses de plus. Nos scénarios "
+    f"({fr(K['model_med'], 2)} %) et le FOMC ({fr(FOMC_SEP, 1)} % fin 2026) sont en deçà, mais cet écart n'est pas un signal : "
+    f"sur {K['bt_n']} mois depuis 1990, le taux à 1 an prévoit mieux que notre règle (erreur quadratique moyenne {fr(K['bt_mkt'], 2)} contre "
+    f"{fr(K['bt_rule'], 2)} pt) et la règle n'y ajoute rien (pente {frs(K['bt_b'], 2)}, p = {fr(K['bt_p'], 2)}). "
+    "Erratum : la version précédente disait le marché « trop restrictif » ; le test ne le soutient pas.",
 )
 n.rich(
     "Les vrais risques sont en dehors des États-Unis.",
@@ -765,10 +787,10 @@ n.table(
     [
         [
             "Fed",
-            "Une hausse de plus, puis pause",
+            "Le prix de marché ; nos règles ne le battent pas",
             f"{fr(K['priced'], 2)} % dans 12 mois (≈ {fr(priced_hikes, 0)} hausses)",
-            "Moyenne",
-            "Inflation sous-jacente > 3 % (3 mois) jusqu'en mars",
+            "Pas d'écart",
+            "Inflation sous-jacente < 2,5 % (3 mois) : le marché baisserait",
         ],
         [
             "BCE",
@@ -863,7 +885,9 @@ n.takeaway(
 
 # ---------------------------------------------------------------- 2. banques centrales
 n.section(
-    2, "Banques centrales", "Le marché a déjà fait le chemin vers les règles. La Fed, elle, s'arrêtera avant"
+    2,
+    "Banques centrales",
+    "Le marché a fait le chemin vers les règles ; nos modèles n'ont pas de quoi le contester",
 )
 n.text(
     f"La Fed a relevé ses taux le 16 septembre (fourchette 3,75-4,00 %), une première depuis 2023. Avec un PCE sous-jacent à "
@@ -884,8 +908,17 @@ n.rich(
     f"Le marché attend {fr(K['priced'], 2)} % dans un an, environ {fr(priced_hikes, 0)} hausses de plus. Notre médiane "
     f"({fr(K['model_med'], 2)} %, intervalle à 68 % de {fr(K['model_lo'], 2)} à {fr(K['model_hi'], 2)} %) intègre l'inertie "
     "historique de la Fed et le risque de récession. Elle est cohérente avec le FOMC, qui ne prévoit qu'une hausse de plus "
-    "d'ici fin 2026. L'écart avec le marché n'est pas une conviction forte : il disparaît si l'inflation sous-jacente reste au "
-    "rythme actuel jusqu'au premier trimestre.",
+    "d'ici fin 2026. Nous ne tirons pas de cet écart une vue contre le marché.",
+)
+n.takeaway(
+    "Le test contre le marché",
+    f"Depuis 1990, à chaque mois, nous avons comparé trois prévisions du taux des fed funds moyen des 12 mois suivants : le "
+    f"taux à 1 an, notre règle réestimée avec les seules données disponibles alors, et le statu quo. Le marché gagne "
+    f"(erreur quadratique moyenne {fr(K['bt_mkt'], 2)} pt contre {fr(K['bt_rule'], 2)} pour la règle, {K['bt_n']} mois). "
+    f"Quand la règle et le marché divergent de plus d'un demi-point, le résultat tombe du côté de la règle dans "
+    f"{fr(100 * K['bt_side'], 0)} % des cas, à peine mieux qu'à pile ou face, et la régression d'englobement ne lui trouve aucune information propre "
+    f"(pente {frs(K['bt_b'], 2)}, p = {fr(K['bt_p'], 2)}). Les données révisées avantagent la règle : le test en temps réel "
+    "(ALFRED) sera plus dur encore. Nous utilisons donc les modèles pour comprendre le prix, pas pour le battre.",
 )
 n.exhibit(
     "un resserrement synchronisé, mais à des niveaux très différents",
@@ -1070,13 +1103,13 @@ n.table(
             "Inflation sous-jacente US, 3 mois annualisé",
             f"{fr(K['core3m'])} %",
             "< 2,5 % deux mois de suite",
-            "Le prix de marché de la Fed devient trop restrictif ; notre vue se renforce",
+            "Le marché retire des hausses ; le scénario de pause devient central",
         ],
         [
             "Inflation sous-jacente US, 3 mois annualisé",
             f"{fr(K['core3m'])} %",
             "> 3 % jusqu'en mars",
-            "Nous rejoignons le marché : plusieurs hausses de plus",
+            "Le marché ajoute des hausses ; le risque d'un vrai cycle monte",
         ],
         [
             "Brent",
@@ -1103,9 +1136,7 @@ n.table(
 )
 
 # ---------------------------------------------------------------- 8. consensus
-n.section(
-    8, "Où nous nous situons", "Alignés avec le FOMC sur la Fed, plus prudents que le consensus sur l'Europe"
-)
+n.section(8, "Où nous nous situons", "Sur la Fed, le marché ; sur l'Europe, plus prudents que la règle")
 n.table(
     ["", "Fed", "BCE", "BoJ"],
     [
@@ -1137,9 +1168,49 @@ n.table(
     [30, 50, 48, 46],
 )
 n.text(
-    "Notre vue sur la Fed rejoint celle du FOMC et de BlackRock : une hausse de plus, pas un cycle. Nous nous en écartons sur "
-    "un point : nous accordons plus de poids au risque de diffusion de l'énergie, d'où une conviction seulement moyenne. "
+    "Sur la Fed, nos modèles, le FOMC et BlackRock voient moins de hausses que le marché. Faute de preuve que nos règles "
+    "battent le prix de marché, nous ne prenons pas parti : le marché est le scénario central, nos scénarios en mesurent les "
+    "risques. "
     "En Europe, nous sommes plus prudents que la règle de Taylor ne le suggère, à cause du marché obligataire français."
+)
+
+# ---------------------------------------------------------------- 9. post-mortem
+_st = {"open": "En cours", "right": "Juste", "wrong": "Faux", "no data": "Pas de donnée"}
+_done = calls[calls["status"].isin(["right", "wrong"])]
+n.section(
+    9,
+    "Post-mortem",
+    f"{len(_done)} appel{'s' if len(_done) > 1 else ''} arrivé{'s' if len(_done) > 1 else ''} à échéance sur {len(calls)} ; "
+    + (
+        f"{int((_done['status'] == 'right').sum())} juste{'s' if (_done['status'] == 'right').sum() > 1 else ''}"
+        if len(_done)
+        else "aucun bilan encore"
+    ),
+)
+n.text(
+    "Chaque appel de nos notes est enregistré à la publication (config/note_calls.yaml) avec sa mesure, son seuil et son "
+    "échéance, puis noté sans retouche. Un appel retiré reste noté.",
+)
+n.table(
+    ["Note", "Appel", "Échéance", "Dernier point", "Statut"],
+    [
+        [
+            r["note"],
+            r["statement"] + (" (retiré)" if r["withdrawn"] else ""),
+            mois(r["matures"]),
+            fr(r["value"], 2),
+            _st[r["status"]],
+        ]
+        for _, r in calls.iterrows()
+    ],
+    [16, 92, 22, 22, 22],
+    size=7.3,
+)
+n.text(
+    f"Hors appels : nos prévisions d'inflation à 12 mois font jeu égal avec la médiane des prévisionnistes professionnels "
+    f"(test de Diebold-Mariano, p = {fr(K['spf_dm'], 2)}) ; nous ne revendiquons pas d'avance sur le consensus.",
+    size=8.4,
+    lh=4.2,
 )
 
 # ---------------------------------------------------------------- annexes
@@ -1154,7 +1225,9 @@ n.text(
 )
 n.text(
     "Limites. Le r* et l'écart de production sont inobservables. Les évaluations utilisent les données révisées, pas celles "
-    "disponibles en temps réel. L'inflation japonaise n'est disponible qu'avec retard. Faute de courbe OIS gratuite, les "
+    "disponibles en temps réel (le test en temps réel attend les millésimes ALFRED). Les intervalles à 95 % de l'inflation "
+    f"couvrent {fr(100 * K['cov95'], 0)} % des réalisations à 12 mois au lieu de 95 % : les ratés se concentrent sur les "
+    f"ruptures de régime (2008, 2020-2021) ; ceux à 68 % en couvrent {fr(100 * K['cov68'], 0)} %. L'inflation japonaise n'est disponible qu'avec retard. Faute de courbe OIS gratuite, les "
     "anticipations de la BCE et de la BoJ sont approchées par les taux à 2 ans. Les probabilités de scénarios, celles du "
     "modèle comme les nôtres, sont subjectives."
 )

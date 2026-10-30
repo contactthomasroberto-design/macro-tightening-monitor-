@@ -137,6 +137,18 @@ def is_valid(name: str, path: Path) -> bool:
     return stored[0] == _fingerprint(name) and inputs_current(meta)
 
 
+def previous(name: str) -> Any | None:
+    """The last stored result of `name`, whatever code or data produced it (None if unreadable).
+    For parts that only some machines can recompute (ALFRED vintages live in the workflow's store,
+    not in the app's snapshot)."""
+    path = _dir() / f"{name.replace(':', '__')}.pkl"
+    try:
+        with open(path, "rb") as fh:
+            return pickle.load(fh)[1]
+    except (OSError, pickle.UnpicklingError, EOFError, AttributeError, ModuleNotFoundError, IndexError):
+        return None
+
+
 def _load_or_compute(name: str, fn: Callable[[], Any], force: bool) -> Any:
     path = _dir() / f"{name.replace(':', '__')}.pkl"
     fp = _fingerprint(name)
