@@ -23,6 +23,8 @@ model's side of the benchmark? Data are latest vintages (revised), which flatter
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -72,43 +74,80 @@ def disagreement_hit_rate(realised, model, bench, threshold: float) -> dict:
 
 
 def fed_panel(
-    dff: pd.Series, core_pce: pd.Series, gdp: pd.Series, gdppot: pd.Series, dgs1: pd.Series
+    dff: pd.Series,
+    core_pce: pd.Series,
+    gdp: pd.Series,
+    gdppot: pd.Series,
+    dgs1: pd.Series,
+    lag: bool = True,
 ) -> pd.DataFrame:
     """Monthly inputs. pi: core PCE y/y lagged 1 month; y: CBO output gap (quarterly, carried over the
-    quarter) lagged 4 months; i: monthly average fed funds; mkt: monthly average 1-year yield."""
+    quarter) lagged 4 months; i: monthly average fed funds; mkt: monthly average 1-year yield.
+    lag=False for real-time vintages, whose own end date already reflects the publication delay."""
     m = lambda s: s.dropna().resample("MS").mean()  # noqa: E731
     pce = core_pce.dropna().resample("MS").last()
-    pi = (100 * (pce / pce.shift(12) - 1)).shift(1)
+    pi = (100 * (pce / pce.shift(12) - 1)).shift(1 if lag else 0)
     gap_q = 100 * (gdp.dropna().resample("QS").last() / gdppot.dropna().resample("QS").last() - 1)
-    y = gap_q.resample("MS").ffill().shift(4)
+    y = gap_q.resample("MS").ffill().shift(4 if lag else 0)
     return pd.DataFrame({"i": m(dff), "pi": pi, "y": y, "mkt": m(dgs1)})
+
+
+def _rule_at(d: pd.DataFrame, t: pd.Timestamp, h: int, min_obs: int) -> dict | None:
+    """Estimate the rule on months up to t and iterate it h months from t (None if data are short)."""
+    d = d.assign(i_lag=d["i"].shift(1))
+    hist = d.loc[:t].dropna(subset=["i", "i_lag", "pi", "y"])
+    if t not in d.index or len(hist) < min_obs or pd.isna(d.loc[t, ["i", "pi", "y"]]).any():
+        return None
+    X = np.column_stack([np.ones(len(hist)), hist[["i_lag", "pi", "y"]].to_numpy()])
+    coef, *_ = np.linalg.lstsq(X, hist["i"].to_numpy(), rcond=None)
+    a, rho, b, g = coef
+    i, path = float(d.loc[t, "i"]), []
+    for _ in range(h):
+        i = max(0.0, a + rho * i + b * float(d.loc[t, "pi"]) + g * float(d.loc[t, "y"]))
+        path.append(i)
+    return {"origin": t, "rule": float(np.mean(path)), "rho": float(rho)}
 
 
 def rule_forecasts(
     panel: pd.DataFrame, start: str = "1990-01-01", h: int = 12, min_obs: int = 120
 ) -> pd.DataFrame:
     """Pseudo-out-of-sample: at each origin t, estimate the rule on months up to t, iterate h months."""
-    rows = []
-    d = panel.copy()
-    d["i_lag"] = d["i"].shift(1)
-    for t in d.loc[start:].index:
-        hist = d.loc[:t].dropna(subset=["i", "i_lag", "pi", "y"])
-        if len(hist) < min_obs or pd.isna(d.loc[t, ["i", "pi", "y"]]).any():
-            continue
-        X = np.column_stack([np.ones(len(hist)), hist[["i_lag", "pi", "y"]].to_numpy()])
-        coef, *_ = np.linalg.lstsq(X, hist["i"].to_numpy(), rcond=None)
-        a, rho, b, g = coef
-        i, path = float(d.loc[t, "i"]), []
-        for _ in range(h):
-            i = max(0.0, a + rho * i + b * float(d.loc[t, "pi"]) + g * float(d.loc[t, "y"]))
-            path.append(i)
-        rows.append({"origin": t, "rule": float(np.mean(path)), "rho": float(rho)})
+    rows = [r for t in panel.loc[start:].index if (r := _rule_at(panel, t, h, min_obs)) is not None]
     return pd.DataFrame(rows).set_index("origin")
 
 
-def fed_backtest(panel: pd.DataFrame, start: str = "1990-01-01", h: int = 12) -> dict:
+def rule_forecasts_realtime(
+    dff: pd.Series,
+    dgs1: pd.Series,
+    vintage_of: Callable[[str, pd.Timestamp], pd.Series | None],
+    start: str = "1990-01-01",
+    h: int = 12,
+    min_obs: int = 120,
+) -> pd.DataFrame:
+    """Real-time version: at each origin t, core PCE, real GDP and potential GDP are the ALFRED
+    vintages published by the end of month t (`vintage_of(series, date)`), so the rule sees only
+    what the Fed and the market could see. Origins with a missing vintage are skipped."""
+    rows = []
+    for t in pd.date_range(start, dff.dropna().index[-1], freq="MS"):
+        end = t + pd.offsets.MonthEnd(0)
+        pce, gdp, pot = (vintage_of(sid, end) for sid in ("PCEPILFE", "GDPC1", "GDPPOT"))
+        if pce is None or gdp is None or pot is None or min(len(x.dropna()) for x in (pce, gdp, pot)) == 0:
+            continue
+        pan = fed_panel(dff.loc[:end], pce, gdp, pot, dgs1.loc[:end], lag=False)
+        pan = pan.reindex(pd.date_range(pan.index[0], t, freq="MS"))
+        pan[["pi", "y"]] = pan[["pi", "y"]].ffill()  # latest published value carried to t
+        if (r := _rule_at(pan, t, h, min_obs)) is not None:
+            rows.append(r)
+    return pd.DataFrame(rows, columns=["origin", "rule", "rho"]).set_index("origin")
+
+
+def fed_backtest(
+    panel: pd.DataFrame, start: str = "1990-01-01", h: int = 12, rule: pd.DataFrame | None = None
+) -> dict:
+    """Rule, market and no-change forecasts of the average fed funds rate over the next h months.
+    `rule`: precomputed rule forecasts (the real-time ones); estimated on `panel` when None."""
     target = pd.concat([panel["i"].shift(-k) for k in range(1, h + 1)], axis=1).mean(axis=1, skipna=False)
-    rf = rule_forecasts(panel, start, h)
+    rf = rule_forecasts(panel, start, h) if rule is None else rule
     df = (
         pd.DataFrame(
             {

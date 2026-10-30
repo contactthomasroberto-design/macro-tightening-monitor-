@@ -77,7 +77,6 @@ SECTIONS = [
         "Macro",
         [
             ("briefing.py", "Briefing"),
-            ("overview.py", "Overview"),
             ("inflation.py", "Inflation"),
             ("policy.py", "Monetary policy"),
             ("sec_growth.py", "Growth and recession"),

@@ -32,3 +32,6 @@ in the next window and are logged with that effective date.
 | 2026-11 | stress_test | 0.2.0 | Student-t option for conditional scenarios (degrees of freedom from the median excess kurtosis); coverage reported for both | Research log H23 | — |
 | 2026-11 | backtest | 0.1.0 | Initial version: Fed rule against the 1-year yield, inflation combination against the SPF; DM and encompassing tests | Does the model beat the market? | — |
 | 2026-11 | forecast_book | 0.1.0 | Initial version: 13-week directional probabilities from momentum, value and carry, pseudo-OOS scores, live archive | Measurable record | — |
+| 2026-11 | markets | 0.3.0 | Removed the regime forward-moves table (in-sample, no |t| above 2, used by no decision) | Remove what serves no decision | — |
+| 2026-11 | stress_test | 0.3.0 | Removed the PCA factor view from the bundle and the app (H19 rejected; no decision used it) | Remove what serves no decision | — |
+| 2026-11 | backtest | 0.2.0 | Real-time Fed rule backtest on ALFRED vintages (runs once FRED_API_KEY is set, H26); inflation interval coverage, normal and empirical (H25) | Real-time discipline; honest bands | — |

@@ -1,8 +1,18 @@
 import pandas as pd
 import streamlit as st
 
-from components import CACHE_TTL, footer, header, show_status, sidebar_controls
+from components import (
+    CACHE_TTL,
+    footer,
+    header,
+    live_strip,
+    show_status,
+    sidebar_controls,
+    tradingview_ticker,
+)
+from macro import panels
 from macro import signposts as sp
+from macro.config import stale_assumptions
 from macro.data import try_series
 from macro.pipeline import backtest_bundle, forecast_book_bundle, leading_bundle, markets_bundle
 
@@ -12,6 +22,13 @@ header(
     "models are worth.",
 )
 ctl = sidebar_controls()
+if st.sidebar.toggle(
+    "Market ticker (TradingView)",
+    value=True,
+    help="Near-real-time prices from TradingView's free widget. Display only: the models use public data.",
+):
+    tradingview_ticker()
+live_strip()
 
 
 @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
@@ -154,6 +171,16 @@ if not ftab.empty:
     st.caption(
         "Probabilities from momentum, value and carry signals (research log H22). A probability near 50% with "
         "no demonstrated skill says: no edge. Recorded every week and scored at maturity."
+    )
+stale = [
+    k
+    for k in stale_assumptions()
+    if not (k == "fed_terminal_rate" and panels.market_priced("fed") is not None)
+]
+if stale:
+    st.warning(
+        f"Market-pricing assumptions missing or older than 30 days: {', '.join(stale)} "
+        "(config/assumptions.yaml). 2-year yields are used as proxies."
     )
 st.caption(f"Data as of {pd.Timestamp(mk['as_of']):%d %b %Y}.")
 footer()

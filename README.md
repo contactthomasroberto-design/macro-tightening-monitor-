@@ -117,7 +117,8 @@ Equations are in [`docs/methodology.md`](docs/methodology.md); each model has a 
   intervals) and against the Fed Board's published EBP model.
 - **Stress testing** (`src/macro/stress_test.py`): conditional-normal cross-asset scenarios with an
   out-of-sample calibration test, ten historical stress episodes with a similarity score for the
-  current move, and principal-component factors with a stability check.
+  current move. (The principal-component factor view was removed on 2026-10-30: it informed no
+  decision; the function and its test remain, research log H19.)
 - **Scenario simulator**: user-defined oil, unemployment, inflation and term-premium paths through
   the quarterly engine, against the configured scenario mix.
 - **Against the market** (`src/macro/backtest.py`): the Fed policy rule against the 1-year Treasury
@@ -134,7 +135,7 @@ Equations are in [`docs/methodology.md`](docs/methodology.md); each model has a 
 - Methods, sources and what was left out: [`docs/methods_review.md`](docs/methods_review.md);
   hypotheses written before estimation and their results: [`docs/research_log.md`](docs/research_log.md).
 
-The dashboard is organised in three menus: **Macro** (Briefing, Overview, Inflation, Monetary policy, Growth and
+The dashboard is organised in three menus: **Macro** (Briefing, Inflation, Monetary policy, Growth and
 recession, Scenarios, History and calendar), **Markets** (Monitor, Rates, FX and commodities,
 Cross-asset, Stress testing, Priced against our models, Positioning) and **Governance**. Pages with
 several parts show them as sub-tabs; only the selected part is computed.
@@ -209,14 +210,14 @@ Numbers update themselves when new data is published:
   recomputes the light ones itself (inflation, policy rules, financial conditions, curves,
   transmission, positioning, regimes: seconds each). The heavy ones (dynamic factor nowcast,
   scenarios, views) come from the GitHub snapshot below, unless `MACRO_BACKGROUND_MODELS=1` on a
-  server with enough memory. The Overview's key figures re-read the data every 5 minutes without
+  server with enough memory. The Briefing's key figures re-read the data every 5 minutes without
   reloading the page, and every page lists the releases detected in the last 36 hours. The Data
   health page shows the last refresh and has a "Refresh now" button.
 - **On GitHub (weekdays).** The `refresh` workflow runs three times each weekday (10:47, 14:17 and
   21:37 UTC, after the Japanese and euro-area releases, the 8:30 ET US releases and the US close) and
   after every code change on `main`: data, models, forecast archive, track record, README executive
   summary and figures; the weekly monitor on Mondays. GitHub can start scheduled runs late.
-- **Market ticker.** The Overview shows TradingView's free ticker widget (near-real-time prices).
+- **Market ticker.** The Briefing shows TradingView's free ticker widget (near-real-time prices).
   It is display only: the models never read it.
 - **Warm start.** The same workflow writes `snapshot/live/`: the live data (~2 MB parquet) and the
   computed results. The hosted app adopts each new snapshot as soon as Streamlit pulls the commit, so

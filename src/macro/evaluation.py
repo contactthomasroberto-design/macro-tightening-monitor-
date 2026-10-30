@@ -109,3 +109,48 @@ def scoreboard(
             r["log_score"], r["crps"], r["pit_ks_p"] = de["log_score"], de["crps"], de["pit_ks_p"]
         rows.append(r)
     return pd.DataFrame(rows).set_index("model")
+
+
+def interval_calibration(fcs: pd.DataFrame, model: str, h: int, min_n: int = 24) -> dict:
+    """Coverage of 68% and 95% intervals for one model and horizon, two ways:
+
+    - normal: point ± z × sigma (sigma = RMS of past out-of-sample errors, as in the forecasts);
+    - empirical: point + quantiles of the model's own past errors (only errors whose outcome was
+      known at the origin), which keeps fat tails and skew.
+
+    Also the PIT uniformity p-value on all origins and the median over non-overlapping subsamples
+    (one origin every h months): overlapping forecasts make the all-origins test reject too often."""
+    d = fcs[(fcs["model"] == model) & (fcs["h"] == h)].sort_values("origin").reset_index(drop=True)
+    known_at = d["origin"] + pd.DateOffset(months=int(h))
+    rows: dict[str, list[bool]] = {"normal 68": [], "normal 95": [], "empirical 68": [], "empirical 95": []}
+    for _, r in d.iterrows():
+        if r["actual"] != r["actual"] or r["sigma"] != r["sigma"]:
+            continue
+        z = abs(r["actual"] - r["point"]) / r["sigma"]
+        past = d.loc[(known_at <= r["origin"]) & d["error"].notna(), "error"].to_numpy()
+        if len(past) < min_n:
+            continue
+        rows["normal 68"].append(z < 1.0)
+        rows["normal 95"].append(z < 1.96)
+        e = r["actual"] - r["point"]
+        q = np.quantile(past, [0.16, 0.84, 0.025, 0.975])
+        rows["empirical 68"].append(q[0] <= e <= q[1])
+        rows["empirical 95"].append(q[2] <= e <= q[3])
+    ok = d.dropna(subset=["actual", "point", "sigma"])
+    pit = pit_normal(ok["actual"].to_numpy(), ok["point"].to_numpy(), ok["sigma"].to_numpy())
+    sub = [pit_uniformity_pvalue(pit[o :: max(1, h)]) for o in range(max(1, h))] if len(pit) >= 3 * h else []
+    return {
+        "model": model,
+        "h": h,
+        "n": len(rows["normal 68"]),
+        **{f"coverage {k}": float(np.mean(v)) if v else np.nan for k, v in rows.items()},
+        "PIT p (all origins)": pit_uniformity_pvalue(pit) if len(pit) > 10 else np.nan,
+        "PIT p (non-overlapping, median)": float(np.median(sub)) if sub else np.nan,
+    }
+
+
+def empirical_prob_exceed(point: float, past_errors: np.ndarray, threshold: float) -> float:
+    """P(outcome > threshold) using the empirical distribution of past errors (fat tails kept)."""
+    e = np.asarray(past_errors, float)
+    e = e[~np.isnan(e)]
+    return float(np.mean(point + e > threshold)) if len(e) else np.nan

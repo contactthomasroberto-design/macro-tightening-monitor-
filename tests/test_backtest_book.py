@@ -139,3 +139,52 @@ def test_student_t_bands_are_wider_for_large_shocks():
     assert stt.tail_dof(pd.DataFrame({"a": np.random.default_rng(4).standard_t(6, 20000)})) == pytest.approx(
         6, abs=1.5
     )
+
+
+def test_realtime_rule_uses_only_published_vintages():
+    g = np.random.default_rng(5)
+    idx = pd.date_range("1980-01-01", periods=480, freq="MS")
+    pce = pd.Series(100 * np.exp(np.cumsum(g.normal(0.002, 0.001, 480))), index=idx)
+    gdp = pd.Series(100 * np.exp(np.cumsum(g.normal(0.002, 0.003, 480))), index=idx).resample("QS").last()
+    pot = gdp.rolling(8, min_periods=1).mean()
+    dff = pd.Series(3 + np.cumsum(g.normal(0, 0.1, 480)), index=idx).clip(lower=0)
+    seen: list = []
+
+    def vintage_of(sid, date):  # a vintage dated `date` ends a month (prices) or a quarter (GDP) earlier
+        s = {"PCEPILFE": pce, "GDPC1": gdp, "GDPPOT": pot}[sid]
+        lag = pd.DateOffset(months=1 if sid == "PCEPILFE" else 4)
+        out = s.loc[: date - lag]
+        seen.append((date, out.index[-1]))
+        return out
+
+    rt = bt.rule_forecasts_realtime(dff, dff, vintage_of, start="2000-01-01")
+    assert len(rt) > 200 and all(last < d for d, last in seen)
+    revised = bt.rule_forecasts(bt.fed_panel(dff, pce, gdp, pot, dff), start="2000-01-01")
+    common = rt.index.intersection(revised.index)
+    assert np.corrcoef(rt.loc[common, "rule"], revised.loc[common, "rule"])[0, 1] > 0.9
+
+
+def test_note_calls_open_right_wrong_and_early_fail():
+    from macro import note_calls as nc
+
+    idx = pd.date_range("2026-01-01", "2027-12-01", freq="MS")
+    s = pd.Series(range(len(idx)), index=idx, dtype=float)
+    base = {"note": "x", "statement": "s", "series": "S", "transform": "level", "made": "2026-01-01"}
+    calls = [
+        base | {"id": "open", "stat": "at", "op": "above", "threshold": 5, "matures": "2027-06-30"},
+        base | {"id": "right", "stat": "at", "op": "above", "threshold": 5, "matures": "2026-12-31"},
+        base | {"id": "wrong", "stat": "at", "op": "between", "threshold": [0, 3], "matures": "2026-12-31"},
+        base
+        | {
+            "id": "early",
+            "stat": "max",
+            "op": "below",
+            "threshold": 2,
+            "matures": "2027-06-30",
+            "withdrawn": "w",
+        },
+    ]
+    ev = nc.evaluate(lambda sid: s, calls, today="2027-02-15")
+    assert ev["status"].to_dict() == {"open": "open", "right": "right", "wrong": "wrong", "early": "wrong"}
+    assert ev.loc["early", "withdrawn"] and ev.loc["right", "value"] == 11.0
+    assert set(nc.evaluate(lambda sid: None, calls[:1])["status"]) == {"no data"}

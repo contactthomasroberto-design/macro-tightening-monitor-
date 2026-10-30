@@ -53,23 +53,6 @@ if sp is not None:
         "Share of days since the start of the sample: " + ", ".join(f"{k} {v}%" for k, v in share.items())
     )
 
-    fwd = b["regime_forward"]
-    if not fwd.empty:
-        st.markdown("**What usually followed: average move over the next month, by regime**")
-        piv = fwd.pivot(index="asset", columns="regime", values="mean")[list(REGIMES)]
-        tst = fwd.pivot(index="asset", columns="regime", values="t-stat")[list(REGIMES)]
-        units = fwd.drop_duplicates("asset").set_index("asset")["unit"]
-        disp = piv.copy().astype(object)
-        for a in piv.index:
-            for c in piv.columns:
-                v, t = piv.loc[a, c], tst.loc[a, c]
-                disp.loc[a, c] = "" if v != v else f"{v:+.2f} {units[a]} (t {t:+.1f})"
-        st.dataframe(disp, use_container_width=True)
-        st.caption(
-            "Average change over the 21 business days after each day of the regime, full sample; t-statistics use the "
-            "effective number of independent months (overlapping windows). Descriptive, in-sample statistics, not a "
-            "forecast: |t| below 2 means the average cannot be told apart from zero."
-        )
 
 # ------------------------------------------------------------------ correlations
 st.subheader("Rolling correlations (3 months, daily changes)")

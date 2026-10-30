@@ -1,0 +1,60 @@
+# Calls made in the research notes, written down when the note is published and never edited after:
+# the monthly post-mortem (scripts/research_note.py, section "Post-mortem") scores each one at maturity.
+# A call that is withdrawn stays here with `withdrawn`: it is still scored.
+#
+# transform: level | yoy (12-month % change) | sahm (Sahm rule, pp)
+# stat: at (last value on or before `matures`) | max | min (over the window made → matures)
+# op: below | above | between (threshold = [low, high])
+calls:
+  - id: fed_one_more_hike
+    note: 2026-10
+    made: 2026-10-30
+    statement: "Fed : une hausse de plus, puis une pause (borne haute ≤ 4,25 % dans un an)"
+    market_at_call: "le marché intégrait 4,68 % dans 12 mois (environ trois hausses)"
+    series: DFEDTARU
+    transform: level
+    stat: at
+    op: below
+    threshold: 4.30
+    matures: 2027-10-31
+    withdrawn: "2026-10-30 : erratum, le backtest ne soutient pas un écart de nos règles au prix de marché (research log H20)"
+  - id: us_no_recession
+    note: 2026-10
+    made: 2026-10-30
+    statement: "États-Unis : ralentissement sans récession à 12 mois (règle de Sahm sous 0,5 pt)"
+    series: UNRATE
+    transform: sahm
+    stat: max
+    op: below
+    threshold: 0.5
+    matures: 2027-10-31
+  - id: us_cpi_band
+    note: 2026-10
+    made: 2026-10-30
+    statement: "Inflation totale US à 3,4 % dans un an, intervalle à 68 % de 1,5 à 5,2 %"
+    series: CPIAUCSL
+    transform: yoy
+    stat: at
+    op: between
+    threshold: [1.50, 5.24]
+    matures: 2027-09-30
+  - id: ecb_december_hike
+    note: 2026-10
+    made: 2026-10-30
+    statement: "BCE : pause en octobre, puis une hausse en décembre (taux de dépôt au-dessus de 2,50 % fin 2026)"
+    series: EA_DFR
+    transform: level
+    stat: at
+    op: above
+    threshold: 2.50
+    matures: 2026-12-31
+  - id: boj_hike_by_january
+    note: 2026-10
+    made: 2026-10-30
+    statement: "BoJ : une hausse en décembre ou janvier (taux au jour le jour au-dessus de 1,35 % fin janvier)"
+    series: JP_CALL_D
+    transform: level
+    stat: at
+    op: above
+    threshold: 1.35
+    matures: 2027-01-31
