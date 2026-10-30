@@ -1,0 +1,12 @@
+{
+  "core_cpi_low": false,
+  "core_cpi_high": false,
+  "brent_low": false,
+  "brent_high": false,
+  "sahm": false,
+  "oat_bund": false,
+  "usdjpy": false,
+  "hy": false,
+  "ebp": false,
+  "vix": false
+}
