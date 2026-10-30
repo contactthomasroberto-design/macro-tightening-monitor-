@@ -145,3 +145,4 @@ run_date,mode,git_hash,data_as_of,module,model,model_version,region,variable,tar
 2026-10-28,live,30cd86d,2026-09-01,inflation,COMB,0.1.0,EA,EA headline inflation yoy,2027-09-01,12,3.5976,2.0689,0.1946,1.5402,3.5976,5.6550,7.0006,"latest-vintage, not point-in-time"
 2026-10-28,live,30cd86d,2026-10-28,growth,DFM nowcast,0.1.0,US,US real GDP growth q/q annualised,2026-07-01,0,2.6186,1.9359,-0.5656,0.6935,2.6186,4.5438,5.8028,"latest-vintage, not point-in-time"
 2026-10-29,live,9fdbe04,2026-10-29,growth,DFM nowcast,0.1.0,US,US real GDP growth q/q annualised,2026-07-01,0,2.6186,1.9359,-0.5656,0.6935,2.6186,4.5438,5.8028,"latest-vintage, not point-in-time"
+2026-10-30,live,373b879,2026-10-30,growth,DFM nowcast,0.1.0,US,US real GDP growth q/q annualised,2026-10-01,0,2.9151,3.0100,-2.0360,-0.0782,2.9151,5.9085,7.8662,"latest-vintage, not point-in-time"
