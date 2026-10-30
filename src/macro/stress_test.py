@@ -68,8 +68,14 @@ def covariance(W: pd.DataFrame, mask: pd.Series | None = None, min_weeks: int = 
     return nearest_psd(c.dropna(how="all").dropna(axis=1, how="all"))
 
 
-def conditional(cov: pd.DataFrame, shocks: dict[str, float], h_weeks: float = 1.0) -> pd.DataFrame:
-    """Expected moves of the other assets given `shocks` over h weeks, with 68% and 95% bands."""
+def conditional(
+    cov: pd.DataFrame, shocks: dict[str, float], h_weeks: float = 1.0, nu: float | None = None
+) -> pd.DataFrame:
+    """Expected moves of the other assets given `shocks` over h weeks, with 68% and 95% bands.
+
+    nu None: multivariate normal. nu > 2: multivariate Student-t with that many degrees of freedom
+    and the same covariance. The conditional is then t with nu + k degrees of freedom and a scale
+    that grows with the size of the shock (d² = s'Σ_ss⁻¹s): large shocks widen the bands."""
     s_ids = [k for k in shocks if k in cov.index]
     if not s_ids:
         raise ValueError("no shocked asset is in the covariance matrix")
@@ -78,22 +84,44 @@ def conditional(cov: pd.DataFrame, shocks: dict[str, float], h_weeks: float = 1.
     css = c.loc[s_ids, s_ids].to_numpy()
     cos = c.loc[o_ids, s_ids].to_numpy()
     s = np.array([shocks[k] for k in s_ids], float)
-    k = np.linalg.solve(css, s)
-    mean = cos @ k
+    w = np.linalg.solve(css, s)
+    mean = cos @ w
     var = np.diag(c.loc[o_ids, o_ids].to_numpy()) - np.einsum("ij,ij->i", cos @ np.linalg.inv(css), cos)
-    sd = np.sqrt(np.maximum(var, 0.0))
+    var = np.maximum(var, 0.0)
     uncond = np.sqrt(np.diag(c.loc[o_ids, o_ids].to_numpy()))
+    if nu is None:
+        sd68 = sd95 = np.sqrt(var)
+        q68, q95 = 1.0, 1.96
+        share = 1 - var / uncond**2
+    else:
+        from scipy.stats import t as student
+
+        k = len(s_ids)
+        to_scale = (nu - 2) / nu  # covariance -> scale matrix
+        d2 = float(s @ w) / to_scale
+        scale = np.sqrt(var * to_scale * (nu + d2) / (nu + k))
+        sd68 = sd95 = scale
+        q68, q95 = student.ppf(0.84, nu + k), student.ppf(0.975, nu + k)
+        share = 1 - var / uncond**2
     return pd.DataFrame(
         {
             "expected move": mean,
-            "68% low": mean - sd,
-            "68% high": mean + sd,
-            "95% low": mean - 1.96 * sd,
-            "95% high": mean + 1.96 * sd,
-            "share of risk explained": 1 - (sd / uncond) ** 2,
+            "68% low": mean - q68 * sd68,
+            "68% high": mean + q68 * sd68,
+            "95% low": mean - q95 * sd95,
+            "95% high": mean + q95 * sd95,
+            "share of risk explained": share,
         },
         index=o_ids,
     )
+
+
+def tail_dof(W: pd.DataFrame) -> float:
+    """Degrees of freedom of a Student-t matching the median excess kurtosis of weekly changes
+    (excess kurtosis of a t is 6 / (nu − 4)); floored at 4.5."""
+    k = W.kurt().replace([np.inf, -np.inf], np.nan).dropna()
+    k = float(k[k > 0].median()) if (k > 0).any() else np.nan
+    return float(max(4.5, 4 + 6 / k)) if k == k else 30.0
 
 
 def coverage_backtest(
@@ -101,10 +129,11 @@ def coverage_backtest(
     cond_ids: tuple[str, ...] = ("SPX", "DGS10"),
     window: int = 104,
     start: str = "2010-01-01",
+    nu: float | None = None,
 ) -> dict:
     """Out-of-sample calibration: each week t from `start`, a covariance from the previous `window`
-    weeks only, conditioned on that week's realised moves of `cond_ids`; z = (realised − expected) / sd
-    for every other asset. A calibrated model has 68% of |z| < 1 and 95% of |z| < 1.96."""
+    weeks only, conditioned on that week's realised moves of `cond_ids`; share of realised moves of
+    every other asset inside the 68% and 95% bands (normal, or Student-t when `nu` is given)."""
     rows = []
     idx = W.index
     for i, t in enumerate(idx):
@@ -118,45 +147,42 @@ def coverage_backtest(
         if not all(c in cov.index for c in cond_ids):
             continue
         try:
-            cd = conditional(cov, {c: float(x_t[c]) for c in cond_ids})
+            cd = conditional(cov, {c: float(x_t[c]) for c in cond_ids}, nu=nu)
         except np.linalg.LinAlgError:
             continue
-        sd = (cd["68% high"] - cd["expected move"]).replace(0, np.nan)
         for a in cd.index:
-            if pd.isna(x_t.get(a)) or pd.isna(sd[a]):
+            x = x_t.get(a)
+            if pd.isna(x):
                 continue
+            r = cd.loc[a]
             rows.append(
                 {
                     "week": t,
                     "asset": a,
-                    "z": (x_t[a] - cd.loc[a, "expected move"]) / sd[a],
-                    "actual": x_t[a],
-                    "expected": cd.loc[a, "expected move"],
+                    "in68": r["68% low"] <= x <= r["68% high"],
+                    "in95": r["95% low"] <= x <= r["95% high"],
+                    "actual": x,
+                    "expected": r["expected move"],
                 }
             )
     df = pd.DataFrame(rows)
     if df.empty:
         return {"pooled": {}, "by_asset": pd.DataFrame(), "n": 0}
-    absz = df["z"].abs()
     pooled = {
-        "inside ±1 s.d.": float((absz < 1).mean()),
-        "inside ±1.96 s.d.": float((absz < 1.96).mean()),
+        "inside 68% band": float(df["in68"].mean()),
+        "inside 95% band": float(df["in95"].mean()),
         "R² of expected moves": float(
             1 - ((df["actual"] - df["expected"]) ** 2).sum() / (df["actual"] ** 2).sum()
         ),
         "weeks": int(df["week"].nunique()),
         "from": df["week"].min().date(),
     }
-    by = (
-        df.assign(in1=absz < 1, in2=absz < 1.96)
-        .groupby("asset")
-        .agg(
-            **{
-                "inside ±1 s.d.": ("in1", "mean"),
-                "inside ±1.96 s.d.": ("in2", "mean"),
-                "weeks": ("z", "size"),
-            }
-        )
+    by = df.groupby("asset").agg(
+        **{
+            "inside 68% band": ("in68", "mean"),
+            "inside 95% band": ("in95", "mean"),
+            "weeks": ("in68", "size"),
+        }
     )
     by["R² of expected moves"] = df.groupby("asset").apply(
         lambda g: 1 - ((g["actual"] - g["expected"]) ** 2).sum() / (g["actual"] ** 2).sum(),

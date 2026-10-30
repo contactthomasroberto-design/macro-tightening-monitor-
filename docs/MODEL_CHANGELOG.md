@@ -28,3 +28,7 @@ in the next window and are logged with that effective date.
 | 2026-11 | markets | 0.2.0 | Universe unchanged; dashboard gains stress testing and recession-signal pages fed by new modules | Markets tab extension | — |
 | 2026-11 | leading | 0.1.0 | Initial version: five recession probits (10Y-3M, near-term forward spread proxy, EBP, combinations) with pseudo-out-of-sample evaluation | Recession signals from markets | — |
 | 2026-11 | stress_test | 0.1.0 | Initial version: conditional-normal scenarios, coverage backtest, historical episodes and analogs, principal-component factors | Stress testing | — |
+| 2026-11 | scenarios | 0.2.0 | Unemployment noise bootstrapped from expansion quarters only | With recession quarters in the noise, the no-shock path triggered the Sahm signal 43% of the time (16% after); research log H24 | — |
+| 2026-11 | stress_test | 0.2.0 | Student-t option for conditional scenarios (degrees of freedom from the median excess kurtosis); coverage reported for both | Research log H23 | — |
+| 2026-11 | backtest | 0.1.0 | Initial version: Fed rule against the 1-year yield, inflation combination against the SPF; DM and encompassing tests | Does the model beat the market? | — |
+| 2026-11 | forecast_book | 0.1.0 | Initial version: 13-week directional probabilities from momentum, value and carry, pseudo-OOS scores, live archive | Measurable record | — |

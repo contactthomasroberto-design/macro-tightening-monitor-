@@ -672,6 +672,25 @@ def markets_bundle(force: bool = False) -> dict:
                 axis=1,
             )
         probit = mk.curve_recession_probit(data["T10Y3M"], data["USREC"]) if "T10Y3M" in data else None
+        curve_s = {m: try_series(i) for i, m in mk.US_CURVE.items()}
+        curve = {
+            m: float(s.dropna().iloc[-1])
+            for m, s in curve_s.items()
+            if s is not None and not s.dropna().empty
+        }
+        vols = {
+            m: float(mk.realized_vol(mk.business_daily(s), "yield", 63).dropna().iloc[-1])
+            for m, s in curve_s.items()
+            if s is not None and len(s.dropna()) > 80
+        }
+        carry_rates = mk.rates_carry_roll(curve, vols) if len(curve) >= 3 else pd.DataFrame()
+        fxp = {}
+        sofr, estr, jpcall = try_series("SOFR"), try_series("EA_ESTR"), try_series("JP_CALL_D")
+        if "EURUSD" in data and sofr is not None and estr is not None:
+            fxp["Long EUR against USD (EUR/USD)"] = (data["EURUSD"], estr, sofr, 1)
+        if "USDJPY" in data and sofr is not None and jpcall is not None:
+            fxp["Long USD against JPY (USD/JPY)"] = (data["USDJPY"], sofr, jpcall, 1)
+        carry_fx = mk.fx_carry(fxp)
         last = max(s.dropna().index[-1] for s in data.values())
         return {
             "dashboard": dash,
@@ -686,6 +705,8 @@ def markets_bundle(force: bool = False) -> dict:
             "vol_premium": vrp,
             "rates_vol": move_rv,
             "curve_recession": probit,
+            "carry_rates": carry_rates,
+            "carry_fx": carry_fx,
             "levels": {
                 k: data[k] for k in ("SPX", "DGS10", "BAMLH0A0HYM2", "BAMLC0A0CM", "VIX", "MOVE") if k in data
             },
@@ -748,6 +769,8 @@ def stress_bundle(force: bool = False) -> dict:
             "weekly": W,
             "covariances": covs,
             "coverage": stt.coverage_backtest(W),
+            "tail_dof": (nu := stt.tail_dof(W)),
+            "coverage_t": stt.coverage_backtest(W, nu=nu),
             "episodes": moves,
             "analogs": stt.analogs(W, moves),
             "factors": stt.pca_factors(W),
@@ -758,6 +781,54 @@ def stress_bundle(force: bool = False) -> dict:
         }
 
     return load_or_compute("stress_test:all", compute, force=force)
+
+
+def backtest_bundle(force: bool = False) -> dict:
+    """Models against the market (src/macro/backtest.py): the Fed rule against the 1-year yield,
+    our inflation combination against the SPF median."""
+    from macro import backtest as bt
+
+    def compute() -> dict:
+        pan = bt.fed_panel(
+            get_series("DFF"),
+            get_series("PCEPILFE"),
+            get_series("GDPC1"),
+            get_series("GDPPOT"),
+            get_series("DGS1"),
+        )
+        fed = bt.fed_backtest(pan)
+        infl = bt.inflation_vs_spf(inflation_bundle("US")["oos"]["forecasts"])
+        return {"fed": fed, "inflation": infl, "as_of": fed["forecasts"].index[-1]}
+
+    return load_or_compute("backtest:US", compute, force=force)
+
+
+def forecast_book_inputs() -> tuple[dict, dict]:
+    """Weekly levels and carry proxies for the forecast book."""
+    from macro import forecast_book as fb
+
+    ids = set(fb.VARIABLES) | {x for v in fb.CARRY.values() if v for x in v if x}
+    lv = {i: s for i in sorted(ids) if (s := try_series(i)) is not None and not s.dropna().empty}
+    car: dict = {}
+    for k, v in fb.CARRY.items():
+        if v is None or v[0] not in lv or (v[1] is not None and v[1] not in lv):
+            car[k] = None
+            continue
+        a, b = v
+        car[k] = fb.weekly(lv[a]) - (fb.weekly(lv[b]) if b else 0.0)
+    return lv, car
+
+
+def forecast_book_bundle(force: bool = False) -> dict:
+    """Directional 13-week forecasts from momentum, value and carry, scored pseudo out of sample,
+    plus the live archive scored at maturity (src/macro/forecast_book.py)."""
+    from macro import forecast_book as fb
+
+    def compute() -> dict:
+        lv, car = forecast_book_inputs()
+        return {**fb.book(lv, car), "as_of": max(s.dropna().index[-1] for s in lv.values())}
+
+    return load_or_compute("forecast_book:all", compute, force=force)
 
 
 def scenario_bundle(force: bool = False, n_per: int = 10_000) -> dict:
@@ -783,7 +854,11 @@ def scenario_bundle(force: bool = False, n_per: int = 10_000) -> dict:
         resid_i = (qi - rf.extra["fitted"]).dropna().to_numpy()
         du = q["u"].diff().loc["1990":]
         ar = ols_hac(du, du.shift(1).to_frame("lag"))
-        resid_du = ar.resid.clip(*ar.resid.quantile([0.025, 0.975])).to_numpy()
+        # noise from expansion quarters only: recessions are the scenarios' job (research log H24);
+        # with recession quarters in the noise, the no-shock path triggered the Sahm signal 43% of the time
+        rec_q = get_series("USREC").resample("QS").max().reindex(ar.resid.index).fillna(0) > 0
+        res_exp = ar.resid[~rec_q]
+        resid_du = res_exp.clip(*res_exp.quantile([0.025, 0.975])).to_numpy()
         lo, hi = a["rstar"]["user_range"]
         cb = a["central_banks"]["fed"]
         init_q = q.dropna(subset=["pi", "u"]).iloc[-1]

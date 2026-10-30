@@ -1,0 +1,18 @@
+# Signposts: the thresholds that would change the view (research note, section 7).
+# Evaluated by src/macro/signposts.py on every refresh; a newly crossed signpost opens a GitHub issue
+# (scripts/check_alerts.py), so GitHub e-mails the repository owner. Free, no third-party service.
+#
+#   series     catalogue id (or a computed id: SAHM, OAT_BUND)
+#   transform  level | yoy | ann3m (3-month annualised change of an index) | bp (level x 100)
+#   op         above | below
+signposts:
+  - {id: core_cpi_low, label: "US core CPI, 3-month annualised", series: CPILFESL, transform: ann3m, op: below, threshold: 2.5, unit: "%", meaning: "Disinflation resumes: market pricing of further Fed hikes looks too hawkish"}
+  - {id: core_cpi_high, label: "US core CPI, 3-month annualised", series: CPILFESL, transform: ann3m, op: above, threshold: 3.5, unit: "%", meaning: "Pass-through broadens: the case for several more Fed hikes strengthens"}
+  - {id: brent_low, label: "Brent", series: DCOILBRENTEU, transform: level, op: below, threshold: 90, unit: "$", meaning: "Energy shock unwinds: headline disinflation"}
+  - {id: brent_high, label: "Brent", series: DCOILBRENTEU, transform: level, op: above, threshold: 130, unit: "$", meaning: "Second energy shock: sticky-inflation scenario"}
+  - {id: sahm, label: "Sahm rule (unemployment)", series: SAHM, transform: level, op: above, threshold: 0.5, unit: "pp", meaning: "Recession signal: the Fed stops and later cuts"}
+  - {id: oat_bund, label: "OAT-Bund spread", series: OAT_BUND, transform: bp, op: above, threshold: 120, unit: "bp", meaning: "French sovereign stress constrains the ECB"}
+  - {id: usdjpy, label: "USD/JPY", series: USDJPY, transform: level, op: above, threshold: 160, unit: "", meaning: "Yen weakness pushes the BoJ to accelerate"}
+  - {id: hy, label: "US high-yield spread (ICE BofA OAS)", series: BAMLH0A0HYM2, transform: bp, op: above, threshold: 500, unit: "bp", meaning: "Markets tighten in place of central banks"}
+  - {id: ebp, label: "Excess bond premium", series: EBP, transform: level, op: above, threshold: 0.5, unit: "pp", meaning: "Credit risk appetite falls: recession risk rises (Fed Board model)"}
+  - {id: vix, label: "VIX", series: VIXCLS, transform: level, op: above, threshold: 30, unit: "", meaning: "Equity stress"}

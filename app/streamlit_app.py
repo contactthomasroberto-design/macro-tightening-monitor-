@@ -76,6 +76,7 @@ SECTIONS = [
     (
         "Macro",
         [
+            ("briefing.py", "Briefing"),
             ("overview.py", "Overview"),
             ("inflation.py", "Inflation"),
             ("policy.py", "Monetary policy"),
