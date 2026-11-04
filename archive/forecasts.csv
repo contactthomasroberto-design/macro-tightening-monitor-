@@ -149,3 +149,4 @@ run_date,mode,git_hash,data_as_of,module,model,model_version,region,variable,tar
 2026-10-31,live,021f19a,2026-10-31,growth,DFM nowcast,0.1.0,US,US real GDP growth q/q annualised,2026-10-01,0,2.8597,2.9004,-1.9110,-0.0246,2.8597,5.7440,7.6304,"latest-vintage, not point-in-time"
 2026-11-02,live,38ce46d,2026-11-02,growth,DFM nowcast,0.1.0,US,US real GDP growth q/q annualised,2026-10-01,0,2.8597,2.9004,-1.9110,-0.0246,2.8597,5.7440,7.6304,"latest-vintage, not point-in-time"
 2026-11-03,live,9b3f049,2026-11-03,growth,DFM nowcast,0.1.0,US,US real GDP growth q/q annualised,2026-10-01,0,2.8597,2.9004,-1.9110,-0.0246,2.8597,5.7440,7.6304,"latest-vintage, not point-in-time"
+2026-11-04,live,34ef6a8,2026-11-04,growth,DFM nowcast,0.1.0,US,US real GDP growth q/q annualised,2026-10-01,0,2.8597,2.9004,-1.9110,-0.0246,2.8597,5.7440,7.6304,"latest-vintage, not point-in-time"
