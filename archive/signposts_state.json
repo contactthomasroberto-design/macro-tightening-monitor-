@@ -4,7 +4,7 @@
   "brent_low": false,
   "brent_high": false,
   "sahm": false,
-  "oat_bund": false,
+  "oat_bund": true,
   "usdjpy": false,
   "hy": false,
   "ebp": false,
