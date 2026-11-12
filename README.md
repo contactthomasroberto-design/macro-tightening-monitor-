@@ -11,7 +11,7 @@ model archive (code, model cards, forecast archive, track record, changelog).
 ## 1. Executive summary
 
 <!-- SUMMARY:START -->
-_Generated 2026-11-12T18:41:36Z from data as of 2026-11-12 (git ce95937). Educational research product. May be revised or discontinued. Not an official view of any central bank and not investment advice._
+_Generated 2026-11-12T21:36:07Z from data as of 2026-11-12 (git b1b6fd5). Educational research product. May be revised or discontinued. Not an official view of any central bank and not investment advice._
 
 - FED: core PCE inflation is 3.1% (+1.1 pp vs target); the policy rate (3.75%) is 1.53 pp below a Taylor (1993) prescription with r* at the middle of the 0.00-1.50% range.
 - ECB: HICP excl. energy and food inflation is 2.5% (+0.5 pp vs target); the policy rate (2.50%) is 1.89 pp below a Taylor (1993) prescription with r* at the middle of the 0.00-1.50% range.
