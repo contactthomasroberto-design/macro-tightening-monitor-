@@ -1,24 +1,24 @@
 # Japon et Asie développée (calcul GitHub)
 
-*`japan-asia-analyst` — 17/11/2026 17:19 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`japan-asia-analyst` — 17/11/2026 19:42 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
-**En bref** : Préféré : Korean equities (+4.6 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an).
+**En bref** : Préféré : Korean equities (+4.0 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an).
 
-- Korean equities : 1 mois -14,1 %, 12 mois +47,8 %, -39 % du plus haut, vol 54 % ; familles trend +0.9, macro +0.5, value +0.2, house +0.5 → **positive** (accord 100 %) ; vues publiées +0.5 (2) ; poids +0,8 % (+0,0 % vs 60/40).
-- Taiwanese equities : 1 mois -17,5 %, 12 mois +46,5 %, -25 % du plus haut, vol 43 % ; familles trend +1.0, macro +0.5, value -0.2, house +0.3 → **positive** (accord 75 %) ; vues publiées +0.3 (3) ; poids +1,2 % (+0,0 % vs 60/40).
-- Japanese equities : 1 mois -6,7 %, 12 mois +12,1 %, -11 % du plus haut, vol 21 % ; familles trend +0.8, macro +0.5, house +1.0 → **positive** (accord 100 %) ; vues publiées +1.0 (4) ; poids +3,3 % (+0,0 % vs 60/40).
-- Japanese yen : 1 mois -0,4 %, 12 mois -2,9 %, -5 % du plus haut, vol 8 % ; familles trend -0.1, macro -0.3, value +1.0, carry -0.9, house -1.0 → **negative** (accord 80 %) ; vues publiées -1.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
+- Korean equities : 1 mois -14,1 %, 12 mois +47,9 %, -39 % du plus haut, vol 54 % ; familles trend +0.9, macro +0.5, regime +0.1, value +0.2, house +0.5 → **positive** (accord 100 %) ; vues publiées +0.5 (2) ; poids +0,8 % (-0,0 % vs 60/40).
+- Taiwanese equities : 1 mois -17,7 %, 12 mois +46,2 %, -25 % du plus haut, vol 43 % ; familles trend +1.0, macro +0.5, regime +0.5, value -0.2, house +0.3 → **positive** (accord 80 %) ; vues publiées +0.3 (3) ; poids +1,2 % (+0,0 % vs 60/40).
+- Japanese equities : 1 mois -6,9 %, 12 mois +11,9 %, -11 % du plus haut, vol 21 % ; familles trend +0.8, macro +0.5, regime +0.3, house +1.0 → **positive** (accord 100 %) ; vues publiées +1.0 (4) ; poids +3,3 % (+0,0 % vs 60/40).
+- Japanese yen : 1 mois -0,5 %, 12 mois -2,9 %, -5 % du plus haut, vol 8 % ; familles trend -0.1, macro -0.3, regime -0.6, value +1.0, carry -0.9, house -1.0 → **negative** (accord 83 %) ; vues publiées -1.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
 - Nikkei 225 : 59,662 (-5,662 sur un mois, z -2.2 ; percentile 5 ans 89 %) ⚠.
-- USD/JPY : 159 (+1 sur un mois, z +0.3 ; percentile 5 ans 93 %).
-- USD/KRW : 1,335 (+2 sur un mois, z +0.0 ; percentile 5 ans 41 %).
+- USD/JPY : 159 (+2 sur un mois, z +0.3 ; percentile 5 ans 93 %).
+- USD/KRW : 1,335 (+1 sur un mois, z +0.0 ; percentile 5 ans 40 %).
 - Japan CPI : +2,1 % sur un an (précédent +1,9 %, au 09/2026).
 - BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
 - JGB 2Y : 1.88 (-0.04 sur un mois, z -1.1 ; percentile 5 ans 98 %).
 - JGB 10Y : 2.93 (-0.03 sur un mois, z -0.7 ; percentile 5 ans 98 %).
 - US-Japan 10Y differential : 2.25 (+0.08 sur un mois, z +0.6 ; percentile 5 ans 27 %).
 - JPY futures: leveraged funds net : -16,855 (+16,818 sur un mois, z +0.6 ; percentile 5 ans 81 %).
-- Valeur relative candidate : long Korean equities / short Japanese yen — écart de vues +5.1 pt/an, corrélation 1 an +0.19, ratio à z -0.3 sur un an (pas encore dans les prix).
+- Valeur relative candidate : long Korean equities / short Japanese yen — écart de vues +4.5 pt/an, corrélation 1 an +0.19, ratio à z -0.3 sur un an (pas encore dans les prix).
 
 **À surveiller / à débattre**
 
@@ -28,7 +28,7 @@
 
 |  | name | 1 month | 3 months | 12 months | from 1y high | vol 3m | model tilt (pp/yr) | stance | agreement | house views | n views | weight | vs benchmark | 12-1 momentum | 1m z | 5y percentile | beta SPY | corr SPY | corr change 3m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| EWY | Korean equities | -14.1% | -24.5% | +47.8% | -38.7% | +53.8% | +4.6 | positive | +100.0% | +0.5 | 2 | +0.8% | +0.0% | +70% | -1.64 | +87% | +1.47 | +0.56 | +0.17 |
-| EWT | Taiwanese equities | -17.5% | -15.0% | +46.5% | -25.0% | +43.4% | +3.7 | positive | +75.0% | +0.3 | 3 | +1.2% | +0.0% | +72% | -2.76 | +89% | +1.30 | +0.71 | +0.12 |
-| EWJ | Japanese equities | -6.7% | -6.0% | +12.1% | -10.8% | +21.0% | +2.3 | positive | +100.0% | +1.0 | 4 | +3.3% | +0.0% | +18% | -1.95 | +88% | +0.91 | +0.71 | +0.18 |
-| FXY | Japanese yen | -0.4% | -0.2% | -2.9% | -4.7% | +7.9% | -0.5 | negative | +80.0% | -1.0 | 1 | +0.0% | +0.0% | -3% | -0.10 | +6% | -0.07 | -0.11 | +0.10 |
+| EWY | Korean equities | -14.1% | -24.5% | +47.9% | -38.6% | +53.8% | +4.0 | positive | +100.0% | +0.5 | 2 | +0.8% | -0.0% | +70% | -1.63 | +87% | +1.47 | +0.56 | +0.17 |
+| EWT | Taiwanese equities | -17.7% | -15.2% | +46.2% | -25.2% | +43.4% | +3.4 | positive | +80.0% | +0.3 | 3 | +1.2% | +0.0% | +72% | -2.78 | +89% | +1.30 | +0.71 | +0.12 |
+| EWJ | Japanese equities | -6.9% | -6.2% | +11.9% | -10.9% | +21.0% | +2.0 | positive | +100.0% | +1.0 | 4 | +3.3% | +0.0% | +18% | -1.99 | +88% | +0.91 | +0.71 | +0.18 |
+| FXY | Japanese yen | -0.5% | -0.2% | -2.9% | -4.7% | +7.9% | -0.5 | negative | +83.3% | -1.0 | 1 | +0.0% | +0.0% | -3% | -0.12 | +5% | -0.07 | -0.11 | +0.11 |

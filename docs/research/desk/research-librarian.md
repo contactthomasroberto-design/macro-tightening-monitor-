@@ -1,6 +1,6 @@
 # Veille des publications (calcul GitHub)
 
-*`research-librarian` — 17/11/2026 17:19 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`research-librarian` — 17/11/2026 19:42 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : 639 publications relevées sur 3 jours, 43 institutions.
 
