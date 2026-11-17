@@ -356,3 +356,35 @@ def test_research_tracker_stances_are_explicit_only():
     }
     assert rt.stances("BlackRock says markets face uncertainty", assets) == {}
     assert rt.stances("UBS upgrades and downgrades European stocks", assets) == {}  # ambiguous
+
+
+def test_team_roster_matches_agent_files(tmp_path):
+    from macro import team
+
+    r = team.roster()
+    assert r["defined"].all(), r[~r["defined"]]["agent"].tolist()  # every listed member has an agent file
+    assert r["agent"].is_unique and len(r) >= 25
+    path = tmp_path / "log.csv"
+    team.append_log(
+        [
+            {
+                "date": "2026-11-17",
+                "agent": "macro-strategist",
+                "status": "terminé",
+                "task": "t1",
+                "summary": "s",
+                "link": "",
+            },
+            {
+                "date": "2026-11-18",
+                "agent": "macro-strategist",
+                "status": "en cours",
+                "task": "t2",
+                "summary": "",
+                "link": "",
+            },
+        ],
+        path,
+    )
+    cur, past = team.current_and_past(team.read_log(path), "macro-strategist")
+    assert cur["task"] == "t2" and past["task"].tolist() == ["t1"]

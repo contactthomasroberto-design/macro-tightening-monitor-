@@ -20,6 +20,15 @@ Les rôles sont décrits dans `.claude/agents/`. Toute session Claude Code ouver
 | Recherche quantitative | `quant-researcher` | Tests de signaux, surapprentissage, hypothèses pré-enregistrées |
 | Risque | `risk-manager` | Mandat, concentrations, stress, couverture, ventes à découvert |
 
+Depuis le 17/11/2026, l'équipe compte **27 membres répartis en 7 équipes**, détaillés dans `config/team.yaml`
+et visibles sur la page **Portfolio → Team** du site, avec leur travail en cours et leurs travaux passés
+(`archive/team_log.csv`). Aux rôles ci-dessus s'ajoutent :
+- économiste États-Unis et analyste banques centrales ;
+- analystes pétrole et gaz, métaux, défense et industrie ;
+- analystes haut rendement et dette émergente ;
+- chercheur signaux, quant construction de portefeuille, analyste exécution et coûts, analyste stress tests ;
+- ingénieur données, desk news et documentaliste recherche.
+
 ## Le cycle quotidien
 1. **Toutes les deux heures** (GitHub Actions) :
    - FinBERT note les titres de presse ;

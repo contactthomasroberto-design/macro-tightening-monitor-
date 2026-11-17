@@ -1,0 +1,37 @@
+# The fund's research team (role agents in .claude/agents/). Shown on the Portfolio → Team page with
+# what each member is working on and their past work (archive/team_log.csv).
+teams:
+  Direction:
+    chief-investment-officer: {title: "CIO / gérant", mandate: "Préside le comité du soir, arbitre entre les analystes, valide les vues publiées à enregistrer et signe la note quotidienne."}
+  Macro et stratégie:
+    macro-strategist: {title: "Stratégiste macro mondial", mandate: "Régime de croissance et d'inflation, risque de récession, trajectoires des banques centrales et leur effet sur les classes d'actifs."}
+    us-economist: {title: "Économiste États-Unis", mandate: "Emploi, consommation, composantes de l'inflation, budget ; lecture de chaque statistique américaine et des nowcasts."}
+    central-bank-watcher: {title: "Analyste banques centrales", mandate: "Fed, BCE, BoJ, BoE, PBoC, BNS : communication, projections et écart avec ce que le marché anticipe."}
+  Actions par zone:
+    us-equity-analyst: {title: "Analyste actions US", mandate: "S&P 500, styles (qualité, value, momentum, faible volatilité), résultats, valorisations, rotations."}
+    europe-analyst: {title: "Analyste Europe", mandate: "Actions européennes, BCE et BoE, spreads souverains, politique française et allemande, euro et franc suisse."}
+    japan-asia-analyst: {title: "Analyste Japon et Asie développée", mandate: "BoJ, yen et JGB, gouvernance des entreprises japonaises, Corée et Taïwan et leurs cycles d'exportation."}
+    emerging-markets-analyst: {title: "Analyste marchés émergents", mandate: "Chine, Inde, Brésil, banques centrales émergentes, flux de capitaux."}
+  Secteurs:
+    semis-tech-analyst: {title: "Analyste semi-conducteurs (poche de conviction)", mandate: "Cycle mémoire DRAM/HBM/NAND, capex IA, contrôles à l'export ; SK Hynix, Samsung, Micron, TSMC, NVIDIA, ASML."}
+    energy-commodities-analyst: {title: "Responsable matières premières", mandate: "Vue d'ensemble énergie, métaux et agriculture ; coordonne les analystes pétrole et métaux."}
+    oil-gas-analyst: {title: "Analyste pétrole et gaz", mandate: "Équilibres offre-demande, OPEP+, stocks, géopolitique de l'énergie, actions pétrolières."}
+    metals-analyst: {title: "Analyste métaux", mandate: "Or (banques centrales, ETF, taux réels), argent, cuivre et cycle industriel."}
+    financials-analyst: {title: "Analyste financières et immobilier", mandate: "Banques, assureurs, crédit privé, immobilier commercial, foncières cotées."}
+    defense-industrials-analyst: {title: "Analyste défense et industrie", mandate: "Budgets de défense, aéronautique, biens d'équipement, infrastructures et électrification."}
+  Taux, crédit et changes:
+    rates-credit-analyst: {title: "Responsable taux et crédit", mandate: "Courbes, prime de terme, TIPS et points morts, crédit investment grade ; coordonne le haut rendement et la dette émergente."}
+    high-yield-credit-analyst: {title: "Analyste haut rendement", mandate: "Spreads, défauts, murs de refinancement, crédit privé, signaux du crédit pour les actions."}
+    em-debt-analyst: {title: "Analyste dette émergente", mandate: "Dette souveraine en dollars et en devise locale, inflation et banques centrales émergentes."}
+    fx-strategist: {title: "Stratégiste changes", mandate: "Dollar, yen, euro, franc suisse, devises asiatiques ; portage, positionnement, risque d'intervention."}
+  Quant et risque:
+    quant-researcher: {title: "Responsable recherche quantitative", mandate: "Tests des modèles, surapprentissage, hypothèses pré-enregistrées ; coordonne l'équipe quant."}
+    signals-researcher: {title: "Chercheur signaux", mandate: "Conception et audit des signaux (tendance, value, portage, macro, news) en données datées et hors échantillon."}
+    portfolio-construction-quant: {title: "Quant construction de portefeuille", mandate: "Optimiseur, calibrage Black-Litterman, covariance, budgets de risque, levier et contraintes."}
+    execution-trading-analyst: {title: "Analyste exécution et coûts", mandate: "Coûts de transaction, liquidité, coût et disponibilité des titres empruntés, coûts de roulement des ETF."}
+    risk-manager: {title: "Directeur des risques", mandate: "Contrôle indépendant du mandat : volatilité, tracking error, VaR, expositions, concentrations, ventes à découvert, couverture."}
+    stress-testing-analyst: {title: "Analyste stress tests", mandate: "Crises rejouées et scénarios hypothétiques sur le portefeuille du jour ; comportement de la couverture et des positions courtes."}
+  Données et veille:
+    data-quality-engineer: {title: "Ingénieur données", mandate: "Fraîcheur et qualité des séries, ajustements de cours, décalages de publication, biais du survivant."}
+    news-desk-analyst: {title: "Desk news", mandate: "Revue des titres à fort impact, contrôle des scores FinBERT, synthèse des événements qui comptent."}
+    research-librarian: {title: "Documentaliste recherche", mandate: "Vérifie chaque vue publiée (source, date, formulation) avant son entrée dans le fichier des vues de maison."}

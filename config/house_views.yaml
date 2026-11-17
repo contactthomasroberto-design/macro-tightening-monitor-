@@ -22,7 +22,7 @@ views:
       Maximum overweight global equities, adding in every region (S&P 500 8,700, MSCI Europe 3,030,
       TOPIX 4,800); core bonds neutral, corporate credit equal weight; prefers Bunds and gilts; modest
       dollar rally (DXY 105), yen weaker (162); gold top commodity pick ($5,250).
-    stances: {SPY: 1, VGK: 1, EWJ: 1, EEM: 0.5, AGG: 0, IEF: 0, LQD: 0, BWX: 0.5, UUP: 0.5, FXY: -1, GLD: 1}
+    stances: {SPY: 1, VGK: 1, EWJ: 1, EEM: 0, AGG: 0, IEF: 0, LQD: 0, BWX: 0.5, UUP: 0.5, FXY: -1, GLD: 1}  # EEM corrected 2026-11-17: equal weight per CNBC
   - institution: BlackRock Investment Institute
     title: "Weekly commentary: Midterms and AI in focus at 2027 Forum"
     date: 2026-11-09
@@ -67,3 +67,72 @@ views:
       2027 DRAM contract prices +40% (KB), HBM prices +80-121% (RBC, KB); SK hynix DRAM and HBM output
       sold out through 2029, Samsung's 2027 HBM sold out; HBM share split between SK hynix and Samsung.
     stances: {HYNIX: 1, SAMSUNG: 1, MU: 1}
+
+  # ---- added 2026-11-17 by the research team (analyst notes in docs/research/daily/2026-11-17.md);
+  # secondary coverage where the original report could not be opened, as noted in each summary.
+  - institution: Goldman Sachs Research (Asia equity strategy)
+    title: "2027 Asia outlook: MSCI Asia ex-Japan +19% in USD"
+    date: 2026-11-15
+    url: https://www.businesstoday.in/markets/story/earnings-growth-to-drive-19-asian-equity-rally-in-2027-despite-ai-volatility-risks-goldman-sachs-567505-2026-11-15
+    summary: Overweight Korea and Japan; China H-shares and India raised to overweight; A-shares and Taiwan cut to neutral to balance AI exposure (secondary coverage).
+    stances: {EWY: 1, EWJ: 1, EWT: 0, INDA: 1}
+  - institution: Goldman Sachs Research (Korea memory)
+    title: "Korea memory: selloff overdone, Buy reaffirmed on Samsung and SK hynix"
+    date: 2026-11-10
+    url: https://www.mt.co.kr/en/stock/2026/11/10/2026111015285893769
+    summary: Samsung and SK hynix oversold near historical lows (forward P/B about 1.2x); Buy on both, Samsung on the Conviction List.
+    stances: {HYNIX: 1, SAMSUNG: 1}
+  - institution: UBS Research (US equity strategy)
+    title: "S&P 500 end-2027 target 8,900"
+    date: 2026-11-13
+    url: https://stocktwits.com/news-articles/markets/equity/can-the-s-and-p-500-keep-rising-in-2027-ubs-bets-on-8-900-but-bof-a-warns-of-crowded-trades/cNGDJNcR9Jn
+    summary: S&P 500 8,900 end-2027, EPS $430; main risk a data-centre construction pause in 2028. Stance from the index target, not a formal overweight.
+    stances: {SPY: 0.5}
+  - institution: BofA Global Research (US equity strategy)
+    title: "Crowded trades: not particularly bullish on the index"
+    date: 2026-11-13
+    url: https://stocktwits.com/news-articles/markets/equity/can-the-s-and-p-500-keep-rising-in-2027-ubs-bets-on-8-900-but-bof-a-warns-of-crowded-trades/cNGDJNcR9Jn
+    summary: Not particularly bullish on the S&P 500; crowded positioning may cap the 2027 rally.
+    stances: {SPY: 0}
+  - institution: UBS Investment Bank (European equity strategy)
+    title: "Stoxx 600 end-2027 target 750"
+    date: 2026-11-10
+    url: https://capital.com/en-eu/news/live-markets-europe-s-earnings-engine-has-room-to-run
+    summary: Stoxx 600 750 end-2027 (about +13%), 2027 EPS +13% against a consensus near 10%. Stance from the index target.
+    stances: {VGK: 0.5}
+  - institution: ING (FX strategy)
+    title: "Swiss franc supported by hawkish SNB risk"
+    date: 2026-11-04
+    url: https://www.fxstreet.com/news/swiss-franc-franc-supported-by-hawkish-snb-risk-ing-202611040935
+    summary: A more hawkish SNB supports the franc; downside risks to EUR/CHF forecasts.
+    stances: {FXF: 0.5}
+  - institution: Commerzbank (FX strategy)
+    title: "EUR/USD: political risks tilt against the euro"
+    date: 2026-11-13
+    url: https://www.mitrade.com/insights/news/live-news/article-1-2253380-20261113
+    summary: End-2027 EUR/USD target cut from 1.18 to 1.06; political risk rising in the euro area (France). Supersedes Commerzbank's 23 Oct euro-positive note.
+    stances: {FXE: -1}
+  - institution: ING (FX strategy)
+    title: "US dollar: supported near term, softer later"
+    date: 2026-11-10
+    url: https://www.fxstreet.com/news/us-dollar-supported-near-term-softer-later-ing-202611101056
+    summary: Strong growth, inflation above 3% and a hawkish Fed support the dollar into early 2027, then a spring pull-back.
+    stances: {UUP: 0}
+  - institution: ING (rates strategy)
+    title: "US rates and a triple whammy of obstacles to overcome"
+    date: 2026-11-04
+    url: https://www.fxstreet.com/analysis/us-rates-and-a-triple-whammy-of-obstacles-to-overcome-202611041129
+    summary: US 10-year to keep rising into Q1 2027 towards 5.25%, possibly 5.5%, then 4.5-4.75% later in 2027; warns against positioning for the reversal too early.
+    stances: {IEF: -0.5}
+  - institution: PIMCO
+    title: "Secular Outlook 2026: the credit loss cycle"
+    date: 2026-06-10
+    url: https://www.thinkadvisor.com/2026/06/10/pimco-warns-a-wave-of-defaults-is-coming-for-low-quality-borrowers/
+    summary: Credit loss cycle has begun in lower-quality credit, leveraged loans and private credit; favours intermediate government bonds, global sovereigns and inflation-linked bonds (secondary coverage; expires 2026-12-10).
+    stances: {HYG: -0.5, IEF: 0.5, TIP: 0.5, BWX: 0.5}
+  - institution: U.S. Energy Information Administration
+    title: "Short-Term Energy Outlook, November 2026"
+    date: 2026-11-10
+    url: https://www.ogj.com/general-interest/economics-markets/news/55418180/eia-sees-brent-near-100-bbl-through-yearend-2026-as-middle-east-supply-constraints-persist
+    summary: Inventories rebuild through 2027; Brent $97 in 2026 and $86 in 2027, $77 in 4Q27 (official forecast; secondary coverage).
+    stances: {BNO: -0.5}

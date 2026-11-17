@@ -1503,7 +1503,14 @@ def portfolio_bundle(force: bool = False) -> dict:
         if fresh and isinstance(prev, dict):
             runs, alt, bt_time = prev["backtests"], prev["alternative_returns"], prev["backtest_computed"]
         else:
-            runs = {k: pf.backtest(inp, cfg, **v) for k, v in PORTFOLIO_VARIANTS.items()}
+            from macro.utils import is_demo
+
+            variants = PORTFOLIO_VARIANTS
+            if is_demo():  # synthetic data: two variants are enough to exercise the code
+                variants = {
+                    k: v for k, v in PORTFOLIO_VARIANTS.items() if k in ("full model", "long only (H35)")
+                }
+            runs = {k: pf.backtest(inp, cfg, **v) for k, v in variants.items()}
             alt = {k: pf.backtest_rule(inp, cfg, fn) for k, fn in pf.ALTERNATIVES.items()}
             bt_time = pd.Timestamp.now(tz="UTC")
         start = runs["full model"]["returns"].index[0]

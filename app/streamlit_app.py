@@ -106,6 +106,7 @@ SECTIONS = [
             ("portfolio_scanner.py", "Market scanner"),
             ("portfolio_signals.py", "Signals and tests"),
             ("portfolio_research.py", "Research"),
+            ("portfolio_team.py", "Team"),
             ("portfolio_news.py", "News"),
             ("portfolio_rules.py", "Rules"),
         ],
