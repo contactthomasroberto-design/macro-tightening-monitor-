@@ -5,8 +5,10 @@ name: refresh
 # Secrets: FRED_API_KEY (optional; enables ALFRED vintages). Never echoed.
 on:
   schedule:  # weekdays; GitHub can start scheduled runs late, the dashboard also polls on its own
+    - cron: "17 7 * * 1-5"    # 07:17 UTC: after the Tokyo and Seoul closes (Asia desk)
     - cron: "47 10 * * 1-5"   # 10:47 UTC: after Japanese (overnight) and euro-area 11:00 CET releases
     - cron: "17 14 * * 1-5"   # 14:17 UTC: after 8:30 ET US releases (CPI, payrolls, GDP, PCE)
+    - cron: "47 16 * * 1-5"   # 16:47 UTC: after the European close
     - cron: "37 21 * * 1-5"   # 21:37 UTC: after the US close and FRED's daily market updates
   workflow_dispatch:
   push:  # after a code change, rebuild the warm-start snapshot with the new code
@@ -50,6 +52,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/check_alerts.py --issue
+      - name: Process controls (decision scoring, loss post-mortems, forward stress limits)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/process_controls.py --issue
+      - name: GitHub desk (computed analyst notes across all markets, no AI tokens)
+        continue-on-error: true
+        run: python scripts/desk_run.py
       - name: Daily report (every run; the evening run also opens an issue e-mailed to the owner)
         continue-on-error: true
         env:
@@ -83,7 +93,7 @@ jobs:
           git config user.name "macro-monitor-bot"
           git config user.email "actions@users.noreply.github.com"
           git add archive/forecasts.csv README.md docs/figures snapshot/live
-          for f in archive/forecast_book.csv archive/signposts_state.json archive/portfolio_book.csv archive/portfolio_daily docs/reports/daily; do
+          for f in archive/forecast_book.csv archive/signposts_state.json archive/portfolio_book.csv archive/portfolio_daily docs/reports/daily archive/decisions.csv archive/process_alerts.json docs/research/postmortems docs/research/desk archive/desk_log.csv; do
             if [ -e "$f" ]; then git add "$f"; fi
           done
           if ! git diff --cached --quiet; then

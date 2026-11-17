@@ -46,6 +46,46 @@ et visibles sur la page **Portfolio → Team** du site, avec leur travail en cou
    - écrit la note `docs/research/daily/<date>.md` ;
    - propose les changements de modèle sous forme d'hypothèses pré-enregistrées.
 
+## Le desk GitHub (depuis le 17/11/2026)
+À chaque rafraîchissement (3 fois par jour en semaine), `scripts/desk_run.py` (`src/macro/desk.py`) écrit une note
+calculée pour chaque membre dont le travail se chiffre. Pas d'IA, pas de tokens. Les notes sont dans
+`docs/research/desk/` et sur la page **Portfolio → Desk**, et la page Team affiche la dernière note de chaque membre.
+
+**Ce que couvre chaque note, sur tout son marché et pas seulement nos lignes :**
+- **Analystes de zone et de secteur** :
+  - par instrument : rendements à 1, 3 et 12 mois, distance au plus haut, volatilité, momentum 12-1 ;
+  - z-score du mouvement d'un mois, percentile sur 5 ans, bêta et corrélation au S&P 500, rupture de corrélation ;
+  - les scores de chaque famille de signaux, avec leur accord, le surplus de rendement attendu du modèle et le
+    consensus des vues publiées (désaccords signalés) ;
+  - le poids détenu par rapport au 60/40, et une idée de valeur relative à débattre ;
+  - le scan des séries de leur marché : spreads souverains, prime de terme, breakevens, positionnement CFTC,
+    inflation de zone, différentiels de taux, matières premières, conditions financières.
+- **Macro** : régime, facteurs, nowcast, récession, inflation, emploi et règle de Sahm, banques centrales et prix
+  de marché, plus un tour d'horizon cross-asset de tous les marchés suivis, classés par ampleur du mouvement.
+- **Quants** : tests et deflated Sharpe, variantes, contribution et cohérence des familles de signaux,
+  contraintes saturées, rotation et coûts.
+- **Risque** : volatilité, TE, VaR et ES, contributions au risque, stress tests et crises rejouées, qualité des
+  données, news notées, veille des publications.
+- **CIO** : synthèse et liste des points à débattre au comité du soir.
+
+**Le comité Claude de la nuit part de ces notes.** Il ajoute ce que le code ne sait pas faire : lire les
+publications nouvelles, juger les événements, débattre et trancher.
+
+## Contrôles du process (depuis le 17/11/2026)
+Calculés dans GitHub à chaque rafraîchissement (`scripts/process_controls.py`, `src/macro/fund_process.py`) :
+- **Registre des paris** (`archive/decisions.csv`). Chaque vue du comité est enregistrée avant les faits :
+  - un instrument ou une série, un seuil, un horizon et une probabilité ;
+  - le résultat est constaté à partir des données, sans jugement humain ;
+  - le **score de Brier** est calculé par analyste (0 = parfait, 0,25 = toujours 50 %) et affiché sur la page Team.
+- **Revues de pertes**. Toute position qui a coûté plus de 1 % de la VL sur 4 semaines déclenche un diagnostic
+  automatique :
+  - mouvement en écarts-types, part expliquée par le marché, position à sa borne, vues qui la portaient ;
+  - il est écrit dans `docs/research/postmortems/` et complété par le comité (donnée, signal, taille ou malchance).
+- **Stress tests prospectifs** (`config/stress_scenarios.yaml`), chaque jour sur le portefeuille du jour :
+  - krach IA, cycle mémoire, pétrole, carry yen, crédit, taux, stagflation, dollar, Chine-Taïwan ;
+  - limites : 15 % de la VL, et pas plus que la perte du 60/40 plus 2 points ;
+  - un dépassement ouvre une issue pour le comité, sans changer les poids de lui-même.
+
 ## Garde-fous
 - Aucune vue personnelle de l'IA n'est enregistrée comme « vue de maison ». Seules les positions
   publiées par une institution identifiable le sont, avec la date et le lien.

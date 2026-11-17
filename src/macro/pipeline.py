@@ -1574,6 +1574,29 @@ def portfolio_bundle(force: bool = False) -> dict:
             port = (1 + seg.fillna(0) @ target).prod() - 1
             bseg = (1 + bench.loc[a:e]).prod() - 1
             episodes[name] = {"portfolio (current weights)": port, "benchmark": bseg}
+        # forward stress tests with limits, and loss post-mortems (src/macro/fund_process.py)
+        from macro import fund_process as fp
+
+        w_bench = pd.Series(cfg.get("equilibrium", {}), dtype=float)
+        th = cfg["model"].get("tail_hedge") or {}
+        hn = _hedge_now(inp, target, cfg)
+        forward = fp.forward_stress(
+            target, w_bench, tg["cov"], fp.load_scenarios(), hn | {"moneyness": th.get("moneyness", 0.95)}
+        )
+        held = pl.holdings_at(book)
+        pm_weights = held if len(held) >= 2 else runs["full model"]["weights"]
+        pm_source = "paper book" if len(held) >= 2 else "backtest (full model)"
+        lose = fp.losers(pm_weights, r, threshold=0.01, weeks=4)
+        vw = pd.DataFrame(tg["views"])
+        post_mortems = [
+            fp.post_mortem(a, pm_weights, r, cfg, 4, vw) | {"loss": float(v)} for a, v in lose.items()
+        ]
+        # performance by period (week, month, year to date, calendar years) of the model and the 60/40
+        perf_series = {"model (backtest)": runs["full model"]["returns"], "benchmark 60/40": b}
+        if len(nav) > 1:
+            perf_series["paper book"] = nav.pct_change().dropna()
+        performance = fp.performance_summary(perf_series)
+        calendar = fp.calendar_table(runs["full model"]["returns"], b)
         from macro.utils import is_demo
 
         today = px.index[-1] if is_demo() else pd.Timestamp.today().normalize()  # demo data end in the past
@@ -1616,7 +1639,12 @@ def portfolio_bundle(force: bool = False) -> dict:
             "net_equity": float(
                 target[[a for a in target.index if cfg["universe"][a]["sleeve"] in pf.EQUITY_SLEEVES]].sum()
             ),
-            "hedge_now": _hedge_now(inp, target, cfg),
+            "hedge_now": hn,
+            "forward_stress": forward,
+            "performance": performance,
+            "calendar_returns": calendar,
+            "post_mortems": post_mortems,
+            "post_mortem_source": pm_source,
             "house_views": inp.house,
             "paper_nav": nav,
             "paper_drawdown": dd,

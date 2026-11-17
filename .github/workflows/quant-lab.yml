@@ -3,7 +3,7 @@ name: quant-lab
 # run in GitHub Actions so they cost no AI tokens. Saturday morning, and on demand.
 on:
   schedule:
-    - cron: "13 6 * * 6"
+    - cron: "13 6 * * 3,6"   # Wednesday and Saturday mornings (UTC)
   workflow_dispatch:
 permissions:
   contents: write

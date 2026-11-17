@@ -1,0 +1,37 @@
+# Forward stress scenarios for the current book (src/macro/fund_process.forward_stress).
+# Shocks are total moves in percent of the USD price of universe instruments; the other instruments
+# move by their conditional expectation from the covariance. Sizes are calibrated on past episodes
+# (named in each note), not forecasts. Reviewed by the stress-testing analyst; changes are logged in
+# docs/research_log.md.
+limits:
+  absolute: 0.15            # no scenario may cost more than 15% of NAV
+  relative_to_benchmark: 1.0 # nor more than the 60/40 benchmark loses in the same scenario...
+  tolerance: 0.02            # ...plus 2 points (the mandate: drawdown no worse than the benchmark)
+scenarios:
+  ai_crash:
+    label: "Krach IA / semis (2000, 2022 ; SOX −45 %)"
+    shocks: {NVDA: -45, SOXX: -40, HYNIX: -45, SAMSUNG: -35, MU: -45, TSM: -35, ASML: -40, SPY: -18}
+  memory_bust:
+    label: "Retournement du cycle mémoire (2018-19 ; DRAM −50 %)"
+    shocks: {HYNIX: -40, SAMSUNG: -30, MU: -40, EWY: -15}
+  oil_shock:
+    label: "Choc pétrolier (Brent +50 %, 2022)"
+    shocks: {BNO: 50, XLE: 20, SPY: -10, TIP: -3, TLT: -10}
+  yen_carry_unwind:
+    label: "Débouclage du carry yen (août 2024, ×1,5)"
+    shocks: {FXY: 12, EWJ: -18, SPY: -8, NVDA: -20, EWT: -12}
+  credit_crisis:
+    label: "Crise de crédit (2008 atténuée ; HY −20 %)"
+    shocks: {HYG: -20, LQD: -10, EMB: -15, SPY: -30, XLF: -40, TLT: 15, GLD: 5}
+  rates_shock:
+    label: "Choc de taux (2022 ; 10 ans +150 pb)"
+    shocks: {TLT: -20, IEF: -9, TIP: -8, SPY: -15, VNQ: -20, UUP: 6}
+  stagflation:
+    label: "Stagflation (1970s compressée ; CPI 6 %, Fed en retard)"
+    shocks: {SPY: -20, TLT: -15, IEF: -6, GLD: 15, DBC: 20, UUP: -5}
+  dollar_spike:
+    label: "Envolée du dollar (2014-15, DXY +12 %)"
+    shocks: {UUP: 12, EEM: -18, EMLC: -15, EWZ: -25, GLD: -10, CPER: -20}
+  china_taiwan:
+    label: "Tension Chine-Taïwan (blocus, choc géopolitique)"
+    shocks: {EWT: -35, TSM: -40, MCHI: -25, EWY: -20, HYNIX: -30, SAMSUNG: -25, SPY: -12, GLD: 8}

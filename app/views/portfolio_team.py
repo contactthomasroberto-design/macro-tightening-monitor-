@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from components import footer, header, sidebar_controls
+from macro import fund_process as fp
 from macro import team
 
 header(
@@ -13,10 +14,11 @@ ctl = sidebar_controls()
 
 @st.cache_data(ttl=600, show_spinner=False)
 def _load():
-    return team.roster(), team.read_log()
+    return team.roster(), team.read_log(), fp.read_decisions()
 
 
-roster, log = _load()
+roster, log, decisions = _load()
+scores = fp.brier_table(decisions) if not decisions.empty else pd.DataFrame()
 c = st.columns(4)
 c[0].metric("Members", len(roster))
 c[1].metric("Teams", roster["team"].nunique())
@@ -29,6 +31,79 @@ st.caption(
     "analysts research their area across the whole market, and the work is recorded here and in docs/research/."
 )
 
+
+@st.fragment(run_every="60s")
+def live_board() -> None:
+    """Task board: refreshed every minute from the committee's status file and the desk's last run."""
+    titles = dict(zip(roster["agent"], roster["title"], strict=False))
+    bd = team.board()
+    st.subheader("Live task board")
+    if bd.empty:
+        st.caption("No task in the last 30 hours.")
+        return
+    now = pd.Timestamp.now(tz="UTC")
+    running = bd[bd["status"] == "en cours"]
+    if not running.empty:
+        st.info(
+            f"Committee in session: {running['agent'].nunique()} member(s) working now "
+            f"({', '.join(sorted(running['stage'].astype(str).unique()))})."
+        )
+    cols = st.columns(3)
+    for col, (stage, label) in zip(
+        cols,
+        (("à faire", "To do"), ("en cours", "In progress"), ("terminé", "Done (last 30 h)")),
+        strict=True,
+    ):
+        part = bd[bd["status"] == stage]
+        col.markdown(f"**{label}** · {len(part)}")
+        with col.container(height=420, border=True):
+            for _, r in part.head(60).iterrows():
+                t = r["time"]
+                ago = ""
+                if pd.notna(t):
+                    mins = int((now - t).total_seconds() // 60)
+                    ago = f"{mins} min ago" if mins < 120 else f"{t:%d/%m %H:%M} UTC"
+                st.markdown(
+                    f"**{titles.get(r['agent'], r['agent'])}**  \n{r['task']}  \n"
+                    f"<small>{r['stage']} · {r['source']} · {ago}</small>",
+                    unsafe_allow_html=True,
+                )
+    st.caption(
+        "Desk notes are computed by GitHub five times a weekday; the nightly committee (23:41 Zurich) posts each "
+        "member's status as it moves through the rounds. The board refreshes every minute."
+    )
+
+
+live_board()
+
+st.subheader("Forecast track record (decision registry)")
+if decisions.empty:
+    st.caption(
+        "No forecast on record yet. From the committee of 18 Nov, every view is recorded with a threshold, a horizon "
+        "and a probability (archive/decisions.csv) and scored automatically once its horizon passes."
+    )
+else:
+    st.dataframe(
+        scores.style.format(
+            {"Brier": "{:.3f}", "skill": "{:+.2f}", "mean probability": "{:.0%}", "hit rate": "{:.0%}"},
+            na_rep="—",
+        ),
+        use_container_width=True,
+    )
+    st.caption(
+        "Brier score = mean of (probability − outcome)²: 0 is perfect, 0.25 is always saying 50%. Skill = 1 − Brier "
+        "/ Brier of the base rate: above 0 the analyst beats a constant forecast. Outcomes come from the data, not "
+        "from the committee. Few resolved forecasts mean the ranking is noise: read it after 20 or more per analyst."
+    )
+    with st.expander(f"All forecasts ({len(decisions)})"):
+        st.dataframe(
+            decisions.sort_values("date", ascending=False)[
+                ["date", "agent", "claim", "probability", "horizon", "status", "outcome", "realised"]
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+
 for name, members in roster.groupby("team", sort=False):
     st.subheader(name)
     cols = st.columns(2)
@@ -37,6 +112,13 @@ for name, members in roster.groupby("team", sort=False):
         with cols[i % 2].container(border=True):
             st.markdown(f"**{m['title']}**  \n<small>`{m['agent']}`</small>", unsafe_allow_html=True)
             st.markdown(m["mandate"])
+            if m["agent"] in scores.index and scores.loc[m["agent"], "resolved"] > 0:
+                sc = scores.loc[m["agent"]]
+                st.markdown(
+                    f"<small>Track record: Brier {sc['Brier']:.3f} on {int(sc['resolved'])} resolved forecasts, "
+                    f"{int(sc['open'])} open</small>",
+                    unsafe_allow_html=True,
+                )
             if cur is None:
                 st.markdown("<small>No assignment yet.</small>", unsafe_allow_html=True)
                 continue

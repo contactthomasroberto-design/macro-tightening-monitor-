@@ -1,6 +1,11 @@
 name: ci
 on:
+  # Pull requests run the tests; pushes to main only when code changes. Bot commits of the archive,
+  # reports, research notes and snapshot do not re-run the suite (it saves about half the Actions minutes,
+  # spent instead on more desk and refresh runs).
   push:
+    branches: [main]
+    paths-ignore: ["archive/**", "docs/**", "snapshot/**", "README.md"]
   pull_request:
 jobs:
   test:
