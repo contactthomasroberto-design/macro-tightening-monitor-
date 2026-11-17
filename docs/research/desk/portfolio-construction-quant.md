@@ -1,6 +1,6 @@
 # Construction : contraintes, brut, rotation (calcul GitHub)
 
-*`portfolio-construction-quant` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`portfolio-construction-quant` — 17/11/2026 23:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Statut de l'optimiseur : optimal. Brut +100 % (plafond +160 %), actions nettes +60 %, 19 lignes, 0 shorts.
 

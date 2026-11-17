@@ -1,6 +1,6 @@
 # Énergie et matières premières (calcul GitHub)
 
-*`energy-commodities-analyst` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`energy-commodities-analyst` — 17/11/2026 23:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Brent crude oil (+3.2 pt/an) ; le moins attractif : Gold (+0.0 pt/an). 2 désaccord(s) avec les vues publiées.
 

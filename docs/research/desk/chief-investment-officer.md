@@ -1,6 +1,6 @@
 # Synthèse du desk GitHub (calcul GitHub)
 
-*`chief-investment-officer` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`chief-investment-officer` — 17/11/2026 23:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : 43 point(s) à arbitrer au comité de ce soir.
 

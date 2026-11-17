@@ -1,4 +1,4 @@
-# Desk GitHub — 17/11/2026 22:44 UTC
+# Desk GitHub — 17/11/2026 23:20 UTC
 
 Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des familles de signaux sur tout l'univers, scans de tous les marchés suivis. Le comité du soir les débat.
 
