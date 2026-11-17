@@ -34,9 +34,15 @@ def roster(path: Path = TEAM) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def read_log(path: Path = LOG, desk: Path | None = DESK_LOG) -> pd.DataFrame:
-    """The committee's log, plus the GitHub desk's daily lines when `desk` exists. A committee line
-    and a desk line of the same day both show; the committee's comes first (it is the judgement)."""
+_DEFAULT = Path("<default>")
+
+
+def read_log(path: Path = LOG, desk: Path | None = _DEFAULT) -> pd.DataFrame:
+    """The committee's log, plus the GitHub desk's daily lines when `desk` exists (by default only
+    with the default committee log). A committee line and a desk line of the same day both show; the
+    committee's comes first (it is the judgement)."""
+    if desk == _DEFAULT:
+        desk = DESK_LOG if Path(path) == LOG else None
     parts = [pd.read_csv(p) for p in (path, desk) if p is not None and Path(p).exists()]
     if not parts:
         return pd.DataFrame(columns=COLUMNS)
