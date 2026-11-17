@@ -1,11 +1,11 @@
 # Haut rendement (calcul GitHub)
 
-*`high-yield-credit-analyst` — 17/11/2026 19:42 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`high-yield-credit-analyst` — 17/11/2026 22:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US high yield (+0.3 pt/an) ; le moins attractif : US investment-grade credit (-0.1 pt/an). 1 désaccord(s) avec les vues publiées.
 
-- US high yield : 1 mois +0,3 %, 12 mois +1,6 %, -3 % du plus haut, vol 4 % ; familles trend +0.3, macro +0.6, regime +0.1, carry +0.1, house -0.8 → **positive** (accord 80 %) ; vues publiées -0.8 (2) ; poids +0,0 % (+0,0 % vs 60/40).
-- US investment-grade credit : 1 mois +0,3 %, 12 mois -2,3 %, -5 % du plus haut, vol 6 % ; familles trend -0.4, macro +0.4, regime -0.1, carry +0.0, house -0.2 → **negative** (accord 60 %) ; vues publiées -0.2 (2) ; poids +0,0 % (+0,0 % vs 60/40).
+- US high yield : 1 mois +0,3 %, 12 mois +1,5 %, -3 % du plus haut, vol 4 % ; familles trend +0.3, macro +0.6, regime +0.1, carry +0.1, house -0.8 → **positive** (accord 80 %) ; vues publiées -0.8 (2) ; poids +0,0 % (+0,0 % vs 60/40).
+- US investment-grade credit : 1 mois +0,2 %, 12 mois -2,4 %, -5 % du plus haut, vol 6 % ; familles trend -0.4, macro +0.4, regime -0.1, carry +0.0, house -0.2 → **negative** (accord 60 %) ; vues publiées -0.2 (2) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
 - HY OAS : 3.34 (+0.11 sur un mois, z +0.4 ; percentile 5 ans 84 %).
 - IG OAS : 0.90 (+0.05 sur un mois, z +0.8 ; percentile 5 ans 66 %).
@@ -21,5 +21,5 @@
 
 |  | name | 1 month | 3 months | 12 months | from 1y high | vol 3m | model tilt (pp/yr) | stance | agreement | house views | n views | weight | vs benchmark | 12-1 momentum | 1m z | 5y percentile | beta SPY | corr SPY | corr change 3m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| HYG | US high yield | +0.3% | -2.1% | +1.6% | -2.6% | +4.0% | +0.3 | positive | +80.0% | -0.8 | 2 | +0.0% | +0.0% | +1% | -0.26 | +84% | +0.24 | +0.76 | -0.14 |
-| LQD | US investment-grade credit | +0.3% | -1.8% | -2.3% | -4.6% | +6.4% | -0.1 | negative | +60.0% | -0.2 | 2 | +0.0% | +0.0% | -3% | -0.07 | +70% | +0.15 | +0.35 | -0.14 |
+| HYG | US high yield | +0.3% | -2.2% | +1.5% | -2.7% | +4.0% | +0.3 | positive | +80.0% | -0.8 | 2 | +0.0% | +0.0% | +1% | -0.32 | +84% | +0.24 | +0.76 | -0.14 |
+| LQD | US investment-grade credit | +0.2% | -1.9% | -2.4% | -4.7% | +6.4% | -0.1 | negative | +60.0% | -0.2 | 2 | +0.0% | +0.0% | -3% | -0.12 | +70% | +0.15 | +0.35 | -0.13 |
