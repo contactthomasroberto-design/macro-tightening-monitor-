@@ -169,5 +169,23 @@ st.markdown(
     f"{m.loc['max drawdown', 'benchmark 60/40']:.1%} for the benchmark, Sharpe {full['Sharpe']:.2f} against "
     f"{m.loc['Sharpe', 'benchmark 60/40']:.2f}. Details: Backtest."
 )
+st.subheader("Performance by period")
+perf = b.get("performance")
+if perf is not None and not perf.empty:
+    st.dataframe(perf.style.format("{:+.2%}", na_rep="—"), use_container_width=True)
+    cal = b.get("calendar_returns")
+    if cal is not None and not cal.empty:
+        st.markdown("**By year and month (model, walk-forward backtest; current year to date)**")
+        st.dataframe(
+            cal.style.format("{:+.1%}", na_rep="").map(
+                lambda v: "" if pd.isna(v) else ("color: #1a7f37" if v > 0 else "color: #cf222e")
+            ),
+            use_container_width=True,
+        )
+    st.caption(
+        "Returns in USD after trading costs, borrow and the tail hedge. The model column is the 20-year walk-forward "
+        "backtest (weekly rebalance, no look-ahead); the paper book column appears once the paper book has started "
+        f"({cfg['live']['start']}). Backtest returns are hypothetical and overstate what a real fund would have earned."
+    )
 st.caption(DISCLAIMER)
 footer()

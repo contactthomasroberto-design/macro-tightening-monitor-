@@ -268,6 +268,22 @@ def main() -> int:
             f"- Cycle mémoire (accélération de la croissance du CA de Micron) : {100 * mc.iloc[-1]:+.1f} points au {mc.index[-1]:%d/%m/%Y}."
         )
 
+    perf = b.get("performance")
+    if perf is not None and not perf.empty:
+        L += ["", "### Performance par période (USD, après coûts)", ""]
+        cols = list(perf.columns)
+        L.append("| Période | " + " | ".join(cols) + " |")
+        L.append("|---|" + "---|" * len(cols))
+        for k, row in perf.iterrows():
+            L.append(f"| {k} | " + " | ".join("—" if pd.isna(v) else pct(v) for v in row) + " |")
+        cal = b.get("calendar_returns")
+        if cal is not None and not cal.empty:
+            L += ["", "Par année (modèle ; année en cours à date) :", ""]
+            L.append("| Année | Modèle | 60/40 | Écart |")
+            L.append("|---|---|---|---|")
+            for y, row in cal.head(10).iterrows():
+                L.append(f"| {y} | {pct(row['year'])} | {pct(row['benchmark'])} | {pct(row['excess'])} |")
+
     L += ["", "## 2 quinquies. Contrôles du process : stress tests, revues de pertes, paris notés", ""]
     from macro import fund_process as fp
 

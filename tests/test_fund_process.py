@@ -95,3 +95,20 @@ def test_scenarios_config_uses_universe():
     uni = set(pf.load_config()["universe"])
     for k, sc in fp.load_scenarios()["scenarios"].items():
         assert set(sc["shocks"]) <= uni, k
+
+
+def test_performance_tables():
+    idx = pd.date_range("2024-01-05", "2026-11-13", freq="W-FRI")
+    r = pd.Series(0.001, idx)
+    b = pd.Series(0.0005, idx)
+    p = fp.period_returns(r)
+    assert p["week"] == pytest.approx(0.001)
+    n_ytd = (idx >= "2026-01-01").sum()
+    assert p["year to date"] == pytest.approx(1.001**n_ytd - 1)
+    assert p["2025"] == pytest.approx(1.001 ** (idx.year == 2025).sum() - 1)
+    s = fp.performance_summary({"m": r, "b": b})
+    assert "m − b" in s.columns and (s["m − b"].dropna() > 0).all()
+    cal = fp.calendar_table(r, b)
+    assert list(cal.index) == [2026, 2025, 2024]
+    assert cal.loc[2025, "year"] == pytest.approx((1 + cal.loc[2025, "Jan":"Dec"]).prod() - 1)
+    assert cal.loc[2026, "Dec"] != cal.loc[2026, "Dec"]  # no December yet (NaN)

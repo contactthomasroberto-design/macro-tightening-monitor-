@@ -349,3 +349,68 @@ def forward_stress(
             "largest losses": ", ".join(f"{a} {100 * v:+.1f}%" for a, v in worst.items() if v < 0),
         }
     return pd.DataFrame(rows).T
+
+
+# ---------------------------------------------------------------------------- performance tables
+def _compound(r: pd.Series) -> float:
+    r = r.dropna()
+    return float((1 + r).prod() - 1) if len(r) else np.nan
+
+
+def period_returns(ret: pd.Series, asof: pd.Timestamp | None = None) -> pd.Series:
+    """Return over the usual reporting periods, from a weekly (or daily) return series.
+
+    Last week, month to date, last month (previous calendar month), quarter to date, year to date,
+    last 12 months, the previous calendar year, and since inception (annualised)."""
+    ret = ret.dropna()
+    if ret.empty:
+        return pd.Series(dtype=float)
+    t = asof or ret.index[-1]
+    ret = ret.loc[:t]
+    m0 = t.to_period("M").start_time
+    pm = t.to_period("M") - 1
+    q0 = t.to_period("Q").start_time
+    y0 = t.to_period("Y").start_time
+    per_year = 52 if (ret.index.to_series().diff().median() >= pd.Timedelta(days=5)) else 252
+    years = len(ret) / per_year
+    return pd.Series(
+        {
+            "week": float(ret.iloc[-1]) if per_year == 52 else _compound(ret.loc[t - pd.Timedelta(days=7) :]),
+            "month to date": _compound(ret.loc[m0:]),
+            f"last month ({pm.strftime('%b %Y')})": _compound(ret.loc[pm.start_time : pm.end_time]),
+            "quarter to date": _compound(ret.loc[q0:]),
+            "year to date": _compound(ret.loc[y0:]),
+            "last 12 months": _compound(ret.loc[t - pd.DateOffset(years=1) + pd.Timedelta(days=1) :]),
+            f"{t.year - 1}": _compound(ret.loc[f"{t.year - 1}"]),
+            "since inception (annualised)": (1 + _compound(ret)) ** (1 / years) - 1 if years > 0 else np.nan,
+        }
+    )
+
+
+def performance_summary(series: dict[str, pd.Series], asof: pd.Timestamp | None = None) -> pd.DataFrame:
+    """Period returns (rows) for each series (columns), plus the excess of the first over the second."""
+    t = asof or max(s.dropna().index[-1] for s in series.values() if not s.dropna().empty)
+    out = pd.DataFrame({k: period_returns(v, t) for k, v in series.items()})
+    if out.shape[1] >= 2:
+        a, b = out.columns[:2]
+        out[f"{a} − {b}"] = out[a] - out[b]
+    return out
+
+
+def calendar_table(ret: pd.Series, bench: pd.Series | None = None) -> pd.DataFrame:
+    """Monthly returns by year (rows) and month (columns), with the year's total, and the benchmark's
+    year and the excess when given. The current year is year to date."""
+    ret = ret.dropna()
+    if ret.empty:
+        return pd.DataFrame()
+    m = ret.groupby([ret.index.year, ret.index.month]).apply(_compound).unstack()
+    names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    m = m.reindex(columns=range(1, 13))
+    m.columns = names
+    m["year"] = ret.groupby(ret.index.year).apply(_compound)
+    if bench is not None:
+        b = bench.dropna().loc[ret.index[0] :]
+        m["benchmark"] = b.groupby(b.index.year).apply(_compound)
+        m["excess"] = m["year"] - m["benchmark"]
+    m.index.name = None
+    return m.sort_index(ascending=False)
