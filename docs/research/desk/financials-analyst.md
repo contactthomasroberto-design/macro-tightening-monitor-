@@ -1,6 +1,6 @@
 # Financières et immobilier (calcul GitHub)
 
-*`financials-analyst` — 17/11/2026 22:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`financials-analyst` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US financials sector (+1.2 pt/an) ; le moins attractif : US investment-grade credit (-0.1 pt/an).
 

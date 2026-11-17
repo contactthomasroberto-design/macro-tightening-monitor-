@@ -1,6 +1,6 @@
 # Métaux précieux et industriels (calcul GitHub)
 
-*`metals-analyst` — 17/11/2026 22:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`metals-analyst` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Copper (+2.4 pt/an) ; le moins attractif : Gold (+0.0 pt/an). 1 désaccord(s) avec les vues publiées.
 

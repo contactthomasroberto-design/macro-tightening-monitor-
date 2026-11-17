@@ -1,10 +1,10 @@
 # Synthèse du desk GitHub (calcul GitHub)
 
-*`chief-investment-officer` — 17/11/2026 22:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`chief-investment-officer` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : 43 point(s) à arbitrer au comité de ce soir.
 
-- Livre : US equities (S&P 500) +28,3 %, US aggregate bonds +27,8 %, European equities +9,0 %, US dollar index (long) +6,3 %, US energy sector +4,3 %, Emerging-market equities (broad) +4,0 %, Brent crude oil +4,0 %, Japanese equities +3,3 %.
+- Livre : US equities (S&P 500) +28,4 %, US aggregate bonds +27,8 %, European equities +9,0 %, US dollar index (long) +6,3 %, US energy sector +4,3 %, Emerging-market equities (broad) +4,0 %, Brent crude oil +4,0 %, Japanese equities +3,3 %.
 - 43 point(s) à arbitrer au comité de ce soir.
 
 **À surveiller / à débattre**

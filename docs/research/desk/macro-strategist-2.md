@@ -1,6 +1,6 @@
 # Tour d'horizon cross-asset : tous les marchés suivis (calcul GitHub)
 
-*`macro-strategist` — 17/11/2026 22:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`macro-strategist` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : 23 marchés ; 3 mouvement(s) d'un mois au-delà de 2 écarts-types.
 
@@ -21,7 +21,7 @@
 - [Rates] Euro area 2Y (AAA) : 3.11 (+0.08 sur un mois, z +0.4 ; percentile 5 ans 96 %).
 - [FX] US dollar (broad) : 123 (+1 sur un mois, z +0.4 ; percentile 5 ans 75 %).
 - [Credit] US HY OAS : 3.34 (+0.11 sur un mois, z +0.4 ; percentile 5 ans 84 %).
-- [FX] USD/JPY : 159 (+2 sur un mois, z +0.3 ; percentile 5 ans 93 %).
+- [FX] USD/JPY : 159 (+2 sur un mois, z +0.3 ; percentile 5 ans 94 %).
 - [Rates] US 2Y : 4.83 (+0.06 sur un mois, z +0.3 ; percentile 5 ans 90 %).
 - [Rates] Euro area 10Y (AAA) : 3.42 (-0.02 sur un mois, z -0.2 ; percentile 5 ans 98 %).
 - [Volatility] MOVE (rates vol) : 102 (+1 sur un mois, z +0.1 ; percentile 5 ans 50 %).

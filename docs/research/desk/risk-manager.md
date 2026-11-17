@@ -1,6 +1,6 @@
 # Risque du livre (calcul GitHub)
 
-*`risk-manager` — 17/11/2026 22:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`risk-manager` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Volatilité ex ante +8,4 % (60/40 +8,4 %), tracking error +3,3 %.
 

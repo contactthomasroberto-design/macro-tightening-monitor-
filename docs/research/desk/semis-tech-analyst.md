@@ -1,6 +1,6 @@
 # Semi-conducteurs : noms et cycle (calcul GitHub)
 
-*`semis-tech-analyst` — 17/11/2026 22:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`semis-tech-analyst` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Micron Technology (+8.8 pt/an) ; le moins attractif : NVIDIA (+3.5 pt/an).
 

@@ -1,6 +1,6 @@
 # Émergents : actions et dette (calcul GitHub)
 
-*`emerging-markets-analyst` — 17/11/2026 22:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`emerging-markets-analyst` — 17/11/2026 22:44 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Brazilian equities (+2.2 pt/an) ; le moins attractif : Indian equities (+0.2 pt/an).
 
