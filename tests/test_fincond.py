@@ -68,3 +68,15 @@ def test_index_comparison_percentiles():
     t = fc.index_comparison({"a": s})
     assert t.loc["a", "percentile"] == pytest.approx(99)
     assert t.loc["a", "verdict"] == "tighter than usual"
+
+
+def test_fci_lite_survives_a_lagging_variable():
+    # regression (refresh of 2026-11-17): a variable whose source failed emptied every row
+    from macro import panels
+
+    pn = panels.fincond_panel()
+    lv = pn["levels_q"].copy()
+    dead = lv.columns[-1]
+    lv[dead] = np.nan  # source failed: no data at all
+    r = fc.fci_lite(lv, pn["gdp_q"], lookback=4, n_boot=50, seed=0)
+    assert np.isfinite(r.value.iloc[-1]) and r.extra["dropped variables"] == [dead]
