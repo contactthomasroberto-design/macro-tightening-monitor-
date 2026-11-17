@@ -274,10 +274,10 @@ def central_bank_watcher(ctx: Context) -> Note:
             if abs(ch) > 0.25:
                 watch.append(f"Repricing Fed de {100 * ch:+.0f} pb en un mois.")
     for sid, lab in (
-        ("ECBDFR", "BCE dépôt"),
-        ("IRSTCI01JPM156N", "BoJ (taux au jour le jour)"),
+        ("EA_DFR", "BCE dépôt"),
+        ("JP_POLICY", "BoJ (taux directeur)"),
         ("SOFR", "SOFR"),
-        ("ESTR", "€STR"),
+        ("EA_ESTR", "€STR"),
     ):
         x = _last(ctx.get(sid))
         if x:

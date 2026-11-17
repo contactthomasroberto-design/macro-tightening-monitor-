@@ -24,7 +24,14 @@ TAG = "(calcul GitHub)"
 def main() -> int:
     b = portfolio_bundle()
     px = pf.usd_prices(try_series, b["config"])
-    ctx = desk.Context(b=b, get=try_series, px=px)
+
+    def get(sid: str):
+        try:
+            return try_series(sid)
+        except Exception:  # noqa: BLE001 - an unknown or failing series must not stop a note
+            return None
+
+    ctx = desk.Context(b=b, get=get, px=px)
     notes = desk.run(ctx)
     now = pd.Timestamp.now(tz="UTC")
     stamp = f"{now:%d/%m/%Y %H:%M} UTC"

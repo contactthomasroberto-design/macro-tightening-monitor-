@@ -99,19 +99,19 @@ SECTIONS = [
     (
         "Portfolio",
         [
-            ("portfolio_overview.py", "Positions and trades"),
-            ("portfolio_allocation.py", "Why these weights"),
+            ("portfolio_home.py", "Fund dashboard"),
+            ("portfolio_overview.py", "Positions and performance"),
             ("portfolio_risk.py", "Risk"),
-            ("portfolio_backtest.py", "Backtest"),
-            ("portfolio_scanner.py", "Market scanner"),
-            ("portfolio_signals.py", "Signals and tests"),
+            ("portfolio_backtest.py", "Track record and backtest"),
             ("portfolio_research.py", "Research"),
-            ("portfolio_team.py", "Team"),
-            ("portfolio_desk.py", "Desk"),
             ("portfolio_news.py", "News"),
-            ("portfolio_rules.py", "Rules"),
+            ("portfolio_team.py", "Team"),
+            ("portfolio_desk.py", "Desk notes"),
         ],
     ),
+    # Analytics kept internal (computed every run, archived in docs/ and the snapshot, not in the menu):
+    # portfolio_allocation.py (Black-Litterman internals), portfolio_signals.py (signal tests),
+    # portfolio_scanner.py (full-universe scanner), portfolio_rules.py (mandate text, also in docs/).
     ("Governance", [("sec_governance.py", "Governance")]),
 ]
 PAGES = [p for _, ps in SECTIONS for p in ps]

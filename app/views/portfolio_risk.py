@@ -52,72 +52,95 @@ pl.base_layout(
 fig.update_xaxes(tickformat=".0%")
 st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
 
-st.subheader("Shocks: one-week moves, current weights")
-sc = b["scenarios"]
-if not sc.empty:
-    st.dataframe(sc.rename("portfolio move (%)").to_frame().style.format("{:+.2f}"), use_container_width=True)
-    st.caption(
-        "The shocked asset moves by the stated amount; the others move by their expected co-movement given the "
-        "covariance (conditional normal). Correlations shift in crises: read as a central case, not a bound "
-        "(research log H18, H23)."
+
+def _bars(df: pd.DataFrame, title: str, limit: float | None = None) -> None:
+    """Fund vs benchmark loss per scenario, horizontal bars, worst first."""
+    df = df.sort_values("fund")
+    fig = go.Figure()
+    fig.add_bar(y=df.index, x=df["fund"], orientation="h", name="Fund", marker_color=f"rgb{NAVY}")
+    fig.add_bar(
+        y=df.index, x=df["benchmark"], orientation="h", name="Benchmark 60/40", marker_color="#b8c2cc"
     )
-ep = b["episodes"]
-if not ep.empty:
-    st.subheader("Past crises replayed with today's weights")
-    ep = ep.assign(difference=ep["portfolio (current weights)"] - ep["benchmark"])
-    st.dataframe(ep.style.format("{:+.1%}"), use_container_width=True)
-    worse = ep[ep["difference"] < 0]
-    st.caption(
-        "Actual weekly returns of each holding during the episode (holdings that did not exist yet count as cash)."
-        + (
-            f" Today's weights would have done worse than the benchmark in: {', '.join(worse.index)}."
-            if len(worse)
-            else ""
+    if limit is not None:
+        fig.add_vline(
+            x=limit, line_dash="dot", line_color="#c0392b", annotation_text="limit", annotation_position="top"
         )
+    fig.update_layout(
+        barmode="group",
+        height=90 + 46 * len(df),
+        margin=dict(l=0, r=10, t=30, b=0),
+        title=title,
+        legend=dict(orientation="h", y=-0.12),
+        xaxis_tickformat=".0%",
     )
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+
+
+st.subheader("Stress tests")
 fs = b.get("forward_stress")
+ep = b["episodes"]
+c1, c2 = st.columns(2)
 if fs is not None and not fs.empty:
-    st.subheader("Forward stress tests and limits")
     n_breach = int(fs["breach"].astype(bool).sum())
-    (st.error if n_breach else st.success)(
-        f"{n_breach} scenario(s) breach a limit" if n_breach else "All scenarios within limits"
-    )
-    st.dataframe(
-        fs.style.format(
-            {"book": "{:+.1%}", "of which tail hedge": "{:+.1%}", "benchmark": "{:+.1%}", "limit": "{:.0%}"}
-        ),
-        use_container_width=True,
-    )
-    st.caption(
-        "Hypothetical scenarios (config/stress_scenarios.yaml): the named assets take the stated moves, the others "
-        "their expected co-move from the covariance; the tail-hedge puts pay below their strike. Limits: no scenario "
-        "may cost more than 15% of NAV, nor more than the 60/40 benchmark loses plus 2 points. A breach opens an issue for the "
-        "committee; it does not change the weights by itself."
-    )
+    with c1:
+        (st.error if n_breach else st.success)(
+            f"{n_breach} forward scenario(s) beyond the mandate's limits"
+            if n_breach
+            else "All forward scenarios within limits"
+        )
+        _bars(
+            fs.rename(columns={"book": "fund"})[["fund", "benchmark"]].astype(float),
+            "Forward scenarios (loss in % of NAV)",
+            float(fs["limit"].astype(float).max()),
+        )
+if not ep.empty:
+    with c2:
+        worse = ep[ep["portfolio (current weights)"] < ep["benchmark"]]
+        (st.warning if len(worse) else st.success)(
+            f"Today's book does worse than the 60/40 in {len(worse)} of {len(ep)} past crises"
+            if len(worse)
+            else "Today's book beats the 60/40 in every past crisis replayed"
+        )
+        _bars(
+            ep.rename(columns={"portfolio (current weights)": "fund"})[["fund", "benchmark"]].astype(float),
+            "Past crises replayed with today's weights",
+        )
+st.caption(
+    "Forward scenarios: hypothetical shocks sized on past episodes (config/stress_scenarios.yaml), other assets move by "
+    "their expected co-move, tail-hedge puts pay below their strike. Limits: 15% of NAV and the benchmark's loss plus "
+    "2 points; a breach opens an issue for the committee. Correlations rise in crises: read as a central case."
+)
+with st.expander("Scenario detail"):
+    if fs is not None and not fs.empty:
+        st.dataframe(
+            fs.style.format(
+                {
+                    "book": "{:+.1%}",
+                    "of which tail hedge": "{:+.1%}",
+                    "benchmark": "{:+.1%}",
+                    "limit": "{:.0%}",
+                }
+            ),
+            use_container_width=True,
+        )
+    sc = b["scenarios"]
+    if not sc.empty:
+        st.markdown("**One-week shocks, current weights (%)**")
+        st.dataframe(
+            sc.rename("portfolio move (%)").to_frame().style.format("{:+.2f}"), use_container_width=True
+        )
+
 pms = b.get("post_mortems") or []
-st.subheader("Loss post-mortems (positions down more than 1% of NAV over 4 weeks)")
+st.subheader("Loss reviews")
 if not pms:
-    st.caption(f"None at the moment ({b.get('post_mortem_source', 'backtest')}).")
+    st.success("No position has cost more than 1% of NAV over the last four weeks.")
 else:
-    st.dataframe(
-        pd.DataFrame(pms)
-        .set_index("asset")[
-            ["loss", "asset move", "move in sigmas", "market-explained move", "at a bound", "verdict"]
-        ]
-        .style.format(
-            {
-                "loss": "{:+.2%}",
-                "asset move": "{:+.1%}",
-                "move in sigmas": "{:+.1f}",
-                "market-explained move": "{:+.1%}",
-            },
-            na_rep="n/a",
-        ),
-        use_container_width=True,
-    )
+    for pm in pms:
+        st.warning(
+            f"**{name(b, pm['asset'])}**: {pm['loss']:+.2%} of NAV over 4 weeks. {pm['verdict'].capitalize()}."
+        )
     st.caption(
-        f"Weights from the {b.get('post_mortem_source')}. The verdict is an automatic first read; the full note "
-        "is written to docs/research/postmortems/ and completed by the committee."
+        "Automatic first read; the full review is in docs/research/postmortems/ and completed by the committee."
     )
 st.caption(DISCLAIMER)
 footer()
