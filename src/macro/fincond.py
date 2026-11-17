@@ -97,6 +97,19 @@ def fci_lite(
 ) -> Result:
     """Estimate growth sensitivities and build the FCI-lite with a variable decomposition."""
     dx = changes(levels_q, lookback)
+    # a variable whose source failed (no recent data, or too short) would empty every row: drop it
+    # and say so in the result rather than stop the whole refresh
+    last = dx.dropna(how="all").index.max()
+    dead = [
+        k
+        for k in dx.columns
+        if dx[k].notna().sum() < 20
+        or dx[k].last_valid_index() is None
+        or dx[k].last_valid_index() < last - pd.DateOffset(months=9)
+    ]
+    dx = dx.drop(columns=dead)
+    if dx.empty:
+        raise ValueError("FCI-lite: no usable variable")
     lg = 100 * np.log(gdp_q)
     fwd = (lg.shift(-horizon) - lg).rename("g_fwd")
     past = (lg - lg.shift(4)).rename("g_past")
@@ -120,11 +133,7 @@ def fci_lite(
             "unit": [VARIABLES[k][1] for k in cols],
         }
     )
-    # a variable published later than the others leaves the latest rows incomplete: carry its last
-    # change forward for at most two quarters instead of dropping the whole recent history
-    full_dx = dx.ffill(limit=2).dropna()
-    if full_dx.empty:
-        raise ValueError("FCI-lite: no quarter with all variables, even after carrying lagging ones forward")
+    full_dx = dx.dropna()
     contrib = -(full_dx * b)  # positive = headwind
     fci = contrib.sum(axis=1)
     fci_draws = -(full_dx.iloc[[-1]].to_numpy() @ draws.T).ravel()
@@ -146,6 +155,7 @@ def fci_lite(
             "horizon": horizon,
             "fci_draws": fci_draws,
             "sample": (df.index[0], df.index[-1]),
+            "dropped variables": dead,
         },
         notes=[
             f"FCI-lite ({lookback // 4}-year lookback): statistical growth sensitivities (ridge, penalty {alpha} by "

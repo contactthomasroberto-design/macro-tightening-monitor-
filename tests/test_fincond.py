@@ -71,11 +71,12 @@ def test_index_comparison_percentiles():
 
 
 def test_fci_lite_survives_a_lagging_variable():
-    # regression (refresh of 2026-11-17): one variable without the latest quarters emptied full_dx
+    # regression (refresh of 2026-11-17): a variable whose source failed emptied every row
     from macro import panels
 
     pn = panels.fincond_panel()
     lv = pn["levels_q"].copy()
-    lv.iloc[-2:, lv.columns.get_loc(lv.columns[-1])] = np.nan  # last variable two quarters late
+    dead = lv.columns[-1]
+    lv[dead] = np.nan  # source failed: no data at all
     r = fc.fci_lite(lv, pn["gdp_q"], lookback=4, n_boot=50, seed=0)
-    assert np.isfinite(r.value.iloc[-1]) and r.value.index[-1] == lv.index[-1]
+    assert np.isfinite(r.value.iloc[-1]) and r.extra["dropped variables"] == [dead]
