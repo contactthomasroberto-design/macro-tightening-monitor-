@@ -235,21 +235,20 @@ def fetch_sec(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
 
 # ------------------------------------------------------------------------------------ GDELT
 def fetch_gdelt(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
-    """GDELT 2.0 DOC API: daily average tone of worldwide online news matching a query, since 2017
-    (GDELT indexes Reuters, Bloomberg, the BBC, CNBC and thousands of others; only the tone
-    statistic is kept, no article text). source_id = the query."""
+    """GDELT 2.0 DOC API: daily average tone of worldwide online news matching a query (GDELT indexes
+    Reuters, Bloomberg, the BBC, CNBC and thousands of others; only the tone statistic is kept, no
+    article text). The DOC API searches a rolling window of the last three months only: no long
+    history (the news signal is tested on the FinBERT archive instead). source_id = the query."""
     global _gdelt_last
     wait = GDELT_SPACING - (time.monotonic() - _gdelt_last)
     if wait > 0:  # GDELT asks for at most one request every 5 seconds
         time.sleep(wait)
     _gdelt_last = time.monotonic()
-    now = pd.Timestamp.now(tz="UTC")
     params = {
         "query": f"{spec.source_id} sourcelang:english",
         "mode": "timelinetone",
         "format": "json",
-        "startdatetime": "20170101000000",
-        "enddatetime": f"{now:%Y%m%d%H%M%S}",
+        "timespan": "3months",
     }
     try:
         tl = get(GDELT_DOC, params).json()["timeline"][0]["data"]
