@@ -1,0 +1,43 @@
+name: quant-lab
+# Weekly quant lab (scripts/quant_lab.py): the research team's pre-registered tests on real data,
+# run in GitHub Actions so they cost no AI tokens. Saturday morning, and on demand.
+on:
+  schedule:
+    - cron: "13 6 * * 6"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: quant-lab
+  cancel-in-progress: false
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MACRO_MODE: live
+      SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e . --no-deps
+      - name: Data (warm start from the snapshot, then refresh)
+        run: |
+          python scripts/update_data.py
+      - name: Run the quant lab
+        run: python scripts/quant_lab.py
+      - name: Commit the results
+        run: |
+          git config user.name "macro-monitor-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/research/quant archive/quant_lab
+          if ! git diff --cached --quiet; then
+            git commit -m "research(quant): weekly lab"
+            for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
+          fi

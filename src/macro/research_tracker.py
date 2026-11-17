@@ -21,7 +21,7 @@ from macro.data.http import get
 
 PATH = ROOT / "config" / "research_feeds.yaml"
 ARCHIVE = ROOT / "archive" / "research_tracker.csv"
-GOOGLE = "https://news.google.com/rss/search?q={q}+when:7d&hl=en-US&gl=US&ceid=US:en"
+GOOGLE = "https://news.google.com/rss/search?q={q}+when:3d&hl=en-US&gl=US&ceid=US:en"
 
 POSITIVE = (
     r"\b(overweight|upgrade[sd]?|favou?rs?|prefers?|bullish|buy|raise[sd]? .{0,30}target|positive on)\b"
@@ -63,6 +63,25 @@ def collect(cfg: dict | None = None) -> tuple[pd.DataFrame, dict[str, str]]:
         return pd.DataFrame(columns=["title", "link", "published", "institution", "stances"]), failed
     df = pd.concat(frames, ignore_index=True).drop_duplicates("title")
     df["stances"] = df["title"].map(lambda t: stances(t, cfg["assets"]))
+    return df.sort_values("published", ascending=False).reset_index(drop=True), failed
+
+
+def publications(cfg: dict | None = None, max_age_days: int = 7) -> tuple[pd.DataFrame, dict[str, str]]:
+    """Latest items of the official research feeds (central banks, academic, asset managers, quant)."""
+    cfg = cfg or load()
+    frames, failed = [], {}
+    for f in cfg.get("publications", []):
+        try:
+            df = news.parse_rss(get(f["url"]).content, f["name"])
+        except Exception as exc:  # noqa: BLE001 - one failed feed must not stop the others
+            failed[f["name"]] = str(exc)[:100]
+            continue
+        frames.append(df.rename(columns={"source": "institution"}).assign(kind=f["kind"]))
+    if not frames:
+        return pd.DataFrame(columns=["title", "link", "published", "institution", "kind"]), failed
+    df = pd.concat(frames, ignore_index=True).drop_duplicates("title")
+    cut = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=max_age_days)
+    df = df[df["published"].isna() | (df["published"] >= cut)]
     return df.sort_values("published", ascending=False).reset_index(drop=True), failed
 
 

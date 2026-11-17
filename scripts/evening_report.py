@@ -125,6 +125,50 @@ def main() -> int:
     L.append(f"- Poids des news dans l'allocation : {100 * b.get('news_confidence', 0):.0f} % (verrou H32).")
 
     # ---------------------------------------------------------------- news
+    # ---------------------------------------------------------------- markets, macro, companies
+    L += ["", "## 2 bis. Marchés, macro et entreprises du jour", ""]
+    import datetime as dt
+
+    from macro.data import store, try_series
+    from macro.signposts import evaluate
+
+    px = pd.DataFrame(
+        {a: s.dropna() for a in cfg["universe"] if (s := try_series(a)) is not None and not s.dropna().empty}
+    ).ffill()
+    if len(px) > 6:
+        d1 = (px.iloc[-1] / px.iloc[-2] - 1).dropna()
+        d5 = (px.iloc[-1] / px.iloc[-6] - 1).dropna()
+        mv = d5.reindex(d5.abs().sort_values(ascending=False).index).head(8)
+        L.append(
+            "Plus forts mouvements sur 5 séances (tout l'univers, détenu ou non) : "
+            + ", ".join(
+                f"{name(a)} {100 * v:+.1f} % (jour {100 * d1.get(a, 0):+.1f} %)" for a, v in mv.items()
+            )
+        )
+    rel = store().recent_releases(dt.datetime.now(dt.UTC) - dt.timedelta(days=1))
+    if not rel.empty:
+        L.append(
+            "Publications de données des dernières 24 h : "
+            + ", ".join(
+                f"{r_['series_id']} {r_['value']:.2f} ({r_['obs_date']})" for _, r_ in rel.head(15).iterrows()
+            )
+        )
+    sp_ = evaluate(try_series)
+    crossed = sp_[sp_["crossed"] == True]  # noqa: E712
+    if not crossed.empty:
+        L.append(
+            "Seuils d'alerte franchis : "
+            + ", ".join(f"{r_['label']} ({r_['latest']:.2f})" for _, r_ in crossed.iterrows())
+        )
+    for co in ("MU", "NVDA"):
+        rv = try_series(f"{co}_REV")
+        if rv is not None and len(rv.dropna()) >= 5:
+            q = rv.dropna()
+            L.append(
+                f"{name(co)} : dernier chiffre d'affaires trimestriel publié le {q.index[-1]:%d/%m/%Y}, "
+                f"{q.iloc[-1] / 1e9:.1f} Md$ ({100 * (q.iloc[-1] / q.iloc[-5] - 1):+.0f} % sur un an, SEC)."
+            )
+
     L += ["", "## 3. Ce que disent les news (24 dernières heures)", ""]
     arch = ns.read_archive()
     now = pd.Timestamp.now(tz="UTC")

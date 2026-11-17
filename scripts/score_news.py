@@ -38,7 +38,13 @@ def main() -> int:
 
     pubs, rfail = rt.collect()
     print(
-        f"research tracker: {len(pubs)} publications, {rt.append_archive(pubs)} new; feeds failed: {list(rfail)}"
+        f"research tracker: {len(pubs)} headlines, {rt.append_archive(pubs)} new; feeds failed: {list(rfail)}"
+    )
+    papers, pfail = rt.publications()
+    papers["stances"] = [{} for _ in range(len(papers))]
+    papers["institution"] = papers["institution"] + " (" + papers["kind"] + ")"
+    print(
+        f"research feeds: {len(papers)} items, {rt.append_archive(papers)} new; feeds failed: {list(pfail)}"
     )
     arch = ns.read_archive()
     recent = arch[arch["first_seen"] >= arch["first_seen"].max() - pd.Timedelta(days=3)]

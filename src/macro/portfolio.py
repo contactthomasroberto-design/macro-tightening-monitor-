@@ -1,4 +1,6 @@
-"""Systematic balanced portfolio: macro and micro signals into a 60/40-benchmarked allocation.
+"""Systematic multi-asset alternative fund: macro and micro signals into a long/short allocation
+benchmarked on 60/40 (version 0.3: weekly, gross ≤ 160%, tracking error ≤ 8%; the steps below
+describe the construction, config/portfolio.yaml holds the current parameters).
 
 A model portfolio tracked on paper (config/portfolio.yaml); it places no orders. Pure functions:
 prices in, weights and diagnostics out.
@@ -110,11 +112,17 @@ def ledoit_wolf_corr(x: np.ndarray) -> tuple[np.ndarray, float]:
     return c / np.outer(d, d), float(delta)
 
 
-def covariance(r: pd.DataFrame, window: int, min_weeks: int) -> pd.DataFrame:
-    """Annualised covariance of the assets with at least `min_weeks` of the last `window` weeks."""
+def covariance(r: pd.DataFrame, window: int, min_weeks: int, halflife: float | None = None) -> pd.DataFrame:
+    """Annualised covariance of the assets with at least `min_weeks` of the last `window` weeks.
+    With `halflife` (weeks), volatilities are exponentially weighted (faster reaction, research log
+    H36); correlations stay Ledoit-Wolf on the window."""
     h = r.iloc[-window:]
     h = h.loc[:, h.notna().sum() >= min_weeks]
     vol = h.std() * np.sqrt(WEEKS)
+    if halflife:
+        vol = np.sqrt((h**2).ewm(halflife=halflife, min_periods=min_weeks).mean().iloc[-1] * WEEKS).fillna(
+            vol
+        )
     z = ((h - h.mean()) / h.std()).fillna(0.0).to_numpy()  # missing weeks: no information
     corr, _ = ledoit_wolf_corr(z)
     cov = corr * np.outer(vol, vol)
@@ -126,8 +134,16 @@ def _cum(r: pd.DataFrame) -> pd.Series:
     return (1 + r.fillna(0)).prod() - 1
 
 
-def trend_scores(r: pd.DataFrame) -> pd.Series:
-    """12-month return skipping the last month, over its annual volatility, squashed by tanh."""
+def trend_scores(r: pd.DataFrame, horizons: list[int] | None = None) -> pd.Series:
+    """12-month return skipping the last month, over its annual volatility, squashed by tanh.
+    With `horizons` (weeks, e.g. [4, 13, 52]), the equal-weight average of each horizon's return over
+    its volatility (Hurst, Ooi and Pedersen, 2017; research log H37)."""
+    if horizons:
+        h = r.iloc[-WEEKS:]
+        ok = h.notna().sum() >= 48
+        vol = h.std() * np.sqrt(WEEKS)
+        parts = [np.tanh(_cum(h.iloc[-k:]) / (vol * np.sqrt(k / WEEKS)).replace(0, np.nan)) for k in horizons]
+        return pd.concat(parts, axis=1).mean(axis=1).where(ok).dropna()
     h = r.iloc[-WEEKS:]
     ok = h.notna().sum() >= 48
     r12_1 = _cum(h.iloc[:-4])
@@ -687,7 +703,7 @@ class Inputs:
 
 def views_at(inp: Inputs, t, assets: list[str], cfg: dict) -> dict[str, pd.Series]:
     r = inp.r.loc[:t, assets]
-    v = {"trend": trend_scores(r)}
+    v = {"trend": trend_scores(r, cfg["model"].get("trend_horizons"))}
     if not inp.macro.empty:
         f = inp.macro.loc[:t]
         if not f.empty:
@@ -713,11 +729,14 @@ def target_at(
     long_only: bool = False,
 ) -> dict:
     m = cfg["model"]
-    if t not in inp.cache:
+    key = (t, m.get("cov_halflife_weeks"), tuple(m.get("trend_horizons") or ()))
+    if key not in inp.cache:
         assets = [a for a in cfg["universe"] if a in inp.r.columns]
-        c = covariance(inp.r.loc[:t, assets], m["cov_window_weeks"], m["cov_min_weeks"])
-        inp.cache[t] = (c, views_at(inp, t, list(c.index), cfg))
-    cov, all_views = inp.cache[t]
+        c = covariance(
+            inp.r.loc[:t, assets], m["cov_window_weeks"], m["cov_min_weeks"], m.get("cov_halflife_weeks")
+        )
+        inp.cache[key] = (c, views_at(inp, t, list(c.index), cfg))
+    cov, all_views = inp.cache[key]
     w_eq = equilibrium_weights(list(cov.index), cfg)
     views = {k: v for k, v in all_views.items() if k in families}
     mu, pi = black_litterman(cov, w_eq, views, cfg)

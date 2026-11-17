@@ -1,6 +1,6 @@
 # Research tracker (src/macro/research_tracker.py): the latest published views of banks, asset
-# managers and hedge funds, collected every two hours from Google News search feeds (headline, date,
-# link to the publisher). Their own sites are not scraped. Stances are extracted from headlines by
+# managers and hedge funds, collected every two hours from Google News search feeds (last 3 days) and from the official
+# research feeds of central banks, asset managers and academic outlets (headline, date, link). Their own sites are not scraped. Stances are extracted from headlines by
 # explicit wording only (overweight, underweight, upgrade, downgrade, favour, prefer, bullish, bearish,
 # sell, buy) and compared with the model's views on the Research page.
 institutions:
@@ -24,6 +24,45 @@ institutions:
   Nomura: '"Nomura" (strategist OR outlook OR overweight OR underweight)'
   Societe Generale: '("Societe Generale" OR "SocGen") (strategist OR outlook OR overweight OR underweight)'
   BNP Paribas: '"BNP Paribas" (strategist OR outlook OR overweight OR underweight)'
+  Vanguard: '"Vanguard" (outlook OR economists OR forecast OR "capital markets")'
+  Fidelity: '"Fidelity International" OR "Fidelity Investments" (outlook OR strategist OR views)'
+  Schroders: '"Schroders" (outlook OR economist OR views OR markets)'
+  Invesco: '"Invesco" (strategist OR outlook OR views)'
+  Wellington: '"Wellington Management" (outlook OR views OR markets)'
+  T. Rowe Price: '"T. Rowe Price" (outlook OR strategist OR views)'
+  Allianz GI: '("Allianz Global Investors" OR "Allianz GI") (outlook OR views)'
+  AXA IM: '("AXA IM" OR "AXA Investment Managers") (outlook OR views)'
+  Robeco: '"Robeco" (outlook OR views OR markets)'
+  Nuveen: '"Nuveen" (outlook OR strategist OR views)'
+  Wells Fargo Investment Institute: '"Wells Fargo Investment Institute" OR ("Wells Fargo" strategist)'
+  Jefferies: '"Jefferies" (strategist OR outlook OR overweight OR underweight)'
+  Macquarie: '"Macquarie" (strategist OR outlook OR overweight OR underweight)'
+  Capital Economics: '"Capital Economics" (forecast OR expects OR economist)'
+  Oxford Economics: '"Oxford Economics" (forecast OR expects)'
+  BCA Research: '"BCA Research" (strategist OR expects OR outlook)'
+  Gavekal: '"Gavekal" (expects OR outlook OR markets)'
+  TS Lombard: '"TS Lombard" (expects OR outlook)'
+  Ned Davis Research: '"Ned Davis Research" (expects OR outlook OR strategist)'
+  Fundstrat: '"Fundstrat" (Lee OR outlook OR target)'
+  Morningstar: '"Morningstar" (strategist OR outlook OR "fair value")'
+  Two Sigma: '"Two Sigma" (markets OR outlook OR research)'
+  Millennium: '"Millennium Management" (markets OR outlook)'
+  Point72: '"Point72" (markets OR outlook OR research)'
+
+# Official research feeds read directly (RSS): central-bank research, academic working papers,
+# asset managers' and quant research blogs. Shown on the Research page and in the nightly digest.
+publications:
+  - {name: Federal Reserve FEDS Notes, kind: central bank, url: "https://www.federalreserve.gov/feeds/feds_notes.xml"}
+  - {name: Federal Reserve working papers, kind: central bank, url: "https://www.federalreserve.gov/feeds/working_papers.xml"}
+  - {name: New York Fed Liberty Street, kind: central bank, url: "https://libertystreeteconomics.newyorkfed.org/feed/"}
+  - {name: ECB working papers, kind: central bank, url: "https://www.ecb.europa.eu/rss/wppub.html"}
+  - {name: BIS working papers, kind: central bank, url: "https://www.bis.org/doclist/wppubls.rss"}
+  - {name: BIS FSI, kind: central bank, url: "https://www.bis.org/doclist/bis_fsi_publs.rss"}
+  - {name: NBER new working papers, kind: academic, url: "https://www.nber.org/rss/new.xml"}
+  - {name: CEPR, kind: academic, url: "https://cepr.org/rss.xml"}
+  - {name: arXiv quantitative finance, kind: quant, url: "https://export.arxiv.org/rss/q-fin"}
+  - {name: Alpha Architect, kind: quant, url: "https://alphaarchitect.com/feed/"}
+  - {name: Quantpedia, kind: quant, url: "https://quantpedia.com/feed/"}
 
 # Words → instruments of the universe (case-insensitive, whole words); the whole market is covered,
 # not only current holdings.
