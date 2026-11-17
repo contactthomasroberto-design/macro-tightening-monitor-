@@ -20,6 +20,8 @@ defaults:
   fred_terms: &fred "FRED; public domain unless noted by the original source"
   ice_terms: &ice "ICE BofA via FRED: copyrighted, FRED may truncate history; do not redistribute raw data"
   yahoo_terms: &yahoo "Yahoo Finance via public endpoint: personal, non-commercial use only; do not redistribute"
+  sec_terms: &sec "SEC EDGAR: US government data, public domain; fair-access policy (identified client, ≤10 requests/s)"
+  gdelt_terms: &gdelt "GDELT Project: open data, free use with attribution (tone statistic only, no article text)"
   ecb_terms: &ecb "ECB Data Portal: reuse allowed with source attribution"
 
 series:
@@ -121,6 +123,35 @@ series:
   - {id: SOX, source: yahoo, source_id: "^SOX", freq: D, units: index, release_lag_days: 1, region: US, category: equities, description: PHLX Semiconductor index, terms: *yahoo, optional: true}
   - {id: NVDA, source: yahoo, source_id: "NVDA", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: NVIDIA share price (AI-leader basket component), terms: *yahoo, optional: true}
   - {id: MSFT, source: yahoo, source_id: "MSFT", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: Microsoft share price (AI-leader basket component), terms: *yahoo, optional: true}
+  # ---- systematic portfolio universe (config/portfolio.yaml): adjusted closes, dividends reinvested
+  - {id: SPY, source: yahoo, source_id: "SPY", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: SPDR S&P 500 ETF (total return, adjusted), terms: *yahoo, optional: true}
+  - {id: VGK, source: yahoo, source_id: "VGK", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: Vanguard FTSE Europe ETF, terms: *yahoo, optional: true}
+  - {id: EWJ, source: yahoo, source_id: "EWJ", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: iShares MSCI Japan ETF, terms: *yahoo, optional: true}
+  - {id: EEM, source: yahoo, source_id: "EEM", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: iShares MSCI Emerging Markets ETF, terms: *yahoo, optional: true}
+  - {id: EFA, source: yahoo, source_id: "EFA", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: iShares MSCI EAFE ETF (benchmark proxy before 2008), terms: *yahoo, optional: true}
+  - {id: ACWI, source: yahoo, source_id: "ACWI", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: iShares MSCI ACWI ETF (benchmark), terms: *yahoo, optional: true}
+  - {id: AGG, source: yahoo, source_id: "AGG", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: iShares Core US Aggregate Bond ETF (benchmark), terms: *yahoo, optional: true}
+  - {id: SHY, source: yahoo, source_id: "SHY", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: iShares 1-3 Year Treasury Bond ETF, terms: *yahoo, optional: true}
+  - {id: IEF, source: yahoo, source_id: "IEF", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: iShares 7-10 Year Treasury Bond ETF, terms: *yahoo, optional: true}
+  - {id: TLT, source: yahoo, source_id: "TLT", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: iShares 20+ Year Treasury Bond ETF, terms: *yahoo, optional: true}
+  - {id: TIP, source: yahoo, source_id: "TIP", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: iShares TIPS Bond ETF, terms: *yahoo, optional: true}
+  - {id: LQD, source: yahoo, source_id: "LQD", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: iShares iBoxx Investment Grade Corporate Bond ETF, terms: *yahoo, optional: true}
+  - {id: GLD, source: yahoo, source_id: "GLD", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: SPDR Gold Shares, terms: *yahoo, optional: true}
+  - {id: DBC, source: yahoo, source_id: "DBC", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: Invesco DB Commodity Index Tracking Fund, terms: *yahoo, optional: true}
+  - {id: BIL, source: yahoo, source_id: "BIL", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: SPDR Bloomberg 1-3 Month T-Bill ETF, terms: *yahoo, optional: true}
+  - {id: HYNIX, source: yahoo, source_id: "000660.KS", freq: D, units: KRW, release_lag_days: 1, region: GLOBAL, category: portfolio, description: SK Hynix share price (KRW), terms: *yahoo, optional: true}
+  - {id: SAMSUNG, source: yahoo, source_id: "005930.KS", freq: D, units: KRW, release_lag_days: 1, region: GLOBAL, category: portfolio, description: Samsung Electronics common share price (KRW), terms: *yahoo, optional: true}
+  - {id: MU, source: yahoo, source_id: "MU", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: Micron Technology share price, terms: *yahoo, optional: true}
+  - {id: TSM, source: yahoo, source_id: "TSM", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: TSMC ADR price, terms: *yahoo, optional: true}
+  - {id: ASML, source: yahoo, source_id: "ASML", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: ASML share price (US listing), terms: *yahoo, optional: true}
+  - {id: USDKRW, source: yahoo, source_id: "KRW=X", freq: D, units: KRW per USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: Korean won per US dollar, terms: *yahoo, optional: true}
+  - {id: MU_REV, source: sec, source_id: "CIK0000723125:RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet", freq: Q, units: USD, release_lag_days: 0, region: US, category: fundamentals, description: Micron quarterly revenue (dated at the SEC filing), terms: *sec, optional: true}
+  - {id: MU_GP, source: sec, source_id: "CIK0000723125:GrossProfit", freq: Q, units: USD, release_lag_days: 0, region: US, category: fundamentals, description: Micron quarterly gross profit (dated at the SEC filing), terms: *sec, optional: true}
+  - {id: NVDA_REV, source: sec, source_id: "CIK0001045810:RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet", freq: Q, units: USD, release_lag_days: 0, region: US, category: fundamentals, description: NVIDIA quarterly revenue (dated at the SEC filing), terms: *sec, optional: true}
+  - {id: NVDA_GP, source: sec, source_id: "CIK0001045810:GrossProfit", freq: Q, units: USD, release_lag_days: 0, region: US, category: fundamentals, description: NVIDIA quarterly gross profit (dated at the SEC filing), terms: *sec, optional: true}
+  - {id: NEWS_TONE_MEMORY, source: gdelt, source_id: '("memory chip" OR DRAM OR "SK Hynix" OR "Samsung Electronics" OR Micron)', freq: D, units: tone, release_lag_days: 1, region: GLOBAL, category: news, description: GDELT average news tone on memory chips, terms: *gdelt, optional: true}
+  - {id: NEWS_TONE_RECESSION, source: gdelt, source_id: '(recession OR "economic slowdown")', freq: D, units: tone, release_lag_days: 1, region: GLOBAL, category: news, description: GDELT average news tone on recession, terms: *gdelt, optional: true}
+  - {id: NEWS_TONE_INFLATION, source: gdelt, source_id: '(inflation OR "consumer prices")', freq: D, units: tone, release_lag_days: 1, region: GLOBAL, category: news, description: GDELT average news tone on inflation, terms: *gdelt, optional: true}
   - {id: GOOGL, source: yahoo, source_id: "GOOGL", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: Alphabet class A share price (AI-leader basket component), terms: *yahoo, optional: true}
   - {id: AMZN, source: yahoo, source_id: "AMZN", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: Amazon share price (AI-leader basket component), terms: *yahoo, optional: true}
   - {id: META, source: yahoo, source_id: "META", freq: D, units: USD, release_lag_days: 1, region: US, category: equities, description: Meta Platforms share price (AI-leader basket component), terms: *yahoo, optional: true}

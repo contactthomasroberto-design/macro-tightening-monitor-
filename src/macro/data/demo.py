@@ -672,6 +672,8 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
     wei = (100 * np.log(M(gdp_m)).diff(12)).dropna()
     out["WEI"] = _weekly(_daily_level(wei, g2, 0.2), "W-SAT").loc["2008-01-05":]
 
+    out.update(_portfolio_block(seed, out))
+
     for sid, s in out.items():
         s.name = sid
         s.index.name = "date"
@@ -698,3 +700,60 @@ def _recession_indicator(gap: np.ndarray) -> np.ndarray:
         else:
             k += 1
     return out.astype(float)
+
+
+# (first date, equity beta, duration beta, semis beta, idiosyncratic daily sd, drift per year)
+_PF = {
+    "SPY": ("1993-02-01", 1.0, 0.0, 0.0, 0.002, 0.09),
+    "VGK": ("2005-03-10", 1.1, 0.0, 0.0, 0.005, 0.06),
+    "EWJ": ("1996-04-01", 0.8, 0.0, 0.0, 0.007, 0.04),
+    "EEM": ("2003-04-14", 1.2, 0.0, 0.1, 0.007, 0.07),
+    "EFA": ("2001-08-27", 1.0, 0.0, 0.0, 0.004, 0.06),
+    "ACWI": ("2008-03-28", 1.0, 0.0, 0.02, 0.002, 0.08),
+    "AGG": ("2003-09-29", 0.0, 0.45, 0.0, 0.0008, 0.035),
+    "SHY": ("2002-07-30", 0.0, 0.15, 0.0, 0.0003, 0.025),
+    "IEF": ("2002-07-30", -0.05, 0.8, 0.0, 0.0008, 0.035),
+    "TLT": ("2002-07-30", -0.1, 1.6, 0.0, 0.002, 0.04),
+    "TIP": ("2003-12-05", 0.05, 0.6, 0.0, 0.0015, 0.035),
+    "LQD": ("2002-07-30", 0.15, 0.7, 0.0, 0.0015, 0.045),
+    "GLD": ("2004-11-18", 0.1, 0.3, 0.0, 0.009, 0.06),
+    "DBC": ("2006-02-06", 0.4, 0.0, 0.0, 0.011, 0.02),
+    "BIL": ("2007-05-30", 0.0, 0.0, 0.0, 0.00005, 0.015),
+    "HYNIX": ("2000-01-04", 1.1, 0.0, 1.4, 0.022, 0.10),
+    "SAMSUNG": ("2000-01-04", 1.0, 0.0, 1.0, 0.014, 0.10),
+    "MU": ("2000-01-04", 1.3, 0.0, 1.3, 0.02, 0.06),
+    "TSM": ("2000-01-04", 1.1, 0.0, 1.0, 0.014, 0.12),
+    "ASML": ("2000-01-04", 1.2, 0.0, 1.0, 0.015, 0.13),
+}
+
+
+def _portfolio_block(seed: int, out: dict) -> dict[str, pd.Series]:
+    """Synthetic prices for the portfolio universe from three common factors (world equity, US
+    duration, the memory cycle) plus idiosyncratic noise; quarterly fundamentals and news tone.
+    Own generator so earlier demo series are unchanged."""
+    g = np.random.default_rng(seed + 2000)
+    days = _bdays()
+    n = len(days)
+    eq = g.standard_t(4, n) * 0.0085
+    dur = g.normal(0, 0.0035, n) - 0.15 * eq
+    cycle = np.cumsum(g.normal(0, 0.02, n))
+    semi = g.standard_t(4, n) * 0.008 + 0.0004 * np.sin(np.arange(n) / 250)
+    res: dict[str, pd.Series] = {}
+    for sid, (first, b_eq, b_dur, b_semi, sd, mu) in _PF.items():
+        r = mu / 252 + b_eq * eq + b_dur * dur + b_semi * semi + g.normal(0, sd, n)
+        px = pd.Series(100 * np.exp(np.cumsum(r)), index=days)
+        res[sid] = px.loc[first:] * (1300 if sid in ("HYNIX", "SAMSUNG") else 1)
+    res["USDKRW"] = pd.Series(1200 * np.exp(np.cumsum(g.normal(0, 0.005, n) - 0.2 * semi)), index=days)
+    q = pd.date_range("2008-03-31", days[-1], freq="QE")
+    cyc_q = pd.Series(cycle, index=days).reindex(q, method="ffill").to_numpy()
+    for co, base in (("MU", 3e9), ("NVDA", 1e9)):
+        rev = base * np.exp(np.cumsum(0.02 + 0.08 * np.diff(cyc_q, prepend=0) + g.normal(0, 0.04, len(q))))
+        filed = q + pd.Timedelta(days=35)
+        gp = rev * np.clip(0.35 + 0.05 * cyc_q / 3, 0.05, 0.7)
+        res[f"{co}_REV"] = pd.Series(rev, index=filed).loc[: days[-1]]
+        res[f"{co}_GP"] = pd.Series(gp, index=filed).loc[: days[-1]]
+    nd = days[days >= "2017-01-02"]
+    for k in ("MEMORY", "RECESSION", "INFLATION"):
+        res[f"NEWS_TONE_{k}"] = pd.Series(-1.5 + _ar1(len(nd), 0.95, 0.3, g), index=nd)
+    assert not set(res) & set(out), "portfolio demo ids collide with earlier demo series"
+    return res

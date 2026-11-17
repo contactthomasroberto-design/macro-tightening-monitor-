@@ -31,6 +31,8 @@ Source = Literal[
     "fed_board_files",
     "philly",
     "cftc",
+    "sec",
+    "gdelt",
 ]
 
 

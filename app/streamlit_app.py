@@ -70,7 +70,7 @@ _autorefresh()
 
 PAGES_DIR = Path(__file__).parent / "views"
 
-# Navigation: two top-level menus, Macro and Markets, plus Governance. Entries named sec_*.py are
+# Navigation: top-level menus Macro, Markets and Portfolio, plus Governance. Entries named sec_*.py are
 # section pages holding several sub-pages behind a segmented control (app/sections.py).
 SECTIONS = [
     (
@@ -96,6 +96,18 @@ SECTIONS = [
             ("positioning.py", "Positioning"),
         ],
     ),
+    (
+        "Portfolio",
+        [
+            ("portfolio_overview.py", "Positions and trades"),
+            ("portfolio_allocation.py", "Why these weights"),
+            ("portfolio_risk.py", "Risk"),
+            ("portfolio_backtest.py", "Backtest"),
+            ("portfolio_signals.py", "Signals and tests"),
+            ("portfolio_news.py", "News"),
+            ("portfolio_rules.py", "Rules"),
+        ],
+    ),
     ("Governance", [("sec_governance.py", "Governance")]),
 ]
 PAGES = [p for _, ps in SECTIONS for p in ps]
@@ -110,7 +122,7 @@ def build_navigation():
         ]
         for section, ps in SECTIONS
     }
-    return st.navigation(nav, position="top")  # one menu per section: Macro, Markets, Governance
+    return st.navigation(nav, position="top")  # one menu per section: Macro, Markets, Portfolio, Governance
 
 
 page = build_navigation()

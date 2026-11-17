@@ -267,3 +267,49 @@ def test_yahoo_circuit_breaker_after_rate_limit(monkeypatch):
             sources.fetch_yahoo(catalogue().get("NVDA"))
     assert len(calls) == 1  # the second series did not hit Yahoo
     monkeypatch.setattr(sources, "_yahoo_blocked_until", None)
+
+
+def _fact(start, end, filed, val, form="10-Q"):
+    return {"start": start, "end": end, "filed": filed, "val": val, "form": form}
+
+
+def test_sec_quarterly_dates_at_filing_and_derives_q4():
+    rows = [
+        _fact("2024-09-01", "2024-11-30", "2024-12-20", 10.0),
+        _fact("2024-12-01", "2025-02-28", "2025-03-25", 11.0),
+        _fact("2025-03-01", "2025-05-31", "2025-06-26", 12.0),
+        _fact("2024-09-01", "2025-08-31", "2025-10-03", 50.0, "10-K"),
+        _fact("2024-09-01", "2024-11-30", "2025-12-20", 99.0),  # later restatement: ignored
+    ]
+    facts = {"facts": {"us-gaap": {"Revenues": {"units": {"USD": rows}}}}}
+    df = sources.sec_quarterly(facts, ["RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues"])
+    assert df["date"].dt.strftime("%Y-%m-%d").tolist() == [
+        "2024-12-20",
+        "2025-03-25",
+        "2025-06-26",
+        "2025-10-03",
+    ]
+    assert df["value"].tolist() == [10.0, 11.0, 12.0, 17.0]
+
+
+def test_sec_needs_a_contact(monkeypatch):
+    monkeypatch.delenv("SEC_CONTACT", raising=False)
+    with pytest.raises(SourceError, match="SEC_CONTACT"):
+        sources.fetch_sec(catalogue().get("MU_REV"))
+
+
+def test_gdelt_tone_timeline():
+    js = {
+        "timeline": [
+            {
+                "series": "Average Tone",
+                "data": [
+                    {"date": "20250101T000000Z", "value": -1.5},
+                    {"date": "20250102T000000Z", "value": -0.5},
+                ],
+            }
+        ]
+    }
+    with patch.object(sources, "get", return_value=FakeResp(js=js)):
+        df = sources.fetch_gdelt(catalogue().get("NEWS_TONE_MEMORY"))
+    assert df["value"].tolist() == [-1.5, -0.5] and df["date"].iloc[0] == pd.Timestamp("2025-01-01")

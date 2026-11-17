@@ -1349,3 +1349,185 @@ def track_record() -> tuple[pd.DataFrame, pd.DataFrame]:
     from macro import archive
 
     return archive.track_record(archive.read(), archive_outcomes())
+
+
+# ------------------------------------------------------------------ systematic portfolio
+PORTFOLIO_VARIANTS: dict[str, dict[str, Any]] = {
+    "full model": {},
+    "no drawdown overlay": {"overlay": False},
+    "no trend views": {"families": ("macro", "micro", "news")},
+    "no macro views": {"families": ("trend", "micro", "news")},
+    "no micro views": {"families": ("trend", "macro", "news")},
+    "no views, no overlay (core)": {"views": False, "overlay": False},
+}
+
+
+def portfolio_inputs():
+    """Weekly USD returns, macro factors, fundamentals and news tone for src/macro/portfolio.py."""
+    from macro import portfolio as pf
+
+    cfg = pf.load_config()
+    px = pf.usd_prices(try_series, cfg)
+    sox = try_series("SOX")
+    if sox is not None:
+        px["SOX"] = sox.dropna()
+    r = pf.weekly_returns(px, try_series("DGS3MO"))
+    stress = markets_bundle()["stress"].value
+    macro = pf.macro_factors(try_series("EBP"), try_series("CPILFESL"), stress)
+    fund = {k: s for k in ("MU_REV", "MU_GP", "NVDA_REV", "NVDA_GP") if (s := try_series(k)) is not None}
+    tone = {
+        k: s
+        for k in ("NEWS_TONE_MEMORY", "NEWS_TONE_RECESSION", "NEWS_TONE_INFLATION")
+        if (s := try_series(k)) is not None
+    }
+    return cfg, px, pf.Inputs(r=r, macro=macro.reindex(r.index, method="ffill"), fundamentals=fund, tone=tone)
+
+
+def _portfolio_tests(inp, cfg) -> dict:
+    """Pre-registered signal tests H29 (memory cycle) and H30 (news tone)."""
+    from macro import portfolio as pf
+
+    r = inp.r
+    mem = [a for a in pf.MEMORY_BASKET if a in r]
+    out: dict = {}
+    if mem and "SOX" in r:
+        rel = r[mem].mean(axis=1) - r["SOX"]
+        fwd13 = (1 + rel).rolling(13).apply(np.prod, raw=True).shift(-13) - 1
+        cyc = pf.memory_cycle(inp.fundamentals.get("MU_REV"))
+        if not cyc.empty:
+            sig = cyc.copy()
+            sig.index = [r.index[r.index.searchsorted(d)] if d <= r.index[-1] else pd.NaT for d in sig.index]
+            sig = sig[sig.index.notna()]
+            out["H29 memory cycle"] = pf.information_coefficient(sig, fwd13.reindex(sig.index))
+        fwd4 = (1 + rel).rolling(4).apply(np.prod, raw=True).shift(-4) - 1
+        tm = inp.tone.get("NEWS_TONE_MEMORY")
+        if tm is not None:
+            w = tm.dropna().resample("W-FRI").mean()
+            z = (w - w.rolling(52).mean()) / w.rolling(52).std()
+            out["H30 news: memory tone"] = pf.information_coefficient(
+                z.iloc[::4], fwd4.reindex(z.index).iloc[::4]
+            )
+    trec = inp.tone.get("NEWS_TONE_RECESSION")
+    if trec is not None and "SPY" in r:
+        w = trec.dropna().resample("W-FRI").mean()
+        z = (w - w.rolling(52).mean()) / w.rolling(52).std()
+        fwd = (1 + r["SPY"]).rolling(4).apply(np.prod, raw=True).shift(-4) - 1
+        out["H30 news: recession tone"] = pf.information_coefficient(
+            z.iloc[::4], fwd.reindex(z.index).iloc[::4]
+        )
+    return out
+
+
+def portfolio_bundle(force: bool = False) -> dict:
+    """Systematic balanced portfolio: walk-forward backtest with ablations, pre-registered tests,
+    the current target and its risk, and the paper book (src/macro/portfolio.py, portfolio_live.py)."""
+    from macro import portfolio as pf
+    from macro import portfolio_live as pl
+    from macro import stress_test as stt
+    from macro.versions import MODEL_VERSIONS
+
+    def compute() -> dict:
+        cfg, px, inp = portfolio_inputs()
+        r = inp.r
+        bench = pf.benchmark_returns(r, cfg)
+        cash = r["BIL"]
+        runs = {k: pf.backtest(inp, cfg, **v) for k, v in PORTFOLIO_VARIANTS.items()}
+        start = runs["full model"]["returns"].index[0]
+        b = bench.loc[start:]
+        table = pd.DataFrame({k: pf.metrics(v["returns"], cash, b) for k, v in runs.items()})
+        table["benchmark 60/40"] = pd.Series(pf.metrics(b, cash))
+        active = {k: (v["returns"] - b).dropna() for k, v in runs.items()}
+        trial_sr = [float(a.mean() / a.std()) for a in active.values() if a.std() > 0]
+        dsr = pf.deflated_sharpe(active["full model"], trial_sr)
+        # current target, with the overlay state of the paper book
+        book = pl.read_book()
+        nav, drifted = pl.paper_nav(book, px)
+        dd = float(1 - nav.iloc[-1] / nav.max()) if not nav.empty else 0.0
+        state = int(book["overlay"].iloc[-1]) if not book.empty else 0
+        state = pf.overlay_scale(dd, state, cfg)
+        t = r.index[-1]
+        cur = drifted  # empty before the first paper rebalance: the first trades build the book
+        tg = pf.target_at(
+            inp, t, cfg, vol_scale=pf.scale_of(state, cfg), w_prev=cur if not cur.empty else None
+        )
+        target = (
+            pf.apply_band(tg["weights"], cur, cfg["model"]["no_trade_band"])
+            if not drifted.empty
+            else tg["weights"]
+        )
+        risk = pf.risk_report(target, tg["cov"], tg["w_eq"], r)
+        # contribution of each view family to expected returns
+        contrib = {}
+        for fam in tg["views"]:
+            mu_wo, _ = pf.black_litterman(
+                tg["cov"], tg["w_eq"], {k: v for k, v in tg["views"].items() if k != fam}, cfg
+            )
+            contrib[fam] = tg["mu"] - mu_wo
+        # scenarios: conditional moves from the weekly covariance, in percent
+        wk = tg["cov"] / pf.WEEKS * 1e4  # (% per week)²
+        scen = {}
+        for name, shock in (
+            ("US equities −10%", {"SPY": -10.0}),
+            ("Long Treasuries −8% (rates shock)", {"TLT": -8.0}),
+            ("Memory bust: SK Hynix −25%", {"HYNIX": -25.0}),
+            ("Gold +10%", {"GLD": 10.0}),
+        ):
+            sh = {k: v for k, v in shock.items() if k in wk.index}
+            if not sh:
+                continue
+            cd = stt.conditional(wk, sh, 1.0)
+            moves = pd.concat([pd.Series(sh), cd["expected move"]])
+            scen[name] = float((target.reindex(moves.index).fillna(0) * moves).sum())
+        episodes = {}
+        for name, a, e, _ in stt.EPISODES:
+            seg = r.loc[a:e, target.index]
+            if seg.empty or seg.notna().mean().mean() < 0.5:
+                continue
+            port = (1 + seg.fillna(0) @ target).prod() - 1
+            bseg = (1 + bench.loc[a:e]).prod() - 1
+            episodes[name] = {"portfolio (current weights)": port, "benchmark": bseg}
+        from macro.utils import is_demo
+
+        today = px.index[-1] if is_demo() else pd.Timestamp.today().normalize()  # demo data end in the past
+        due = pl.rebalance_due(book, today, state, cfg)
+        stale = pl.stale_assets(px, target.index[target > 1e-6], today, cfg["live"]["stale_days"])
+        return {
+            "config": cfg,
+            "backtests": runs,
+            "benchmark": b,
+            "metrics": table,
+            "deflated_sharpe": dsr,
+            "trials": len(trial_sr),
+            "tests": _portfolio_tests(inp, cfg),
+            "target": target,
+            "target_status": tg["status"],
+            "views": tg["views"],
+            "mu": tg["mu"],
+            "pi": tg["pi"],
+            "w_eq": tg["w_eq"],
+            "view_contribution": pd.DataFrame(contrib),
+            "micro_table": pf.micro_table(
+                r.loc[:t],
+                [a for a in tg["cov"].index if cfg["universe"][a]["sleeve"] == "semis"],
+                inp.fundamentals,
+                t,
+            ),
+            "macro_now": inp.macro.loc[:t].iloc[-1] if not inp.macro.empty else pd.Series(dtype=float),
+            "macro_history": inp.macro,
+            "tone": inp.tone,
+            "risk": risk,
+            "scenarios": pd.Series(scen),
+            "episodes": pd.DataFrame(episodes).T,
+            "overlay_state": state,
+            "paper_nav": nav,
+            "paper_drawdown": dd,
+            "current": cur,
+            "trades": pl.trades(target, cur, cfg["model"]["no_trade_band"]),
+            "rebalance_due": due,
+            "stale": stale,
+            "version": MODEL_VERSIONS["portfolio"],
+            "as_of": t,
+            "prices_as_of": {a: px[a].dropna().index[-1] for a in target.index if a in px},
+        }
+
+    return load_or_compute("portfolio", compute, force=force)

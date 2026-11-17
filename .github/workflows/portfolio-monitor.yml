@@ -1,0 +1,42 @@
+name: portfolio-monitor
+# Hourly risk check of the paper portfolio during market hours (Seoul opens 00:00 UTC, New York
+# closes 21:00 UTC), weekdays. It checks and alerts; the daily rebalance runs in refresh.yml.
+on:
+  schedule:
+    - cron: "23 0-21 * * 1-5"
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: portfolio-monitor
+  cancel-in-progress: true
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      MACRO_MODE: live
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e . --no-deps
+      - name: Check drawdown and daily loss
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/portfolio_monitor.py --issue
+      - name: Commit the alert state when it changed
+        run: |
+          if [ -n "$(git status --porcelain archive/portfolio_alerts.json 2>/dev/null)" ]; then
+            git config user.name "macro-monitor-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add archive/portfolio_alerts.json
+            git commit -m "chore(portfolio): alert state"
+            git pull --rebase origin main && git push
+          fi
