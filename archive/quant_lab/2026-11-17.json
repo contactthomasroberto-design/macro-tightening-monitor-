@@ -1,0 +1,149 @@
+{
+ "date": "2026-11-17",
+ "signal_audit": [
+  {
+   "family": "carry",
+   "horizon (weeks)": 4,
+   "IC": 0.059,
+   "t (dates)": 1.0072,
+   "obs": 1681
+  },
+  {
+   "family": "carry",
+   "horizon (weeks)": 13,
+   "IC": 0.1144,
+   "t (dates)": 1.1263,
+   "obs": 561
+  },
+  {
+   "family": "macro",
+   "horizon (weeks)": 4,
+   "IC": 0.0117,
+   "t (dates)": 0.2621,
+   "obs": 12894
+  },
+  {
+   "family": "macro",
+   "horizon (weeks)": 13,
+   "IC": 0.0105,
+   "t (dates)": 0.1361,
+   "obs": 4312
+  },
+  {
+   "family": "micro",
+   "horizon (weeks)": 4,
+   "IC": -0.0069,
+   "t (dates)": -0.1549,
+   "obs": 2126
+  },
+  {
+   "family": "micro",
+   "horizon (weeks)": 13,
+   "IC": -0.0131,
+   "t (dates)": -0.1698,
+   "obs": 710
+  },
+  {
+   "family": "trend",
+   "horizon (weeks)": 4,
+   "IC": 0.0182,
+   "t (dates)": 0.4088,
+   "obs": 13396
+  },
+  {
+   "family": "trend",
+   "horizon (weeks)": 13,
+   "IC": -0.0035,
+   "t (dates)": -0.0447,
+   "obs": 4480
+  },
+  {
+   "family": "value",
+   "horizon (weeks)": 4,
+   "IC": -0.007,
+   "t (dates)": -0.1196,
+   "obs": 5818
+  },
+  {
+   "family": "value",
+   "horizon (weeks)": 13,
+   "IC": -0.0297,
+   "t (dates)": -0.2938,
+   "obs": 1952
+  }
+ ],
+ "variants": {
+  "v0.3": {
+   "annual return": 0.085,
+   "volatility": 0.0937,
+   "Sharpe": 0.7368,
+   "max drawdown": -0.177,
+   "worst 52 weeks": -0.1441,
+   "Calmar": 0.48,
+   "tracking error": 0.0639,
+   "information ratio": 0.2534,
+   "beta to benchmark": 0.6847
+  },
+  "EWMA vol (H36)": {
+   "annual return": 0.0809,
+   "volatility": 0.0931,
+   "Sharpe": 0.7015,
+   "max drawdown": -0.2145,
+   "worst 52 weeks": -0.1945,
+   "Calmar": 0.3774,
+   "tracking error": 0.0594,
+   "information ratio": 0.209,
+   "beta to benchmark": 0.7016
+  },
+  "multi-horizon trend (H37)": {
+   "annual return": 0.0783,
+   "volatility": 0.0883,
+   "Sharpe": 0.7069,
+   "max drawdown": -0.1942,
+   "worst 52 weeks": -0.1816,
+   "Calmar": 0.4032,
+   "tracking error": 0.0657,
+   "information ratio": 0.1452,
+   "beta to benchmark": 0.6366
+  },
+  "no trend": {
+   "annual return": 0.072,
+   "volatility": 0.0888,
+   "Sharpe": 0.6376,
+   "max drawdown": -0.2068,
+   "worst 52 weeks": -0.1718,
+   "Calmar": 0.3481,
+   "tracking error": 0.0501,
+   "information ratio": 0.0744,
+   "beta to benchmark": 0.7112
+  },
+  "benchmark 60/40": {
+   "annual return": 0.0654,
+   "volatility": 0.1128,
+   "Sharpe": 0.4688,
+   "max drawdown": -0.3818,
+   "worst 52 weeks": -0.3301,
+   "Calmar": 0.1713,
+   "tracking error": NaN,
+   "information ratio": NaN,
+   "beta to benchmark": NaN
+  }
+ },
+ "H40": {
+  "DSR (model variants)": 0.792013775938113,
+  "PBO": 0.9939393939393939,
+  "beta": 0.6847219905318519,
+  "MinTRL weeks": 274.82385131628826
+ },
+ "relaxed share": {
+  "v0.3": 0.021910604732690624,
+  "EWMA vol (H36)": 0.06397896581945661,
+  "multi-horizon trend (H37)": 0.024539877300613498,
+  "no trend": 0.021034180543382998
+ },
+ "stock_bond": {
+  "hot": NaN,
+  "calm": -0.3867727474380549,
+  "now": -0.2320165910953738
+ }
+}
