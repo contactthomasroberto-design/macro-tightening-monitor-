@@ -10,6 +10,8 @@ MACRO_MODE=live python scripts/quant_lab.py          # write docs/research/quant
 4. H37: multi-horizon trend (4, 13, 52 weeks) against 12-1 month trend and against no trend.
 5. H44: weeks run with a relaxed constraint and their share of the worst drawdown.
 6. Stock-bond correlation when the 10-year yield is above 5% and core inflation above 3%.
+7. Candidate signals H48-H51: country valuation, CFTC positioning, earnings momentum (each at
+   confidence 0.10 in its own variant) and event de-risking before FOMC, US CPI and NVIDIA earnings.
 Thresholds are those written in docs/research_log.md before the first run."""
 
 from __future__ import annotations
@@ -157,6 +159,20 @@ def main() -> int:
     no_names = pf.backtest(inp, clean)
     # H47: Michaud resampling; 25 draws a week keeps the lab within its time budget
     resampled = run_variant(inp, cfg, resample={"draws": 25, "seed": 0})
+
+    def with_conf(fam: str, c: float = 0.10) -> dict:
+        x = copy.deepcopy(cfg)
+        x["model"]["confidence"][fam] = c
+        return pf.backtest(inp, x, families=(*pf.FAMILIES, fam))
+
+    cand = {
+        "valuation (H48)": with_conf("valuation"),
+        "positioning (H49)": with_conf("positioning"),
+        "earnings (H50)": with_conf("earnings"),
+    }
+    evc = copy.deepcopy(cfg)
+    evc["model"]["event_derisk"]["enabled"] = True
+    cand["event de-risk (H51)"] = pf.backtest(inp, evc)
     runs = {
         "v0.3": base,
         "EWMA vol (H36)": ewma,
@@ -168,6 +184,7 @@ def main() -> int:
         "SOX put hedge (H42)": sox_hedge,
         "forced cash (H44)": cash_v,
         "resampled weights (H47)": resampled,
+        **cand,
     }
     start = base["returns"].index[0]
     b = bench.loc[start:]
@@ -322,6 +339,44 @@ def main() -> int:
         f"{share:.0%} pendant le pire drawdown ({peak:%Y-%m} → {trough:%Y-%m})."
     )
     res["relaxed share"] = relaxed
+
+    # H48-H51: candidate signals (thresholds pre-registered in docs/research_log.md)
+    def ic_t(fam: str, h: int) -> tuple[float, float]:
+        if audit.empty:
+            return float("nan"), float("nan")
+        row = audit[(audit["family"] == fam) & (audit["horizon (weeks)"] == h)]
+        if row.empty:
+            return float("nan"), float("nan")
+        return float(row["IC"].iloc[0]), float(row["t (dates)"].iloc[0])
+
+    L += ["", "### Signaux candidats (H48-H51)", ""]
+    for hyp, fam, h in (("H48", "valuation", 13), ("H49", "positioning", 4), ("H50", "earnings", 13)):
+        k = f"{fam} ({hyp})"
+        ic, tt = ic_t(fam, h)
+        ok = bool(
+            tt > 2 and mm(k, "Sharpe") >= sh0 and mm(k, "max drawdown") >= dd0 - 0.01 and relaxed[k] < 0.02
+        )
+        res["verdicts"][hyp] = ok
+        L.append(
+            f"- **{hyp} {'confirmée' if ok else 'rejetée'}** ({fam}) : IC à {h} semaines {ic:+.3f} (t = {tt:.1f}) ; "
+            f"Sharpe {mm(k, 'Sharpe'):.2f} contre {sh0:.2f} ; drawdown max {mm(k, 'max drawdown'):.1%} contre {dd0:.1%}."
+        )
+    k = "event de-risk (H51)"
+    share_ev = float(
+        np.mean(
+            [
+                bool(pf.events_ahead(inp.events, t, 7) & {"fomc", "cpi", "nvda_earnings"})
+                for t in base["log"].index
+            ]
+        )
+    )
+    h51 = bool(mm(k, "max drawdown") - dd0 >= 0.01 and sh0 - mm(k, "Sharpe") <= 0.03)
+    res["verdicts"]["H51"] = h51
+    L.append(
+        f"- **H51 {'confirmée' if h51 else 'rejetée'}** (réduction du risque la semaine avant FOMC, CPI US et résultats "
+        f"NVIDIA) : drawdown max {mm(k, 'max drawdown'):.1%} contre {dd0:.1%}, Sharpe {mm(k, 'Sharpe'):.2f} contre "
+        f"{sh0:.2f} ; part des semaines concernées {share_ev:.0%}."
+    )
 
     # 6. stock-bond correlation by regime
     y10 = try_series("DGS10")

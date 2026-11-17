@@ -674,6 +674,12 @@ def generate(seed: int = SEED) -> dict[str, pd.Series]:
 
     out.update(_portfolio_block(seed, out))
 
+    # CFTC positioning for the portfolio's contrarian signal (H49): own stream, earlier draws unchanged
+    g3 = np.random.default_rng(seed + 3)
+    out["TFF_UST30_LEV"] = W(-60000 + _ar1(nt, 0.95, 25000, g3))
+    out["TFF_CHF_LEV"] = W(-5000 + _ar1(nt, 0.92, 8000, g3))
+    out["TFF_DXY_LEV"] = W(15000 + _ar1(nt, 0.93, 6000, g3))
+
     for sid, s in out.items():
         s.name = sid
         s.index.name = "date"

@@ -1413,6 +1413,10 @@ def portfolio_inputs():
             carry=carry,
             house=pf.load_house_views(),
             hedge=hedge,
+            positioning={
+                sid: s for sid in set(pf.POSITIONING_OF.values()) if (s := try_series(sid)) is not None
+            },
+            events=pf.load_events(fundamentals=fund),
         ),
     )
 
