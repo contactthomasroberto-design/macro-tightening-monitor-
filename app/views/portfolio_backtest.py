@@ -102,6 +102,34 @@ if alt is not None:
         "cannot beat them on drawdown and Sharpe after costs adds complexity without value."
     )
 
+st.subheader("Against funds one can buy")
+fb = b.get("fund_benchmarks")
+if fb is not None and not fb.empty:
+    labels = b.get("fund_benchmark_labels", {})
+    num = fb.drop(index=["weeks", "first week"], errors="ignore").T.astype(float)
+    num.index = [labels.get(k, k) for k in num.index]
+    st.dataframe(
+        num.style.format(
+            fmt
+            | {
+                "Sharpe": "{:.2f}",
+                "Calmar": "{:.2f}",
+                "information ratio": "{:.2f}",
+                "beta to benchmark": "{:.2f}",
+            },
+            na_rep="",
+        ),
+        use_container_width=True,
+    )
+    st.caption(
+        f"Common history of all series: {int(fb.loc['weeks'].iloc[0])} weeks from {fb.loc['first week'].iloc[0]}, "
+        "net of each fund's fees (ETF prices with dividends reinvested). Managed futures (DBMF), risk parity "
+        "(RPAR) and hedge-fund replication ETFs (QAI, HDG): if the model does no better than products an investor "
+        "can simply buy, its complexity does not pay. Funds with less than a year of history are left out."
+    )
+else:
+    st.caption("The fund benchmarks' prices are not loaded yet (next refresh).")
+
 wts = runs["full model"]["weights"]
 sl = wts.T.groupby([sleeve(b, a) for a in wts.columns]).sum().T
 fig = go.Figure()

@@ -39,6 +39,15 @@ al., 2017). So every addition must earn its place out of sample, after costs.
 | Macro regimes: growth and inflation quadrants; excess bond premium (Gilchrist-Zakrajšek, 2012) | EBP is the best recession signal here (H17); regime timing is hard | **Macro views** |
 | Business-cycle fundamentals: memory cycle | Micron reports before the Korean makers; DRAM prices lead earnings | **Micro view** (H29) |
 | **News sentiment**: Tetlock (2007), Garcia (2013), Ke-Kelly-Xiu (2019), Lopez-Lira and Tang (2023) | Negative media tone predicts lower returns; news is priced within about two days (KKX); LLM headline scores predict next-day returns, more for small stocks and bad news; GDELT tone predicts index returns in several studies | **Scored and archived**; in the allocation only if H32 passes |
+| Country valuation: CAPE and earnings yield across countries (Asness, Ilmanen, Maloney, "Market timing: sin a little", 2017; Klement, 2012, CAPE across countries) | Cheap markets earn more over 5-10 years; weak at 1-3 months | **Candidate `valuation`** (H48), price-deviation proxy: no free point-in-time CAPE by country |
+| Positioning: speculators' net futures positions at extremes (Bessembinder and Chan, 1992; Wang, 2003; Dewally, Ederington, Fernando, 2013) | Mixed: hedgers' extremes are weakly contrarian, speculators' positions often follow trend; strongest at extremes, in currencies | **Candidate `positioning`** (H49), CFTC TFF leveraged funds, tails only |
+| Earnings momentum and surprise (Bernard and Thomas, 1989, post-earnings drift; Chan, Jegadeesh, Lakonishok, 1996) | Drift after surprises is one of the most robust anomalies, weaker since 2000 in large caps | **Candidate `earnings`** (H50), revenue only (SEC filings, MU and NVDA) |
+| Event risk: returns and volatility around FOMC and macro releases (Lucca and Moench, 2015, pre-FOMC drift; Savor and Wilson, 2013, announcement-day premium) | Announcement days carry a *premium*: cutting risk before them may cost return | **Candidate event de-risking** (H51), tested against that prior |
+
+Candidate families enter `views_at` and the quant lab's signal audit but keep confidence 0 in
+`config/portfolio.yaml`; each is run in its own variant at confidence 0.10, and adopted only on the
+verdict rules written in the research log (H48-H51) before the first run. Note the prior against H51:
+the literature finds a positive premium on announcement days, so de-risking may well lose return.
 
 ## 4. News analytics, as practitioners do it
 

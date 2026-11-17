@@ -148,7 +148,11 @@ def _coverage_note(ctx: Context, agent: str, title: str) -> Note:
         )
     conflict = t[
         np.isfinite(t["house views"].astype(float))
-        & (np.sign(t["house views"].astype(float)) * np.sign(t["model tilt (pp/yr)"].astype(float)) < 0)
+        & (
+            np.sign(t["house views"].astype(float))
+            * t["stance"].map({"positive": 1, "negative": -1}).fillna(0)
+            < 0
+        )
     ]
     watch = [
         f"{r['name']} : nos signaux ({r['stance']}) contredisent les vues publiées ({r['house views']:+.1f}) — à débattre."

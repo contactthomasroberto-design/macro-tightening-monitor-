@@ -44,6 +44,29 @@ Pre-registered H27-H35. Ablations: long only, no hedge, no overlay, no views, v0
 Comparisons with equal weight, minimum variance, ERC and HRP. Deflated Sharpe over every configuration
 run. The paper book starts 2026-11-20 and is never edited.
 
+Operational checks (`src/macro/fund_checks.py`):
+- **Funds one can buy.** Metrics against DBMF (managed futures), RPAR (risk parity), QAI and HDG
+  (hedge-fund replication) over the common history of all of them, net of their fees. Funds with less
+  than a year of history are left out. Shown on Portfolio → Backtest.
+- **Liquidity.** Days to liquidate each position of a USD 100m notional fund (`live.notional_usd`) at
+  10% of average daily traded value. A position is flagged above one day or above 1% of a day's
+  volume. The ADV figures are static, rounded, dated estimates (`liquidity.adv_usd`), not live data.
+  Shown on Portfolio → Risk.
+- **Price anomalies.** The two-hourly monitor flags:
+  - a daily move beyond 6 trailing-year standard deviations that the sector proxy did not share
+    (beyond 3 sd);
+  - a same-day close that differs by more than 2% between Yahoo and Stooq (US listings only).
+
+  Anomalies go to `archive/price_anomalies.csv`, open one GitHub issue each, and appear in the
+  evening report. They never change a position automatically.
+- **Model health** (Portfolio → Model health):
+  - the weight change at each rebalance;
+  - ex-ante volatility (sample covariance of the trailing three years, every fourth rebalance)
+    against the volatility realised over the next 26 weeks;
+  - the limits binding today;
+  - optimiser fallbacks over the backtest;
+  - the paper book against the backtest, once it has two weeks.
+
 ## Known failure modes
 - Shorts: borrow availability and recalls are not modelled beyond a cost; squeezes on crowded shorts.
 - Synthetic puts: Black-Scholes at the VIX plus a fixed skew premium; real put prices and bid-ask differ.
@@ -51,6 +74,10 @@ run. The paper book starts 2026-11-20 and is never edited.
 - House views cannot be backtested; they enter with a 10% confidence only.
 - Survivorship: the semiconductor names were chosen in 2026, knowing they survived.
 - ETF proxies for futures-based exposures (oil, managed futures) carry roll costs that futures would not.
+- Liquidity uses static ADV estimates. Volumes fall in crises, exactly when exits matter, so the check
+  is an order of magnitude, not a guarantee.
+- The second price source covers US listings only. The Korean names rely on the jump check alone, and a
+  Stooq outage silently leaves only that check.
 
 ## Change history
 See `docs/MODEL_CHANGELOG.md`.

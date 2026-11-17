@@ -29,6 +29,7 @@ FRED_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 ECB_API = "https://data-api.ecb.europa.eu/service/data"
 YAHOO_API = "https://query1.finance.yahoo.com/v8/finance/chart"
 SEC_FACTS = "https://data.sec.gov/api/xbrl/companyfacts"
+STOOQ_CSV = "https://stooq.com/q/d/l/"  # free daily CSV (second price source for the anomaly check)
 GDELT_DOC = "https://api.gdeltproject.org/api/v2/doc/doc"
 GDELT_SPACING = 5.5  # seconds between requests
 _gdelt_last = 0.0
@@ -269,6 +270,36 @@ def yahoo_quote(source_id: str) -> tuple[float, pd.Timestamp]:
         )
     except (KeyError, IndexError, TypeError) as exc:
         raise SourceError(f"unexpected Yahoo quote payload for {source_id}") from exc
+
+
+# ------------------------------------------------------------------------------------ Stooq
+def stooq_symbol(source_id: str) -> str | None:
+    """Stooq symbol of a US listing ('SPY' -> 'spy.us'); None for other listings (Korean shares,
+    currency pairs, indices), which the second-source check skips."""
+    if any(c in source_id for c in ".=^"):
+        return None
+    return f"{source_id.lower()}.us"
+
+
+def stooq_daily(symbol: str, days: int = 10) -> pd.Series:
+    """Daily closes of the last `days` calendar days from Stooq's free CSV download (unadjusted
+    closes: compare only same-day closes, where Yahoo's adjusted close equals the close)."""
+    today = pd.Timestamp.now(tz="UTC").normalize()
+    params = {
+        "s": symbol,
+        "i": "d",
+        "d1": (today - pd.Timedelta(days=days)).strftime("%Y%m%d"),
+        "d2": today.strftime("%Y%m%d"),
+    }
+    text = get(STOOQ_CSV, params).text
+    try:
+        df = pd.read_csv(io.StringIO(text))
+        out = pd.Series(df["Close"].astype(float).to_numpy(), index=pd.to_datetime(df["Date"]))
+    except (KeyError, ValueError, pd.errors.ParserError) as exc:
+        raise SourceError(f"unexpected Stooq payload for {symbol}: {text[:60]!r}") from exc
+    if out.empty:
+        raise SourceError(f"no Stooq data for {symbol}")
+    return out.sort_index()
 
 
 # ------------------------------------------------------------------------------------ CFTC TFF

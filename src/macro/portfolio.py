@@ -48,6 +48,9 @@ from macro.config import ROOT
 PATH = ROOT / "config" / "portfolio.yaml"
 WEEKS = 52
 FAMILIES = ("trend", "macro", "regime", "value", "carry", "micro", "house", "news")
+# Candidate families (H48-H50): computed by views_at and audited by the quant lab, but outside the
+# families used by default, so the live book, its pages and reports are unchanged until a verdict.
+CANDIDATE_FAMILIES = ("valuation", "positioning", "earnings")
 MEMORY_BASKET = ("HYNIX", "SAMSUNG", "MU")
 
 
@@ -367,9 +370,9 @@ def regime_series(indpro: pd.Series | None, cpi: pd.Series | None) -> pd.Series:
     for k, x in (("growth", indpro), ("inflation", cpi)):
         mth = x.dropna().resample("MS").last()
         yoy = 100 * (mth / mth.shift(12) - 1)
-        up = (yoy - yoy.shift(3)) > 0
+        up = ((yoy - yoy.shift(3)) > 0).where(yoy.notna() & yoy.shift(3).notna())  # mask on the same dates
         up.index = up.index + pd.DateOffset(months=3) - pd.Timedelta(days=1)  # published ~6 weeks later
-        out[k] = up.where(yoy.notna() & yoy.shift(3).notna())
+        out[k] = up
     df = pd.DataFrame(out).dropna()
     lab = (
         df["growth"].map({True: "growth up", False: "growth down"})
@@ -577,6 +580,182 @@ def black_litterman(
     return pd.Series(mu, index=cov.index), pd.Series(pi, index=cov.index)
 
 
+# ------------------------------------------------------------------ candidate signals (H48-H51)
+VALUATION_ASSETS = ("SPY", "VGK", "EWJ", "MCHI", "INDA", "EWT", "EWY", "EWZ", "EEM")
+
+
+def valuation_scores(r: pd.DataFrame, years: int = 10, min_years: int = 5) -> pd.Series:
+    """Country valuation proxy (research log H48): each country ETF's log price deviation from its own
+    linear trend over the last 10 years, in units of the deviation's standard deviation, ranked across
+    countries; cheaper (further below trend) scores higher. A price-based proxy: no free point-in-time
+    CAPE or earnings yield by country is available from the monitor's sources."""
+    h = r.iloc[-years * WEEKS :]
+    if len(h) < min_years * WEEKS:
+        return pd.Series(dtype=float)
+    names = [a for a in VALUATION_ASSETS if a in h and h[a].notna().sum() >= min_years * WEEKS]
+    if len(names) < 3:
+        return pd.Series(dtype=float)
+    dev = {}
+    for a in names:
+        lp = np.log1p(h[a].dropna()).cumsum().to_numpy()
+        x = np.arange(len(lp))
+        resid = lp - np.polyval(np.polyfit(x, lp, 1), x)
+        sd = resid.std()
+        if sd > 0:
+            dev[a] = resid[-1] / sd
+    return -_rank(pd.Series(dev, dtype=float)) if len(dev) >= 3 else pd.Series(dtype=float)
+
+
+# CFTC Traders in Financial Futures, leveraged funds' net position, by instrument (H49). Gold and oil
+# are in the disaggregated report, not TFF: not covered.
+POSITIONING_OF = {
+    "SPY": "TFF_ES_LEV",
+    "IEF": "TFF_UST10_LEV",
+    "TLT": "TFF_UST30_LEV",
+    "FXY": "TFF_JPY_LEV",
+    "FXE": "TFF_EUR_LEV",
+    "FXF": "TFF_CHF_LEV",
+    "UUP": "TFF_DXY_LEV",
+}
+POSITIONING_LAG_DAYS = 4  # Tuesday positions, published Friday 15:30 ET: usable from the next rebalance
+
+
+def positioning_scores(
+    pos: dict[str, pd.Series], t, assets: list[str], window: int = 156, tail: float = 0.10
+) -> pd.Series:
+    """Contrarian positioning (H49): percentile of the latest net speculative position within the last
+    3 years; beyond the 90th percentile the score falls linearly to -1 at the 100th, below the 10th it
+    rises to +1 at the 0th, and it is 0 in between."""
+    out = {}
+    t = pd.Timestamp(t)
+    for a, sid in POSITIONING_OF.items():
+        s = pos.get(sid)
+        if a not in assets or s is None:
+            continue
+        s = s.dropna()
+        s.index = s.index + pd.Timedelta(days=POSITIONING_LAG_DAYS)
+        s = s.loc[:t]
+        if len(s) < int(0.8 * window) or s.index[-1] < t - pd.Timedelta(days=21):
+            continue
+        h = s.iloc[-window:]
+        last = h.iloc[-1]
+        p = float((h < last).mean() + 0.5 * (h == last).mean())
+        if p >= 1 - tail:
+            out[a] = -(p - (1 - tail)) / tail
+        elif p <= tail:
+            out[a] = (tail - p) / tail
+        else:
+            out[a] = 0.0
+    return pd.Series(out, dtype=float).clip(-1, 1)
+
+
+EARNINGS_OF = {"MU": "MU_REV", "NVDA": "NVDA_REV"}  # US filers in XBRL; TSM and ASML file 20-F/6-K
+
+
+def earnings_component(rev: pd.Series | None, t) -> float | None:
+    """Earnings momentum of one company (H50), revenue dated at the SEC filing date: the average of
+    (a) acceleration, year-on-year log growth minus the previous quarter's, and (b) surprise against a
+    seasonal random walk with drift, this quarter's growth minus the average of the previous four;
+    scaled by the past standard deviation of that average and squashed with tanh."""
+    if rev is None:
+        return None
+    t = pd.Timestamp(t)
+    rv = rev.dropna()
+    rv = rv[(rv > 0) & (rv.index < t)]  # filed strictly before the rebalance date
+    if len(rv) < 10 or rv.index[-1] < t - pd.Timedelta(days=200):
+        return None
+    g = np.log(rv / rv.shift(4))
+    c = 0.5 * (g - g.shift(1)) + 0.5 * (g - g.shift(1).rolling(4).mean())
+    c = c.dropna()
+    if c.empty:
+        return None
+    past = c.iloc[:-1]
+    scale = float(past.std()) if len(past) >= 6 and past.std() > 0 else 0.25
+    return float(np.tanh(c.iloc[-1] / scale))
+
+
+def earnings_scores(fundamentals: dict[str, pd.Series], t, assets: list[str]) -> pd.Series:
+    out = {a: earnings_component(fundamentals.get(sid), t) for a, sid in EARNINGS_OF.items() if a in assets}
+    return pd.Series({k: v for k, v in out.items() if v is not None}, dtype=float)
+
+
+EVENTS_PATH = ROOT / "config" / "event_calendar.yaml"
+
+
+def _first_friday(year: int, month: int) -> pd.Timestamp:
+    d = pd.Timestamp(year, month, 1)
+    return d + pd.Timedelta(days=(4 - d.weekday()) % 7)
+
+
+def _weekday_on_or_after(d: pd.Timestamp) -> pd.Timestamp:
+    return d + pd.Timedelta(days=max(0, 7 - d.weekday()) if d.weekday() >= 5 else 0)
+
+
+def load_events(
+    path=None, fundamentals: dict[str, pd.Series] | None = None, end: str = "2027-12-31"
+) -> pd.DataFrame:
+    """Event calendar (H51): dated events of config/event_calendar.yaml plus rule-based ones (first
+    Friday for payrolls, the weekday on or after the 13th for US CPI) and NVIDIA's earnings, taken as
+    the SEC filing date minus a fixed number of days. Columns: date, kind."""
+    with open(path or EVENTS_PATH, encoding="utf-8") as fh:
+        cal = yaml.safe_load(fh)
+    rows = [
+        {"date": pd.Timestamp(d), "kind": k} for k, ds in (cal.get("dates") or {}).items() for d in ds or []
+    ]
+    rules = cal.get("rules") or {}
+    months = pd.date_range(rules.get("start", "2005-01-01"), end, freq="MS")
+    if "nfp" in rules:
+        rows += [{"date": _first_friday(m.year, m.month), "kind": "nfp"} for m in months]
+    if "cpi" in rules:
+        day = int(rules["cpi"].get("day", 13))
+        rows += [
+            {"date": _weekday_on_or_after(m + pd.Timedelta(days=day - 1)), "kind": "cpi"} for m in months
+        ]
+    nv = cal.get("nvda_earnings") or {}
+    rev = (fundamentals or {}).get(nv.get("series", "NVDA_REV"))
+    if nv and rev is not None:
+        lag = pd.Timedelta(days=int(nv.get("days_before_filing", 5)))
+        rows += [{"date": d - lag, "kind": "nvda_earnings"} for d in rev.dropna().index]
+    df = pd.DataFrame(rows, columns=["date", "kind"])
+    return df.drop_duplicates().sort_values("date").reset_index(drop=True)
+
+
+def events_ahead(events: pd.DataFrame, t, days: int = 7) -> set[str]:
+    """Kinds of the events in the `days` after t (exclusive of t)."""
+    if events is None or events.empty:
+        return set()
+    t = pd.Timestamp(t)
+    m = (events["date"] > t) & (events["date"] <= t + pd.Timedelta(days=days))
+    return set(events.loc[m, "kind"])
+
+
+def event_derisk(cfg: dict, events: pd.DataFrame, t, vol_scale: float) -> tuple[dict, float, set[str]]:
+    """H51: in the week before a high-stakes event, scale the volatility budget (macro events) or the
+    affected sleeve's maximum (company events) by `scale`. Returns (cfg, vol_scale, events hit)."""
+    ev = cfg["model"].get("event_derisk") or {}
+    if not ev.get("enabled"):
+        return cfg, vol_scale, set()
+    hit = events_ahead(events, t, int(ev.get("days", 7)))
+    hit &= set(ev.get("macro_kinds", [])) | set(ev.get("sleeve_kinds", {}))
+    if not hit:
+        return cfg, vol_scale, hit
+    k = float(ev.get("scale", 0.8))
+    if hit & set(ev.get("macro_kinds", [])):
+        vol_scale *= k
+    sleeves = {ev["sleeve_kinds"][x] for x in hit if x in ev.get("sleeve_kinds", {})}
+    if sleeves:
+        cfg = {
+            **cfg,
+            "sleeves": {s: dict(v) if isinstance(v, dict) else v for s, v in cfg["sleeves"].items()},
+        }
+        for s in sleeves:
+            if isinstance(cfg["sleeves"].get(s), dict) and "max" in cfg["sleeves"][s]:
+                cfg["sleeves"][s]["max"] = max(
+                    cfg["sleeves"][s]["max"] * k, cfg["sleeves"][s].get("min", 0.0)
+                )
+    return cfg, vol_scale, hit
+
+
 # ------------------------------------------------------------------ optimiser
 EQUITY_SLEEVES = ("equity", "style", "sector", "semis")
 
@@ -596,6 +775,45 @@ def optimise(
     w_prev: pd.Series | None = None,
     long_only: bool = False,
 ) -> tuple[pd.Series, str]:
+    """Mean-variance weights (`_optimise`), or their resampled average when `model.resample` is set
+    (Michaud, 1998; research log H47): draws of μ ~ N(μ_BL, τΣ) and Σ ~ Wishart(T, Σ/T), T the
+    covariance window in weeks; the weights of each draw are averaged and the average is projected
+    back onto the constraints (closest feasible point in the least-squares sense)."""
+    rs = cfg["model"].get("resample") or {}
+    draws = int(rs.get("draws", 0))
+    if draws <= 0:
+        return _optimise(mu, cov, w_eq, cfg, vol_scale, w_prev, long_only)
+    rng = np.random.default_rng(int(rs.get("seed", 0)))
+    S = cov.to_numpy()
+    n = len(S)
+    T = int(cfg["model"]["cov_window_weeks"])
+    tau = float(cfg["model"]["tau"])
+    Lm = _psd_root(tau * S)
+    Ls = _psd_root(S / T)
+    ws = []
+    for _ in range(draws):
+        m_d = mu.to_numpy() + Lm @ rng.standard_normal(n)
+        z = Ls @ rng.standard_normal((n, T))  # Wishart(T, Σ/T) as a sum of T outer products
+        S_d = pd.DataFrame(z @ z.T, index=cov.index, columns=cov.index)
+        w_d, st_d = _optimise(pd.Series(m_d, index=cov.index), S_d, w_eq, cfg, vol_scale, w_prev, long_only)
+        if not st_d.startswith("fallback"):
+            ws.append(w_d.to_numpy())
+    if not ws:
+        return _optimise(mu, cov, w_eq, cfg, vol_scale, w_prev, long_only)
+    w, status = _optimise(mu, cov, w_eq, cfg, vol_scale, w_prev, long_only, project=np.mean(ws, axis=0))
+    return w, f"resampled ({len(ws)} draws), {status}"
+
+
+def _optimise(
+    mu: pd.Series,
+    cov: pd.DataFrame,
+    w_eq: pd.Series,
+    cfg: dict,
+    vol_scale: float = 1.0,
+    w_prev: pd.Series | None = None,
+    long_only: bool = False,
+    project: np.ndarray | None = None,
+) -> tuple[pd.Series, str]:
     """Long/short mean-variance with costs, as a convex program (cvxpy, Clarabel solver):
 
         max  μ'w − δ/2 w'Σw − borrow'·max(−w, 0) − k·cost'·|w − w_prev|
@@ -603,7 +821,8 @@ def optimise(
              [20% × scale, 90%]; alternatives ≤ 15%; currency gross ≤ 20%; cash ≤ 10% outside the
              overlay; σ(w) ≤ σ(benchmark) × scale; tracking error ≤ 8%.
 
-    If infeasible, the tracking-error cap, then the volatility cap are dropped (status says which)."""
+    If infeasible, the tracking-error cap, then the volatility cap are dropped (status says which).
+    With `project`, the objective is instead the squared distance to those weights (same constraints)."""
     import cvxpy as cp
 
     m, uni, sl = cfg["model"], cfg["universe"], cfg["sleeves"]
@@ -631,12 +850,16 @@ def optimise(
 
     w = cp.Variable(n)
     short = cp.Variable(n, nonneg=True)
-    obj = cp.Maximize(
-        mu.to_numpy() @ w
-        - m["risk_aversion"] / 2 * cp.sum_squares(L.T @ w)
-        - borrow @ short
-        - tc @ cp.abs(w - w0)
-    )
+    obj: cp.Minimize | cp.Maximize
+    if project is not None:  # closest feasible point to resampled weights
+        obj = cp.Minimize(cp.sum_squares(w - project))
+    else:
+        obj = cp.Maximize(
+            mu.to_numpy() @ w
+            - m["risk_aversion"] / 2 * cp.sum_squares(L.T @ w)
+            - borrow @ short
+            - tc @ cp.abs(w - w0)
+        )
     # the cash cap and the equity floor are the two limits a forced de-risking may lift (H44)
     soft = [w <= hi, eqm @ w >= sl["equity_net"]["min"] * vol_scale]
     base = [
@@ -713,6 +936,8 @@ class Inputs:
     carry: pd.DataFrame = field(default_factory=pd.DataFrame)
     house: list = field(default_factory=list)
     hedge: pd.DataFrame = field(default_factory=pd.DataFrame)  # weekly SPY price, VIX, cash yield (%)
+    positioning: dict[str, pd.Series] = field(default_factory=dict)  # CFTC TFF net positions (H49)
+    events: pd.DataFrame = field(default_factory=pd.DataFrame)  # event calendar: date, kind (H51)
     cache: dict = field(default_factory=dict, repr=False)  # covariance and views by date, shared by variants
 
 
@@ -731,6 +956,9 @@ def views_at(inp: Inputs, t, assets: list[str], cfg: dict) -> dict[str, pd.Serie
         v["micro"] = micro_scores(r, semis, inp.fundamentals, t)
     v["house"] = house_scores(inp.house, t, assets)
     v["news"] = news_scores(inp.tone, t, assets, cfg)
+    v["valuation"] = valuation_scores(r)
+    v["positioning"] = positioning_scores(inp.positioning, t, assets)
+    v["earnings"] = earnings_scores(inp.fundamentals, t, assets)
     return v
 
 
@@ -802,7 +1030,8 @@ def backtest(
         due = freq == "weekly" or new_month
         cost, hedge_pnl = 0.0, 0.0
         if due or new_state != state or w.empty:
-            tg = target_at(inp, t, cfg, fam, scale_of(new_state, cfg), w if not w.empty else None, long_only)
+            cfg_t, vs, _ = event_derisk(cfg, inp.events, t, scale_of(new_state, cfg))  # H51, off by default
+            tg = target_at(inp, t, cfg_t, fam, vs, w if not w.empty else None, long_only)
             target = tg["weights"]
             if not w.empty:
                 target = apply_band(target, w, cfg["model"]["no_trade_band"])
@@ -938,6 +1167,113 @@ def risk_report(w: pd.Series, cov: pd.DataFrame, w_eq: pd.Series, r: pd.DataFram
         "VaR 95% (1 week)": -q,
         "expected shortfall 95% (1 week)": float(-h[h <= q].mean()),
     }
+
+
+# Return sources for the risk budget, by sleeve; `risk_sources` in config/portfolio.yaml overrides
+# single instruments whose sleeve is ambiguous (inflation-linked bonds, the semiconductor index...).
+SOURCE_OF_SLEEVE = {
+    "equity": "equity",
+    "style": "equity",
+    "sector": "equity",
+    "semis": "semis",
+    "bond": "rates (duration)",
+    "cash": "rates (duration)",
+    "credit": "credit",
+    "real": "commodities",
+    "alt": "alternatives",
+    "fx": "FX",
+}
+
+
+def risk_source(asset: str, cfg: dict) -> str:
+    over = cfg.get("risk_sources") or {}
+    if asset in over:
+        return over[asset]
+    return SOURCE_OF_SLEEVE.get(cfg["universe"].get(asset, {}).get("sleeve", ""), "other")
+
+
+def risk_budget(
+    w: pd.Series, cov: pd.DataFrame, r: pd.DataFrame, cfg: dict, weeks: int = 156
+) -> pd.DataFrame:
+    """Share of variance by return source (equity, rates, inflation, credit, FX, semis, commodities,
+    alternatives): Euler contributions w_i (Σw)_i / w'Σw summed by source, so the shares sum to 1
+    (negative when a source hedges the rest). Ex ante with the model covariance, and realised with
+    the sample covariance of the last `weeks` weekly returns; with net and gross weight per source."""
+    a = [x for x in w.index if x in cov.index and abs(w[x]) > 1e-9]
+    wv = w.reindex(a).to_numpy()
+    src = pd.Series({x: risk_source(x, cfg) for x in a})
+
+    def shares(S: np.ndarray) -> pd.Series:
+        v = wv @ S @ wv
+        return pd.Series(wv * (S @ wv) / v, index=a).groupby(src).sum() if v > 0 else pd.Series(dtype=float)
+
+    ex = shares(cov.loc[a, a].to_numpy())
+    h = r.reindex(columns=a).iloc[-weeks:].fillna(0.0)
+    real = shares(h.cov().to_numpy() * WEEKS) if len(h) > 10 else pd.Series(dtype=float)
+    out = pd.DataFrame(
+        {
+            "ex-ante share": ex,
+            "realised share (3y)": real,
+            "net weight": pd.Series(wv, index=a).groupby(src).sum(),
+            "gross weight": pd.Series(np.abs(wv), index=a).groupby(src).sum(),
+        }
+    )
+    return out.sort_values("ex-ante share", ascending=False)
+
+
+STYLE_FACTORS = {
+    "market": ("SPY", "BIL"),
+    "value": ("VLUE", "SPY"),
+    "momentum": ("MTUM", "SPY"),
+    "quality": ("QUAL", "SPY"),
+    "size (equal weight)": ("RSP", "SPY"),
+    "min vol": ("USMV", "SPY"),
+}
+
+
+def _style_regression(y: pd.Series, r: pd.DataFrame, lags: int = 4) -> dict:
+    """OLS of weekly returns y on long-short style factors, Newey-West (HAC) t-statistics.
+    Alpha is annualised (52 weeks); factors whose ETFs are missing are left out."""
+    import statsmodels.api as sm
+
+    f = pd.DataFrame({k: r[a] - r[b] for k, (a, b) in STYLE_FACTORS.items() if a in r and b in r})
+    d = pd.concat([y.rename("y"), f], axis=1).dropna()
+    if len(d) < 30 or f.empty:
+        return {
+            "loadings": pd.DataFrame(),
+            "alpha (annual)": np.nan,
+            "alpha t": np.nan,
+            "R²": np.nan,
+            "weeks": len(d),
+        }
+    fit = sm.OLS(d["y"], sm.add_constant(d.drop(columns="y"))).fit(cov_type="HAC", cov_kwds={"maxlags": lags})
+    lo = pd.DataFrame({"loading": fit.params, "t-stat": fit.tvalues}).drop(index="const")
+    return {
+        "loadings": lo,
+        "alpha (annual)": float(fit.params["const"] * WEEKS),
+        "alpha t": float(fit.tvalues["const"]),
+        "R²": float(fit.rsquared),
+        "weeks": len(d),
+    }
+
+
+def style_exposures(w: pd.Series, r: pd.DataFrame, weeks: int = 156) -> dict:
+    """Style exposures of today's weights: their simulated weekly excess return over the last
+    `weeks` (excess of T-bills) regressed on market, value, momentum, quality, size and min-vol."""
+    a = [x for x in w.index if x in r.columns]
+    h = r[a].iloc[-weeks:]
+    y = h.fillna(0.0) @ w.reindex(a).fillna(0.0)
+    if "BIL" in r:
+        y = y - r["BIL"].reindex(y.index).fillna(0.0)
+    return _style_regression(y, r.loc[h.index])
+
+
+def alpha_decomposition(ret: pd.Series, r: pd.DataFrame, bench: pd.Series | None = None) -> dict:
+    """The backtest's active return (over `bench`, else over T-bills) regressed on the style
+    factors: what is left (alpha) is not explained by exposures one could buy as ETFs (H46)."""
+    base = bench if bench is not None else r.get("BIL", pd.Series(0.0, index=ret.index))
+    y = (ret - base.reindex(ret.index)).dropna()
+    return _style_regression(y, r.reindex(y.index))
 
 
 def information_coefficient(signal: pd.Series, fwd: pd.Series) -> dict:

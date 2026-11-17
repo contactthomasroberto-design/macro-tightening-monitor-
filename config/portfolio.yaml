@@ -97,6 +97,14 @@ sleeves:
   alt_max: 0.15
   fx_gross_max: 0.20
 
+# Return source of each instrument for the risk budget (portfolio.risk_budget): by sleeve, except these.
+risk_sources:
+  TIP: inflation                    # inflation-linked Treasuries: breakeven exposure
+  SOXX: semis                       # the semiconductor index hedges the conviction names
+  VNQ: equity                       # REITs trade with equities
+  IGF: equity
+  EMLC: FX                          # EM local-currency debt: mostly currency risk
+
 # Prices in local currency converted to USD. Weekly returns (Seoul and New York closes are not synchronous).
 fx: {HYNIX: USDKRW, SAMSUNG: USDKRW}
 
@@ -118,6 +126,15 @@ model:
     micro: 0.20
     house: 0.10                     # dated views published by banks and asset managers (not backtestable)
     news: 0.0                       # set each run by the pre-registered gate (H32)
+    valuation: 0.0                  # candidate (H48): country valuation proxy, tested in the quant lab
+    positioning: 0.0                # candidate (H49): CFTC contrarian positioning, tested in the quant lab
+    earnings: 0.0                   # candidate (H50): SEC earnings momentum, tested in the quant lab
+  event_derisk:                     # candidate (H51): off until the quant lab verdict
+    enabled: false
+    days: 7                         # the week before the event
+    scale: 0.8                      # volatility budget (macro events) or sleeve maximum (company events)
+    macro_kinds: [fomc, cpi]        # payrolls excluded a priori: with them most weeks would be de-risked
+    sleeve_kinds: {nvda_earnings: semis}
   vol_cap_vs_benchmark: 1.0         # ex-ante volatility ≤ benchmark's ex-ante volatility
   tracking_error_max: 0.08          # annual ex-ante tracking error
   no_trade_band: 0.0025             # trades below 0.25 pp of NAV are skipped
@@ -126,6 +143,7 @@ model:
       - {drawdown: 0.08, scale: 0.75}
       - {drawdown: 0.15, scale: 0.50}
     recover_at: 0.5                 # a level is released when the drawdown is below half its threshold
+  # resample: {draws: 100, seed: 0}  # Michaud resampled weights (H47): off until the lab confirms it
   tail_hedge:                       # one-month 5% out-of-the-money S&P 500 puts, rolled monthly (H34)
     moneyness: 0.95
     skew_premium: 0.15              # put implied vol = VIX × (1 + 0.15)
@@ -143,3 +161,123 @@ live:
   alerts:                           # GitHub issue when crossed (scripts/portfolio_monitor.py)
     drawdown: 0.08
     daily_loss: 0.03
+  notional_usd: 100000000           # notional fund size for the liquidity check (fund_checks.liquidity)
+
+# Liquidity check (src/macro/fund_checks.py). adv_usd: average daily traded value in USD, rounded
+# order-of-magnitude estimates written 2026-11-17 for the primary listing (Korean names: KRX), not
+# fetched: refresh by hand about twice a year. A position is flagged when it needs more than one
+# day to exit at 10% of ADV, or is larger than 1% of one day's volume.
+liquidity:
+  participation: 0.10
+  max_days: 1.0
+  max_share_adv: 0.01
+  as_of: "2026-11-17"
+  adv_usd:
+    SPY: 3.0e+10
+    VGK: 4.0e+8
+    EWJ: 5.0e+8
+    MCHI: 4.0e+8
+    INDA: 3.0e+8
+    EWT: 3.0e+8
+    EWY: 4.0e+8
+    EWZ: 8.0e+8
+    EEM: 1.5e+9
+    QUAL: 3.0e+8
+    USMV: 2.5e+8
+    VLUE: 1.0e+8
+    MTUM: 2.0e+8
+    RSP: 6.0e+8
+    XLE: 1.5e+9
+    XLU: 1.0e+9
+    XLV: 1.0e+9
+    XLF: 2.0e+9
+    ITA: 1.0e+8
+    SOXX: 8.0e+8
+    HYNIX: 1.5e+9
+    SAMSUNG: 1.5e+9
+    MU: 3.0e+9
+    TSM: 3.0e+9
+    NVDA: 3.0e+10
+    ASML: 1.0e+9
+    BIL: 5.0e+8
+    SHY: 3.0e+8
+    IEF: 1.0e+9
+    TLT: 3.0e+9
+    TIP: 1.5e+8
+    AGG: 7.0e+8
+    BWX: 2.0e+7
+    LQD: 2.0e+9
+    HYG: 3.0e+9
+    EMB: 4.0e+8
+    EMLC: 4.0e+7
+    GLD: 3.0e+9
+    SLV: 1.0e+9
+    DBC: 3.0e+7
+    CPER: 1.0e+7
+    BNO: 3.0e+7
+    VNQ: 4.0e+8
+    IGF: 3.0e+7
+    DBMF: 3.0e+7
+    KMLM: 5.0e+6
+    TAIL: 5.0e+6
+    UUP: 5.0e+7
+    FXY: 5.0e+7
+    FXE: 3.0e+7
+    FXF: 5.0e+6
+
+# Price-anomaly check (fund_checks.price_jumps / source_mismatches; scripts/portfolio_monitor.py).
+# A daily move beyond `jump_sd` trailing-year standard deviations is an anomaly unless the sector
+# proxy moved by more than `proxy_sd` of its own the same day; a Yahoo/Stooq gap beyond `source_tol`
+# on the same date is an anomaly. Stooq covers the US listings only (sources.stooq_symbol); Korean names are skipped.
+anomalies:
+  jump_sd: 6.0
+  proxy_sd: 3.0
+  source_tol: 0.02
+  proxy:
+    VGK: EFA
+    EWJ: EFA
+    MCHI: EEM
+    INDA: EEM
+    EWT: EEM
+    EWY: EEM
+    EWZ: EEM
+    EEM: ACWI
+    QUAL: SPY
+    USMV: SPY
+    VLUE: SPY
+    MTUM: SPY
+    RSP: SPY
+    XLE: SPY
+    XLU: SPY
+    XLV: SPY
+    XLF: SPY
+    ITA: SPY
+    SOXX: SPY
+    HYNIX: SOXX
+    SAMSUNG: SOXX
+    MU: SOXX
+    TSM: SOXX
+    NVDA: SOXX
+    ASML: SOXX
+    SHY: IEF
+    TLT: IEF
+    TIP: IEF
+    AGG: IEF
+    BWX: IEF
+    LQD: AGG
+    HYG: LQD
+    EMB: LQD
+    EMLC: EMB
+    SLV: GLD
+    DBC: BNO
+    CPER: DBC
+    BNO: DBC
+    VNQ: SPY
+    IGF: SPY
+    DBMF: KMLM
+    KMLM: DBMF
+    TAIL: SPY
+    FXY: UUP
+    FXE: UUP
+    FXF: UUP
+    SPY: ACWI

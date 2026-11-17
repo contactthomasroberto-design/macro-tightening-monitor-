@@ -1413,6 +1413,10 @@ def portfolio_inputs():
             carry=carry,
             house=pf.load_house_views(),
             hedge=hedge,
+            positioning={
+                sid: s for sid in set(pf.POSITIONING_OF.values()) if (s := try_series(sid)) is not None
+            },
+            events=pf.load_events(fundamentals=fund),
         ),
     )
 
@@ -1597,6 +1601,35 @@ def portfolio_bundle(force: bool = False) -> dict:
             perf_series["paper book"] = nav.pct_change().dropna()
         performance = fp.performance_summary(perf_series)
         calendar = fp.calendar_table(runs["full model"]["returns"], b)
+        # operational checks (src/macro/fund_checks.py): funds one can buy, liquidity, model health
+        from macro import fund_checks as fchk
+
+        fund_r = {}
+        for k in fchk.FUND_BENCHMARKS:
+            if k in r:
+                fund_r[k] = r[k]
+            elif (s := try_series(k)) is not None:
+                fund_r[k] = pf.weekly_returns(s.dropna().to_frame(k))[k]
+        fund_table = fchk.fund_benchmarks(runs["full model"]["returns"], b, cash, fund_r, pf.metrics)
+        lq = cfg.get("liquidity", {})
+        liquidity = fchk.liquidity(
+            target,
+            lq.get("adv_usd", {}),
+            float(cfg["live"].get("notional_usd", 1e8)),
+            lq.get("participation", 0.10),
+            lq.get("max_days", 1.0),
+            lq.get("max_share_adv", 0.01),
+        )
+        health = fchk.model_health(
+            runs["full model"],
+            r,
+            target,
+            cfg,
+            risk,
+            tg["status"],
+            pf.scale_of(state, cfg),
+            nav if not nav.empty else None,
+        )
         from macro.utils import is_demo
 
         today = px.index[-1] if is_demo() else pd.Timestamp.today().normalize()  # demo data end in the past
@@ -1631,10 +1664,18 @@ def portfolio_bundle(force: bool = False) -> dict:
             "macro_history": inp.macro,
             "tone": inp.tone,
             "risk": risk,
+            "fund_benchmarks": fund_table,
+            "fund_benchmark_labels": dict(fchk.FUND_BENCHMARKS),
+            "liquidity": liquidity,
+            "liquidity_as_of": lq.get("as_of"),
+            "health": health,
             "scenarios": pd.Series(scen),
             "episodes": pd.DataFrame(episodes).T,
             "overlay_state": state,
             "exposures": pf.factor_exposures(target, r),
+            "risk_budget": pf.risk_budget(target, tg["cov"], r, cfg),
+            "style_exposures": pf.style_exposures(target, r),
+            "alpha_decomposition": pf.alpha_decomposition(runs["full model"]["returns"], r, b),
             "gross": float(target.abs().sum()),
             "net_equity": float(
                 target[[a for a in target.index if cfg["universe"][a]["sleeve"] in pf.EQUITY_SLEEVES]].sum()
