@@ -1368,6 +1368,9 @@ def portfolio_inputs():
 
     cfg = pf.load_config()
     px = pf.usd_prices(try_series, cfg)
+    missing = [a for a in ("SPY", "AGG", "BIL", "EFA", "EEM") if a not in px]
+    if missing:
+        raise ValueError(f"portfolio prices missing: {', '.join(missing)}")
     sox = try_series("SOX")
     if sox is not None:
         px["SOX"] = sox.dropna()
@@ -1377,7 +1380,7 @@ def portfolio_inputs():
     fund = {k: s for k in ("MU_REV", "MU_GP", "NVDA_REV", "NVDA_GP") if (s := try_series(k)) is not None}
     tone = {
         k: s
-        for k in ("NEWS_TONE_MEMORY", "NEWS_TONE_RECESSION", "NEWS_TONE_INFLATION")
+        for k in ("NEWS_TONE_MEMORY", "NEWS_TONE_RECESSION", "NEWS_TONE_INFLATION", *pf.NEWS_TONE_OF.values())
         if (s := try_series(k)) is not None
     }
     return cfg, px, pf.Inputs(r=r, macro=macro.reindex(r.index, method="ffill"), fundamentals=fund, tone=tone)
@@ -1429,6 +1432,8 @@ def portfolio_bundle(force: bool = False) -> dict:
     def compute() -> dict:
         cfg, px, inp = portfolio_inputs()
         r = inp.r
+        news_h32 = pf.news_test(r, inp.tone)
+        cfg["model"]["confidence"]["news"] = pf.news_confidence(news_h32)  # pre-registered gate (H32)
         bench = pf.benchmark_returns(r, cfg)
         cash = r["BIL"]
         runs = {k: pf.backtest(inp, cfg, **v) for k, v in PORTFOLIO_VARIANTS.items()}
@@ -1436,7 +1441,12 @@ def portfolio_bundle(force: bool = False) -> dict:
         b = bench.loc[start:]
         table = pd.DataFrame({k: pf.metrics(v["returns"], cash, b) for k, v in runs.items()})
         table["benchmark 60/40"] = pd.Series(pf.metrics(b, cash))
+        alt = {k: pf.backtest_rule(inp, cfg, fn) for k, fn in pf.ALTERNATIVES.items()}
+        alternatives = pd.DataFrame({k: pf.metrics(v.loc[start:], cash, b) for k, v in alt.items()})
+        alternatives["our model"] = table["full model"]
+        alternatives["benchmark 60/40"] = table["benchmark 60/40"]
         active = {k: (v["returns"] - b).dropna() for k, v in runs.items()}
+        active |= {k: (v.loc[start:] - b).dropna() for k, v in alt.items()}
         trial_sr = [float(a.mean() / a.std()) for a in active.values() if a.std() > 0]
         dsr = pf.deflated_sharpe(active["full model"], trial_sr)
         # current target, with the overlay state of the paper book
@@ -1496,9 +1506,12 @@ def portfolio_bundle(force: bool = False) -> dict:
             "backtests": runs,
             "benchmark": b,
             "metrics": table,
+            "alternatives": alternatives,
+            "alternative_returns": alt,
             "deflated_sharpe": dsr,
             "trials": len(trial_sr),
-            "tests": _portfolio_tests(inp, cfg),
+            "tests": _portfolio_tests(inp, cfg) | {"H32 company news tone (gate)": news_h32},
+            "news_confidence": cfg["model"]["confidence"]["news"],
             "target": target,
             "target_status": tg["status"],
             "views": tg["views"],

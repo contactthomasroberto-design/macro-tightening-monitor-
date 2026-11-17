@@ -79,6 +79,29 @@ st.caption(
     "Before ACWI exists (2008) the benchmark uses 0.66 S&P 500 + 0.21 EAFE + 0.13 emerging markets."
 )
 
+st.subheader("Against the textbook constructions")
+alt = b.get("alternatives")
+if alt is not None:
+    st.dataframe(
+        alt.T.astype(float).style.format(
+            fmt
+            | {
+                "Sharpe": "{:.2f}",
+                "Calmar": "{:.2f}",
+                "information ratio": "{:.2f}",
+                "beta to benchmark": "{:.2f}",
+            },
+            na_rep="",
+        ),
+        use_container_width=True,
+    )
+    st.caption(
+        "Same universe, costs and monthly rebalance, no views and no constraints beyond long-only: equal weight; "
+        "minimum variance; equal risk contribution (Maillard, Roncalli and Teïletche, 2010); hierarchical risk "
+        "parity (López de Prado, 2016). They are counted as trials in the deflated Sharpe ratio. A model that "
+        "cannot beat them on drawdown and Sharpe after costs adds complexity without value."
+    )
+
 wts = runs["full model"]["weights"]
 sl = wts.T.groupby([sleeve(b, a) for a in wts.columns]).sum().T
 fig = go.Figure()
