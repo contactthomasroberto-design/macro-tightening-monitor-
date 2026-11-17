@@ -46,6 +46,21 @@ et visibles sur la page **Portfolio → Team** du site, avec leur travail en cou
    - écrit la note `docs/research/daily/<date>.md` ;
    - propose les changements de modèle sous forme d'hypothèses pré-enregistrées.
 
+## Contrôles du process (depuis le 17/11/2026)
+Calculés dans GitHub à chaque rafraîchissement (`scripts/process_controls.py`, `src/macro/fund_process.py`) :
+- **Registre des paris** (`archive/decisions.csv`). Chaque vue du comité est enregistrée avant les faits :
+  - un instrument ou une série, un seuil, un horizon et une probabilité ;
+  - le résultat est constaté à partir des données, sans jugement humain ;
+  - le **score de Brier** est calculé par analyste (0 = parfait, 0,25 = toujours 50 %) et affiché sur la page Team.
+- **Revues de pertes**. Toute position qui a coûté plus de 1 % de la VL sur 4 semaines déclenche un diagnostic
+  automatique :
+  - mouvement en écarts-types, part expliquée par le marché, position à sa borne, vues qui la portaient ;
+  - il est écrit dans `docs/research/postmortems/` et complété par le comité (donnée, signal, taille ou malchance).
+- **Stress tests prospectifs** (`config/stress_scenarios.yaml`), chaque jour sur le portefeuille du jour :
+  - krach IA, cycle mémoire, pétrole, carry yen, crédit, taux, stagflation, dollar, Chine-Taïwan ;
+  - limites : 15 % de la VL, et pas plus que la perte du 60/40 plus 2 points ;
+  - un dépassement ouvre une issue pour le comité, sans changer les poids de lui-même.
+
 ## Garde-fous
 - Aucune vue personnelle de l'IA n'est enregistrée comme « vue de maison ». Seules les positions
   publiées par une institution identifiable le sont, avec la date et le lien.

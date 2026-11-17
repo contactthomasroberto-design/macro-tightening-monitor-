@@ -1,3 +1,4 @@
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -73,6 +74,50 @@ if not ep.empty:
             if len(worse)
             else ""
         )
+    )
+fs = b.get("forward_stress")
+if fs is not None and not fs.empty:
+    st.subheader("Forward stress tests and limits")
+    n_breach = int(fs["breach"].astype(bool).sum())
+    (st.error if n_breach else st.success)(
+        f"{n_breach} scenario(s) breach a limit" if n_breach else "All scenarios within limits"
+    )
+    st.dataframe(
+        fs.style.format(
+            {"book": "{:+.1%}", "of which tail hedge": "{:+.1%}", "benchmark": "{:+.1%}", "limit": "{:.0%}"}
+        ),
+        use_container_width=True,
+    )
+    st.caption(
+        "Hypothetical scenarios (config/stress_scenarios.yaml): the named assets take the stated moves, the others "
+        "their expected co-move from the covariance; the tail-hedge puts pay below their strike. Limits: no scenario "
+        "may cost more than 15% of NAV, nor more than the 60/40 benchmark loses plus 2 points. A breach opens an issue for the "
+        "committee; it does not change the weights by itself."
+    )
+pms = b.get("post_mortems") or []
+st.subheader("Loss post-mortems (positions down more than 1% of NAV over 4 weeks)")
+if not pms:
+    st.caption(f"None at the moment ({b.get('post_mortem_source', 'backtest')}).")
+else:
+    st.dataframe(
+        pd.DataFrame(pms)
+        .set_index("asset")[
+            ["loss", "asset move", "move in sigmas", "market-explained move", "at a bound", "verdict"]
+        ]
+        .style.format(
+            {
+                "loss": "{:+.2%}",
+                "asset move": "{:+.1%}",
+                "move in sigmas": "{:+.1f}",
+                "market-explained move": "{:+.1%}",
+            },
+            na_rep="n/a",
+        ),
+        use_container_width=True,
+    )
+    st.caption(
+        f"Weights from the {b.get('post_mortem_source')}. The verdict is an automatic first read; the full note "
+        "is written to docs/research/postmortems/ and completed by the committee."
     )
 st.caption(DISCLAIMER)
 footer()

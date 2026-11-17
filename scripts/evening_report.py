@@ -268,6 +268,47 @@ def main() -> int:
             f"- Cycle mémoire (accélération de la croissance du CA de Micron) : {100 * mc.iloc[-1]:+.1f} points au {mc.index[-1]:%d/%m/%Y}."
         )
 
+    L += ["", "## 2 quinquies. Contrôles du process : stress tests, revues de pertes, paris notés", ""]
+    from macro import fund_process as fp
+
+    fs = b.get("forward_stress", pd.DataFrame())
+    if not fs.empty:
+        worst = fs.sort_values("book").iloc[0]
+        nb = int(fs["breach"].astype(bool).sum())
+        L.append(
+            f"- Stress tests prospectifs : {len(fs)} scénarios, {nb} au-delà des limites (15 % de la VL, ou la perte du "
+            f"benchmark + 2 points). Pire cas : {fs.sort_values('book').index[0]} à {pct(worst['book'])} contre "
+            f"{pct(worst['benchmark'])} pour le 60/40."
+        )
+        for k, row in fs[fs["breach"].astype(bool)].iterrows():
+            L.append(
+                f"  - ⚠ {k} : {pct(row['book'])} ({row['breach']}) ; principales pertes : {row['largest losses']}."
+            )
+    pms = b.get("post_mortems") or []
+    if pms:
+        L.append(f"- Revues de pertes ({b.get('post_mortem_source')}, 4 semaines, seuil 1 % de la VL) :")
+        for pm in pms:
+            L.append(
+                f"  - {name(pm['asset'])} : {pct(pm['loss'], 2)} de la VL. {pm['verdict'].capitalize()}."
+            )
+    else:
+        L.append("- Revues de pertes : aucune position n'a coûté plus de 1 % de la VL sur 4 semaines.")
+    dec = fp.read_decisions()
+    if dec.empty:
+        L.append("- Registre des paris : vide pour l'instant (premières entrées au comité du soir).")
+    else:
+        bt = fp.brier_table(dec)
+        team_row = bt.loc["team"] if "team" in bt.index else None
+        L.append(
+            f"- Registre des paris : {len(dec)} enregistrés, {int((dec['status'] == 'open').sum())} ouverts, "
+            f"{int((dec['status'] == 'resolved').sum())} notés"
+            + (
+                f" ; score de Brier de l'équipe {team_row['Brier']:.3f} (0,25 = toujours 50 %)."
+                if team_row is not None and pd.notna(team_row["Brier"])
+                else "."
+            )
+        )
+
     L += ["", "## 3. Ce que disent les news (24 dernières heures)", ""]
     arch = ns.read_archive()
     now = pd.Timestamp.now(tz="UTC")
