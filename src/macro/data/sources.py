@@ -27,6 +27,8 @@ FRED_API = "https://api.stlouisfed.org/fred/series/observations"
 FRED_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 ECB_API = "https://data-api.ecb.europa.eu/service/data"
 YAHOO_API = "https://query1.finance.yahoo.com/v8/finance/chart"
+SEC_FACTS = "https://data.sec.gov/api/xbrl/companyfacts"
+GDELT_DOC = "https://api.gdeltproject.org/api/v2/doc/doc"
 CFTC_TFF = "https://publicreporting.cftc.gov/resource/gpe5-46if.json"  # TFF futures only (verify)
 
 # Published research files. URLs must be checked by the live smoke test; when a URL moves,
@@ -178,6 +180,88 @@ def fetch_yahoo(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
         raise SourceError(f"Yahoo returned {granularity} data for {spec.source_id}, expected 1d")
     dates = pd.to_datetime(ts, unit="s").normalize()
     return _tidy(dates, np.array(close, dtype=float))
+
+
+# ------------------------------------------------------------------------------------ SEC EDGAR
+def sec_quarterly(facts: dict, tags: list[str]) -> pd.DataFrame:
+    """Quarterly (3-month) USD amounts from an XBRL companyfacts payload, dated at the filing date
+    (the day the number became public: point in time by construction).
+
+    10-Q filings report the quarter; the fourth quarter is the 10-K annual amount minus the three
+    quarters of the same fiscal year. The first tag with data wins; later restatements of a quarter
+    are ignored (the first filed value is the one that was known)."""
+    gaap = facts.get("facts", {}).get("us-gaap", {})
+    for tag in tags:
+        rows = gaap.get(tag, {}).get("units", {}).get("USD", [])
+        if rows:
+            break
+    else:
+        raise SourceError(f"none of the XBRL tags {tags} reported")
+    df = pd.DataFrame(rows)
+    df = df[df["form"].isin(["10-Q", "10-K"]) & df["start"].notna()].copy()
+    for c in ("start", "end", "filed"):
+        df[c] = pd.to_datetime(df[c])
+    df["days"] = (df["end"] - df["start"]).dt.days
+    df = df.sort_values("filed").drop_duplicates(["start", "end"], keep="first")
+    q = df[df["days"].between(80, 100)][["end", "filed", "val"]]
+    annual = df[df["days"].between(350, 380)]
+    extra = []
+    for _, a in annual.iterrows():
+        inside = q[(q["end"] > a["start"]) & (q["end"] < a["end"])]
+        if len(inside) == 3 and not (q["end"] == a["end"]).any():
+            extra.append({"end": a["end"], "filed": a["filed"], "val": a["val"] - inside["val"].sum()})
+    q = pd.concat([q, pd.DataFrame(extra)], ignore_index=True).sort_values("end")
+    q = q.drop_duplicates("end", keep="first")
+    return _tidy(q["filed"], q["val"].astype(float))
+
+
+def fetch_sec(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
+    """SEC EDGAR XBRL company facts. source_id = 'CIK##########:Tag1|Tag2'.
+
+    The SEC's fair-access policy asks automated clients to identify themselves with a contact
+    address: it is read from the SEC_CONTACT environment variable (a repository secret), never
+    stored in the code."""
+    contact = os.environ.get("SEC_CONTACT")
+    if not contact:
+        raise SourceError("SEC EDGAR needs a contact address in SEC_CONTACT")
+    cik, tags = spec.source_id.split(":")
+    ua = f"macro-tightening-monitor research {contact}"
+    js = get(f"{SEC_FACTS}/{cik}.json", headers={"User-Agent": ua}).json()
+    return sec_quarterly(js, tags.split("|"))
+
+
+# ------------------------------------------------------------------------------------ GDELT
+def fetch_gdelt(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
+    """GDELT 2.0 DOC API: daily average tone of worldwide online news matching a query, since 2017
+    (GDELT indexes Reuters, Bloomberg, the BBC, CNBC and thousands of others; only the tone
+    statistic is kept, no article text). source_id = the query."""
+    now = pd.Timestamp.now(tz="UTC")
+    params = {
+        "query": f"{spec.source_id} sourcelang:english",
+        "mode": "timelinetone",
+        "format": "json",
+        "startdatetime": "20170101000000",
+        "enddatetime": f"{now:%Y%m%d%H%M%S}",
+    }
+    try:
+        tl = get(GDELT_DOC, params).json()["timeline"][0]["data"]
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        raise SourceError(f"unexpected GDELT payload for {spec.id}") from exc
+    dates = pd.to_datetime([d["date"] for d in tl], format="%Y%m%dT%H%M%SZ").normalize()
+    return _tidy(dates, [d["value"] for d in tl])
+
+
+def yahoo_quote(source_id: str) -> tuple[float, pd.Timestamp]:
+    """Latest traded price and its time (UTC) from the chart API's metadata: the intraday check
+    of the hourly portfolio monitor. Same endpoint and terms as fetch_yahoo."""
+    js = get(f"{YAHOO_API}/{source_id}", {"range": "1d", "interval": "1d"}).json()
+    try:
+        meta = js["chart"]["result"][0]["meta"]
+        return float(meta["regularMarketPrice"]), pd.Timestamp(
+            int(meta["regularMarketTime"]), unit="s", tz="UTC"
+        )
+    except (KeyError, IndexError, TypeError) as exc:
+        raise SourceError(f"unexpected Yahoo quote payload for {source_id}") from exc
 
 
 # ------------------------------------------------------------------------------------ CFTC TFF
@@ -439,6 +523,8 @@ FETCHERS: dict[str, Callable[[SeriesSpec, str | None], pd.DataFrame]] = {
     "atlanta_fed": fetch_research_file,
     "yahoo": fetch_yahoo,
     "cftc": fetch_cftc,
+    "sec": fetch_sec,
+    "gdelt": fetch_gdelt,
     "nyfed_files": fetch_research_file,
     "fed_board_files": fetch_research_file,
     "philly": fetch_research_file,

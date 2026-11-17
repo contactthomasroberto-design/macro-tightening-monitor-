@@ -1,0 +1,31 @@
+# Headline feeds for the Portfolio → News tab (src/macro/news.py). Public RSS feeds offered by the
+# publishers for this use; only the headline, time and link are shown, each linking to the source.
+# Reuters and Bloomberg publish no public RSS: their headlines come through Google News search feeds.
+feeds:
+  - {name: BBC Business, url: "https://feeds.bbci.co.uk/news/business/rss.xml"}
+  - {name: MarketWatch, url: "https://feeds.content.dowjones.io/public/rss/mw_topstories"}
+  - {name: CNBC, url: "https://www.cnbc.com/id/100003114/device/rss/rss.html"}
+  - {name: CNBC Economy, url: "https://www.cnbc.com/id/20910258/device/rss/rss.html"}
+  - {name: Federal Reserve, url: "https://www.federalreserve.gov/feeds/press_all.xml"}
+  - {name: ECB, url: "https://www.ecb.europa.eu/rss/press.html"}
+  - {name: Reuters (via Google News), url: "https://news.google.com/rss/search?q=site:reuters.com+(markets+OR+economy+OR+Fed+OR+chips)+when:2d&hl=en-US&gl=US&ceid=US:en"}
+  - {name: Bloomberg (via Google News), url: "https://news.google.com/rss/search?q=site:bloomberg.com+(markets+OR+economy+OR+Fed+OR+chips)+when:2d&hl=en-US&gl=US&ceid=US:en"}
+  - {name: Memory chips (Google News), url: "https://news.google.com/rss/search?q=(%22SK+Hynix%22+OR+%22Samsung+Electronics%22+OR+Micron+OR+DRAM+OR+HBM)+when:2d&hl=en-US&gl=US&ceid=US:en"}
+
+# Tags: a headline is tagged when it contains one of the words (case-insensitive, whole words).
+tags:
+  SK Hynix: ["SK Hynix", "Hynix"]
+  Samsung: ["Samsung"]
+  Micron: ["Micron"]
+  TSMC: ["TSMC", "Taiwan Semiconductor"]
+  NVIDIA: ["Nvidia"]
+  ASML: ["ASML"]
+  Memory chips: ["DRAM", "NAND", "HBM", "memory chip", "memory chips"]
+  Semiconductors: ["chip", "chips", "chipmaker", "chipmakers", "semiconductor", "semiconductors"]
+  Fed: ["Fed", "Federal Reserve", "FOMC", "Powell"]
+  ECB: ["ECB", "Lagarde", "European Central Bank"]
+  BoJ: ["BoJ", "Bank of Japan", "Ueda"]
+  Inflation: ["inflation", "CPI", "prices"]
+  Recession and jobs: ["recession", "jobs", "payrolls", "unemployment", "layoffs"]
+  Oil and energy: ["oil", "Brent", "OPEC", "crude", "energy"]
+  Tariffs and trade: ["tariff", "tariffs", "export controls", "trade war"]

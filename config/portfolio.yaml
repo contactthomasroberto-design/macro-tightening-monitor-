@@ -1,0 +1,87 @@
+# Systematic balanced portfolio (src/macro/portfolio.py). A model portfolio tracked on paper:
+# it describes what the rules would hold, it places no orders.
+#
+# Every parameter below was set on 2026-11-17, before the first backtest (research log H27-H31),
+# and is not tuned on the result. Changing one is a new model version (docs/MODEL_CHANGELOG.md).
+
+base_currency: USD
+
+benchmark:            # 60/40 global, rebalanced monthly
+  ACWI: 0.60          # MSCI ACWI ETF (before April 2008: 0.66 SPY + 0.21 EFA + 0.13 EEM)
+  AGG: 0.40           # US aggregate bonds
+
+# Benchmark weights mapped on the universe: the Black-Litterman equilibrium (approximate ACWI
+# regional shares; the remainder of ACWI is folded into the closest region).
+equilibrium:
+  SPY: 0.396
+  VGK: 0.090
+  EWJ: 0.036
+  EEM: 0.078
+  AGG: 0.400
+
+# sleeve: equity | bond | cash | real | semis.  min/max: weight bounds.
+# cost_bp: one-way transaction cost (Korean sales also pay the securities transaction tax).
+universe:
+  SPY:  {name: "US equities (S&P 500)", sleeve: equity, max: 0.55, cost_bp: 3}
+  VGK:  {name: "European equities", sleeve: equity, max: 0.20, cost_bp: 5}
+  EWJ:  {name: "Japanese equities", sleeve: equity, max: 0.12, cost_bp: 5}
+  EEM:  {name: "Emerging-market equities", sleeve: equity, max: 0.15, cost_bp: 8}
+  AGG:  {name: "US aggregate bonds", sleeve: bond, max: 0.50, cost_bp: 3}
+  SHY:  {name: "US Treasuries 1-3y", sleeve: bond, max: 0.30, cost_bp: 2}
+  IEF:  {name: "US Treasuries 7-10y", sleeve: bond, max: 0.30, cost_bp: 3}
+  TLT:  {name: "US Treasuries 20y+", sleeve: bond, max: 0.15, cost_bp: 4}
+  TIP:  {name: "US inflation-linked Treasuries", sleeve: bond, max: 0.20, cost_bp: 4}
+  LQD:  {name: "US investment-grade credit", sleeve: bond, max: 0.15, cost_bp: 5}
+  GLD:  {name: "Gold", sleeve: real, max: 0.10, cost_bp: 5}
+  DBC:  {name: "Commodities (diversified)", sleeve: real, max: 0.07, cost_bp: 8}
+  BIL:  {name: "Cash (US T-bills)", sleeve: cash, max: 1.00, cost_bp: 1}
+  HYNIX:   {name: "SK Hynix", sleeve: semis, min: 0.015, max: 0.05, cost_bp: 25, memory: true}
+  SAMSUNG: {name: "Samsung Electronics", sleeve: semis, min: 0.015, max: 0.05, cost_bp: 25, memory: true}
+  MU:   {name: "Micron Technology", sleeve: semis, max: 0.05, cost_bp: 4, memory: true}
+  TSM:  {name: "TSMC (ADR)", sleeve: semis, max: 0.05, cost_bp: 4}
+  NVDA: {name: "NVIDIA", sleeve: semis, max: 0.05, cost_bp: 3}
+  ASML: {name: "ASML", sleeve: semis, max: 0.05, cost_bp: 5}
+
+sleeves:
+  semis: {min: 0.05, max: 0.15}   # conviction sleeve chosen by the owner; the model sizes inside it
+  cash_max: 0.10                  # cash above 10% only when the drawdown overlay is engaged
+                                  # (added 2026-11-17 after a demo-data dry run put 38% in cash
+                                  # instead of bonds; set before any run on real data)
+  equity_total_band: 0.15         # total equity (incl. semis) within ±15 pp of the benchmark's 60%
+
+# Prices in local currency converted to USD (closes in Seoul and New York are not synchronous:
+# the model works on weekly returns).
+fx: {HYNIX: USDKRW, SAMSUNG: USDKRW}
+
+model:
+  frequency: W-FRI
+  cov_window_weeks: 156
+  cov_min_weeks: 52
+  risk_aversion: 2.5          # δ, He and Litterman (1999)
+  tau: 0.05
+  view_scale: 0.25            # a full-strength view = 0.25 Sharpe units of extra annual return
+  confidence:                 # weight of each view family in Black-Litterman (0-1)
+    trend: 0.30
+    macro: 0.25
+    micro: 0.20
+    news: 0.0                 # 0 until H30 is rejected out of sample
+  vol_cap_vs_benchmark: 1.0   # ex-ante volatility ≤ benchmark's ex-ante volatility
+  tracking_error_max: 0.05    # annual ex-ante tracking error
+  no_trade_band: 0.005        # trades below 0.5 pp of NAV are skipped
+  drawdown_overlay:           # risk scale applied to the volatility cap, by paper drawdown
+    levels:
+      - {drawdown: 0.08, scale: 0.75}
+      - {drawdown: 0.15, scale: 0.50}
+    recover_at: 0.5           # a level is released when the drawdown is below half its threshold
+  rebalance: monthly          # first week of each month, or earlier when the overlay state changes
+
+backtest:
+  start: "2005-01-07"
+
+live:
+  start: "2026-11-20"         # first paper rebalance; every target is archived (archive/portfolio_book.csv)
+  trading_enabled: true       # kill switch: false freezes the paper book at its last weights
+  stale_days: 5               # a price older than this freezes trading in that asset
+  alerts:                     # GitHub issue when crossed (scripts/portfolio_monitor.py, hourly)
+    drawdown: 0.08
+    daily_loss: 0.03

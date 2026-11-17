@@ -135,9 +135,23 @@ Equations are in [`docs/methodology.md`](docs/methodology.md); each model has a 
 - Methods, sources and what was left out: [`docs/methods_review.md`](docs/methods_review.md);
   hypotheses written before estimation and their results: [`docs/research_log.md`](docs/research_log.md).
 
-The dashboard is organised in three menus: **Macro** (Briefing, Inflation, Monetary policy, Growth and
+- **Systematic portfolio** (`src/macro/portfolio.py`, `config/portfolio.yaml`): a balanced, long-only
+  model portfolio against a 60/40 ACWI/AGG benchmark. Black-Litterman on the benchmark's equilibrium
+  with views from trend, macro (excess bond premium, core inflation, market stress) and micro signals
+  (semiconductor momentum, low volatility, the memory cycle read from Micron's SEC filings), Ledoit-Wolf
+  covariance, ex-ante volatility capped at the benchmark's, a drawdown overlay, and a 5-15%
+  semiconductor conviction sleeve (SK Hynix, Samsung Electronics, Micron, TSMC, NVIDIA, ASML).
+  Walk-forward backtest from 2005 with ablations and a deflated Sharpe ratio (research log H27-H31).
+  A paper book (`archive/portfolio_book.csv`) is rebalanced by the refresh workflow and checked every
+  hour in market hours (`.github/workflows/portfolio-monitor.yml`), with a GitHub issue on a drawdown
+  or daily-loss breach. A news page lists headlines from BBC, MarketWatch, CNBC, the Fed, the ECB, and
+  Reuters and Bloomberg through Google News. It places no orders and is not investment advice.
+  The SEC asks automated clients for a contact address: set the repository secret `SEC_CONTACT`.
+
+The dashboard is organised in four menus: **Macro** (Briefing, Inflation, Monetary policy, Growth and
 recession, Scenarios, History and calendar), **Markets** (Monitor, Rates, FX and commodities,
-Cross-asset, Stress testing, Priced against our models, Positioning) and **Governance**. Pages with
+Cross-asset, Stress testing, Priced against our models, Positioning), **Portfolio** (Positions and
+trades, Why these weights, Risk, Backtest, Signals and tests, News, Rules) and **Governance**. Pages with
 several parts show them as sub-tabs; only the selected part is computed.
 
 ## 6. Results

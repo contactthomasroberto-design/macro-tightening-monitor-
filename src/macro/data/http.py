@@ -42,9 +42,9 @@ def session() -> requests.Session:
     return _session
 
 
-def get(url: str, params: dict | None = None) -> requests.Response:
+def get(url: str, params: dict | None = None, headers: dict | None = None) -> requests.Response:
     try:
-        r = session().get(url, params=params, timeout=TIMEOUT)
+        r = session().get(url, params=params, timeout=TIMEOUT, headers=headers)
     except requests.RequestException as exc:
         raise SourceError(f"network error for {url}: {exc}") from exc
     if r.status_code != 200:

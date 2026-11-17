@@ -18,6 +18,7 @@ IMPLEMENTED = [
     "stress_test",
     "backtest",
     "forecast_book",
+    "portfolio",
 ]  # extended milestone by milestone
 
 

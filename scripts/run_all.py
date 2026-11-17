@@ -10,6 +10,8 @@ import argparse
 import logging
 import time
 
+import pandas as pd
+
 import _bootstrap  # noqa: F401
 from macro import archive, pipeline
 from macro.config import ROOT
@@ -27,7 +29,6 @@ def backfill_demo_archive(b: dict, region: str, last_n: int = 24) -> int:
     """DEMO ONLY: seed the demo archive with pseudo out-of-sample forecasts from the last `last_n`
     origins so the Track record page has evaluation points. Never used in live mode: the live
     archive only contains forecasts actually made by scheduled runs."""
-    import pandas as pd
 
     assert is_demo()
     f = b["oos"]["forecasts"]
@@ -126,6 +127,29 @@ def main() -> int:
         levels, _ = pipeline.forecast_book_inputs()
         n = fb.append_archive(ROOT / "archive" / "forecast_book.csv", fb.archive_rows(book["table"], levels))
         print(f"    archived {n} directional forecasts -> archive/forecast_book.csv")
+    live = not args.no_archive and not is_demo()
+    try:  # a failure here must not stop the rest of the refresh (snapshot, archive, figures)
+        port = _step("systematic portfolio", lambda: pipeline.portfolio_bundle(force=args.force or live))
+    except Exception as exc:  # noqa: BLE001
+        print(f"  systematic portfolio FAILED: {type(exc).__name__}: {exc}")
+        port = None
+    if live and port is not None and port["rebalance_due"]:
+        from macro import portfolio_live as pl
+
+        if port["stale"]:
+            print(f"    paper rebalance skipped: stale prices for {', '.join(port['stale'])}")
+        else:
+            n = pl.append_book(
+                pl.BOOK,
+                pd.Timestamp.today().normalize(),
+                port["target"][port["target"] > 1e-6],
+                port["target_status"],
+                port["overlay_state"],
+                port["rebalance_due"],
+                port["version"],
+            )
+            print(f"    paper rebalance ({port['rebalance_due']}): {n} rows -> archive/portfolio_book.csv")
+            pipeline.portfolio_bundle(force=True)  # paper NAV and trades from the new book
     _step("historical cycles (GMD)", lambda: pipeline.history_bundle(force=args.force))
     _step("views", lambda: pipeline.build_views(sb["base_weights"]))
     return 0
