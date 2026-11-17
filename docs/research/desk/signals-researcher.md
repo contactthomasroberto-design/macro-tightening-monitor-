@@ -1,0 +1,14 @@
+# Contribution et cohérence des familles de signaux (calcul GitHub)
+
+*`signals-researcher` — 17/11/2026 17:19 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+
+**En bref** : Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 51.4, value 9.7, macro 8.4, micro 5.0, house 3.3, carry 2.6, regime 0.0, news 0.0.
+
+- Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 51.4, value 9.7, macro 8.4, micro 5.0, house 3.3, carry 2.6, regime 0.0, news 0.0.
+- trend : 51 instruments notés, moyenne +0.45, top BIL +1.00, bas TAIL -0.92.
+- macro : 50 instruments notés, moyenne +0.19, top HYG +0.59, bas TLT -0.62.
+- value : 29 instruments notés, moyenne -0.00, top CPER +1.00, bas EWZ -1.00.
+- carry : 10 instruments notés, moyenne +0.20, top TIP +0.85, bas FXY -0.94.
+- micro : 6 instruments notés, moyenne +0.19, top MU +0.60, bas NVDA -0.20.
+- house : 29 instruments notés, moyenne +0.28, top EWJ +1.00, bas FXE -1.00.
+- Familles les plus opposées aujourd'hui : value et house (corrélation -0.54).
