@@ -145,7 +145,10 @@ Equations are in [`docs/methodology.md`](docs/methodology.md); each model has a 
   A paper book (`archive/portfolio_book.csv`) is rebalanced by the refresh workflow and checked every
   hour in market hours (`.github/workflows/portfolio-monitor.yml`), with a GitHub issue on a drawdown
   or daily-loss breach. A news page lists headlines from BBC, MarketWatch, CNBC, the Fed, the ECB, and
-  Reuters and Bloomberg through Google News. It places no orders and is not investment advice.
+  Reuters and Bloomberg through Google News, scored by FinBERT every two hours (relevance² × novelty² ×
+  credibility × freshness) and archived point in time; news enters the allocation only if company news
+  tone passes its pre-registered test (H32). Models, evidence and choices:
+  [`docs/portfolio_research.md`](docs/portfolio_research.md). It places no orders and is not investment advice.
   The SEC asks automated clients for a contact address: set the repository secret `SEC_CONTACT`.
 
 The dashboard is organised in four menus: **Macro** (Briefing, Inflation, Monetary policy, Growth and

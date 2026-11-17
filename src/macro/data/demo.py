@@ -753,7 +753,7 @@ def _portfolio_block(seed: int, out: dict) -> dict[str, pd.Series]:
         res[f"{co}_REV"] = pd.Series(rev, index=filed).loc[: days[-1]]
         res[f"{co}_GP"] = pd.Series(gp, index=filed).loc[: days[-1]]
     nd = days[days >= "2017-01-02"]
-    for k in ("MEMORY", "RECESSION", "INFLATION"):
+    for k in ("MEMORY", "RECESSION", "INFLATION", "HYNIX", "SAMSUNG", "MICRON", "TSMC", "NVIDIA", "ASML"):
         res[f"NEWS_TONE_{k}"] = pd.Series(-1.5 + _ar1(len(nd), 0.95, 0.3, g), index=nd)
     assert not set(res) & set(out), "portfolio demo ids collide with earlier demo series"
     return res

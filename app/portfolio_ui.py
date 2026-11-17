@@ -32,8 +32,21 @@ DISCLAIMER = (
 @st.cache_resource(
     ttl=CACHE_TTL, show_spinner="Loading the portfolio (first run simulates 20 years, a few minutes)…"
 )
-def bundle() -> dict:
+def _bundle() -> dict:
     return portfolio_bundle()
+
+
+def bundle() -> dict:
+    """The portfolio bundle, or a clear message (and stop) while its data are not loaded yet."""
+    try:
+        return _bundle()
+    except (KeyError, ValueError) as exc:
+        st.info(
+            "The portfolio's price data are not in the dashboard yet: they arrive with the next GitHub refresh "
+            f"(a few times a day). Detail: {type(exc).__name__}: {exc}"
+        )
+        st.stop()
+        raise  # unreachable: st.stop() ends the script
 
 
 def name(b: dict, a: str) -> str:

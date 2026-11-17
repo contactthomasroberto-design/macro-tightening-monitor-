@@ -242,28 +242,69 @@ def micro_scores(r: pd.DataFrame, names: list[str], fundamentals: dict[str, pd.S
     return tab.mean(axis=1).clip(-1, 1) if not tab.empty else pd.Series(dtype=float)
 
 
+NEWS_TONE_OF = {
+    "HYNIX": "NEWS_TONE_HYNIX",
+    "SAMSUNG": "NEWS_TONE_SAMSUNG",
+    "MU": "NEWS_TONE_MICRON",
+    "TSM": "NEWS_TONE_TSMC",
+    "NVDA": "NEWS_TONE_NVIDIA",
+    "ASML": "NEWS_TONE_ASML",
+}
+
+
+def tone_signal(tone: pd.Series | None) -> pd.Series:
+    """Weekly news signal: 4-week average tone z-scored against the previous 52 weeks (tanh-squashed).
+    Dated at the week it is known."""
+    if tone is None or tone.dropna().empty:
+        return pd.Series(dtype=float)
+    w = tone.dropna().resample("W-FRI").mean()
+    recent = w.rolling(4).mean()
+    base = w.shift(4).rolling(WEEKS, min_periods=40)
+    return np.tanh((recent - base.mean()) / base.std()).dropna()
+
+
 def news_scores(tone: dict[str, pd.Series], t, assets: list[str], cfg: dict) -> pd.Series:
-    """Tone relative to its last year, z-scored: memory tone for the memory makers, recession tone
-    for equities (a darker tone lowers the score)."""
-
-    def z(s):
-        if s is None:
-            return None
-        w = s.dropna().resample("W-FRI").mean().loc[:t]
-        if len(w) < 60:
-            return None
-        h = w.iloc[-WEEKS:]
-        return float(np.tanh((w.iloc[-1] - h.mean()) / (h.std() or np.nan)))
-
+    """Company tone for the semiconductor names (memory-chip tone when a name has none); half the
+    recession-news signal for the other equities (a darker tone lowers the score)."""
     out = {}
-    zm, zr = z(tone.get("NEWS_TONE_MEMORY")), z(tone.get("NEWS_TONE_RECESSION"))
+    rec = tone_signal(tone.get("NEWS_TONE_RECESSION")).loc[:t]
+    mem = tone_signal(tone.get("NEWS_TONE_MEMORY")).loc[:t]
     for a in assets:
         sl = cfg["universe"][a]["sleeve"]
-        if zm is not None and a in MEMORY_BASKET:
-            out[a] = zm
-        elif zr is not None and sl in ("equity", "semis"):
-            out[a] = 0.5 * zr
+        own = tone_signal(tone.get(NEWS_TONE_OF.get(a, ""))).loc[:t]
+        if sl == "semis" and not own.empty:
+            out[a] = float(own.iloc[-1])
+        elif sl == "semis" and a in MEMORY_BASKET and not mem.empty:
+            out[a] = float(mem.iloc[-1])
+        elif sl in ("equity", "semis") and not rec.empty:
+            out[a] = 0.5 * float(rec.iloc[-1])
     return pd.Series(out, dtype=float).dropna()
+
+
+def news_test(r: pd.DataFrame, tone: dict[str, pd.Series], bench: str = "SOX") -> dict:
+    """Research log H32: pooled IC of the company news signal for the next 4 weeks' return relative to
+    the semiconductor index, non-overlapping 4-week steps, second half of the sample."""
+    rows = []
+    if bench not in r:
+        return {"IC": np.nan, "t": np.nan, "n": 0}
+    for a, tid in NEWS_TONE_OF.items():
+        if a not in r or tid not in tone:
+            continue
+        sig = tone_signal(tone[tid])
+        rel = r[a] - r[bench]
+        fwd = (1 + rel).rolling(4).apply(np.prod, raw=True).shift(-4) - 1
+        d = pd.concat([sig, fwd.reindex(sig.index)], axis=1, keys=["s", "f"]).dropna().iloc[::4]
+        rows.append(d)
+    if not rows:
+        return {"IC": np.nan, "t": np.nan, "n": 0}
+    pool = pd.concat(rows)
+    half = pool[pool.index >= pool.index.sort_values()[len(pool) // 2]]
+    return information_coefficient(half["s"], half["f"])
+
+
+def news_confidence(test: dict) -> float:
+    """The pre-registered gate (H32): 0.10 if the second-half IC is positive with t > 2, else 0."""
+    return 0.10 if test.get("n", 0) >= 30 and test.get("IC", 0) > 0 and test.get("t", 0) > 2 else 0.0
 
 
 # ------------------------------------------------------------------ Black-Litterman
@@ -608,3 +649,105 @@ def information_coefficient(signal: pd.Series, fwd: pd.Series) -> dict:
         return {"IC": np.nan, "t": np.nan, "n": n}
     ic = float(stats.spearmanr(d.iloc[:, 0], d.iloc[:, 1])[0])
     return {"IC": ic, "t": ic * np.sqrt((n - 2) / max(1e-12, 1 - ic**2)), "n": n}
+
+
+# ------------------------------------------------------------------ alternative constructions
+def min_variance(cov: pd.DataFrame) -> pd.Series:
+    """Long-only minimum variance."""
+    S = cov.to_numpy()
+    n = len(S)
+    res = optimize.minimize(
+        lambda w: w @ S @ w,
+        np.full(n, 1 / n),
+        jac=lambda w: 2 * S @ w,
+        method="SLSQP",
+        bounds=[(0, 1)] * n,
+        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1, "jac": lambda w: np.ones(n)}],
+    )
+    w = np.clip(res.x, 0, None)
+    return pd.Series(w / w.sum(), index=cov.index)
+
+
+def equal_risk_contribution(cov: pd.DataFrame, iters: int = 500) -> pd.Series:
+    """Equal risk contribution (Maillard, Roncalli and Teïletche, 2010) by cyclical coordinate descent."""
+    S = cov.to_numpy()
+    n = len(S)
+    w = 1 / np.sqrt(np.diag(S))
+    w /= w.sum()
+    for _ in range(iters):  # unnormalised fixed point w_i (Σw)_i = 1/n, normalised at the end
+        for i in range(n):
+            a = S[i, i]
+            b = S[i] @ w - a * w[i]
+            w[i] = (-b + np.sqrt(b * b + 4 * a / n)) / (2 * a)
+    return pd.Series(w / w.sum(), index=cov.index)
+
+
+def hierarchical_risk_parity(cov: pd.DataFrame) -> pd.Series:
+    """López de Prado (2016): cluster on correlation distance, order the matrix, split the budget
+    by inverse variance between clusters, recursively."""
+    from scipy.cluster.hierarchy import leaves_list, linkage
+    from scipy.spatial.distance import squareform
+
+    sd = np.sqrt(np.diag(cov))
+    corr = cov.to_numpy() / np.outer(sd, sd)
+    dist = np.sqrt(np.clip(0.5 * (1 - corr), 0, None))
+    np.fill_diagonal(dist, 0)
+    order = list(leaves_list(linkage(squareform(dist, checks=False), "single")))
+    w = np.ones(len(cov))
+    S = cov.to_numpy()
+
+    def cvar(idx):
+        sub = S[np.ix_(idx, idx)]
+        ivp = 1 / np.diag(sub)
+        ivp /= ivp.sum()
+        return ivp @ sub @ ivp
+
+    stack = [order]
+    while stack:
+        c = stack.pop()
+        if len(c) < 2:
+            continue
+        a, b = c[: len(c) // 2], c[len(c) // 2 :]
+        va, vb = cvar(a), cvar(b)
+        alpha = 1 - va / (va + vb)
+        w[a] *= alpha
+        w[b] *= 1 - alpha
+        stack += [a, b]
+    return pd.Series(w / w.sum(), index=cov.index)
+
+
+ALTERNATIVES = {
+    "equal weight": lambda cov: pd.Series(1 / len(cov), index=cov.index),
+    "minimum variance": min_variance,
+    "equal risk contribution": equal_risk_contribution,
+    "hierarchical risk parity": hierarchical_risk_parity,
+}
+
+
+def backtest_rule(
+    inp: Inputs, cfg: dict, rule: Callable[[pd.DataFrame], pd.Series], start: str | None = None
+) -> pd.Series:
+    """Monthly rebalance into `rule(covariance)` on the same universe and costs, no views, no overlay,
+    no constraints beyond long-only: the textbook constructions the model is compared with."""
+    r = inp.r
+    start_t = pd.Timestamp(start or cfg["backtest"]["start"])
+    weeks = r.loc[start_t:].index
+    w = pd.Series(dtype=float)
+    rets, prev_month = [], None
+    m = cfg["model"]
+    assets = [a for a in cfg["universe"] if a in r.columns]
+    for t in weeks[:-1]:
+        nxt = r.index[r.index.get_loc(t) + 1]
+        cost = 0.0
+        if t.month != prev_month:
+            cov = covariance(r.loc[:t, assets], m["cov_window_weeks"], m["cov_min_weeks"])
+            tgt = rule(cov)
+            cur = w.reindex(tgt.index.union(w.index)).fillna(0.0)
+            tg = tgt.reindex(cur.index).fillna(0.0)
+            cost = float(((tg - cur).abs() * _costs(cfg, cur.index)).sum())
+            w, prev_month = tg[tg > 1e-6], t.month
+        rn = r.loc[nxt, w.index].fillna(0.0)
+        g = float((w * rn).sum())
+        w = w * (1 + rn) / (1 + g)
+        rets.append((nxt, (1 - cost) * (1 + g) - 1))
+    return pd.Series(dict(rets)).sort_index()

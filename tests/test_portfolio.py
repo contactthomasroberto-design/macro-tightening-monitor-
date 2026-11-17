@@ -215,3 +215,79 @@ def test_news_parse_and_tag():
     tags = news.tag(df["title"], news.load()["tags"])
     assert "SK Hynix" in tags[0] and "Memory chips" in tags[0] and "Fed" in tags[1] and "Inflation" in tags[1]
     assert "Fed" not in tags[0] and df["published"].iloc[0] == pd.Timestamp("2026-11-17 08:00", tz="UTC")
+
+
+# ------------------------------------------------------------------ news scoring
+def test_news_novelty_flags_repeats():
+    from macro import news_scoring as ns
+
+    t = pd.to_datetime(["2026-11-17 08:00", "2026-11-17 09:00", "2026-11-17 10:00"], utc=True)
+    titles = [
+        "Samsung and Apple near long-term DRAM supply agreement - Investing.com",
+        "Samsung and Apple near long-term DRAM supply agreement By Investing.com - Investing.com Canada",
+        "Fed holds rates steady",
+    ]
+    n = ns.novelty(titles, list(t), 0.5)
+    assert n[0] == 1 and n[1] == 0.5 and n[2] == 1
+
+
+def test_news_asset_scores_weight_relevance_freshness_and_credibility(tmp_path):
+    from macro import news
+    from macro import news_scoring as ns
+
+    cfg = news.load()
+    now = pd.Timestamp("2026-11-17 12:00", tz="UTC")
+    df = pd.DataFrame(
+        {
+            "title": ["SK Hynix record HBM orders", "Chip stocks slump", "Old Hynix story"],
+            "link": ["a", "b", "c"],
+            "published": pd.to_datetime(
+                ["2026-11-17 11:00", "2026-11-17 11:00", "2026-11-10 11:00"], utc=True
+            ),
+            "source": ["Reuters (via Google News)", "BBC Business", "BBC Business"],
+            "tags": [["SK Hynix", "Memory chips"], ["Semiconductors"], ["SK Hynix"]],
+        }
+    )
+    sc = ns.score(df, lambda ts: np.array([0.9, -0.8, -0.9]), cfg)
+    a = ns.asset_scores(sc, cfg, now=now)
+    assert a.loc["HYNIX", "news score"] > 0.5  # direct, fresh, credible beats sector-level and stale news
+    assert a.loc["NVDA", "news score"] == pytest.approx(-0.8)
+    path = tmp_path / "n.csv"
+    assert ns.append_archive(sc, path, now=now) == 3 and ns.append_archive(sc, path, now=now) == 0
+    back = ns.read_archive(path)
+    assert back["tags"].iloc[0] == ["SK Hynix", "Memory chips"]
+    idx = ns.daily_index(back, cfg)
+    assert idx.loc[pd.Timestamp("2026-11-17"), "HYNIX"] > 0
+
+
+def test_news_gate_opens_only_on_a_real_signal():
+    g = np.random.default_rng(8)
+    d = pd.date_range("2017-01-01", periods=7 * 520, freq="D")
+    w = pd.date_range("2017-01-06", periods=520, freq="W-FRI")
+    r = pd.DataFrame({"SOX": g.normal(0, 0.02, 520)}, index=w)
+    tone_good, tone_noise = {}, {}
+    for a, tid in pf.NEWS_TONE_OF.items():
+        daily = pd.Series(g.normal(0, 1, len(d)), index=d)
+        sig = pf.tone_signal(daily).reindex(w).fillna(0)
+        fut = sig.shift(1).fillna(0)  # tone today predicts next weeks' relative return
+        r[a] = r["SOX"] + 0.01 * fut + g.normal(0, 0.01, 520)
+        tone_good[tid] = daily
+        tone_noise[tid] = pd.Series(g.normal(0, 1, len(d)), index=d)
+    good = pf.news_test(r, tone_good)
+    assert good["t"] > 2 and pf.news_confidence(good) == 0.10
+    assert pf.news_confidence(pf.news_test(r, tone_noise)) == 0.0
+
+
+def test_alternative_constructions():
+    r = _returns(9)
+    cov = pf.covariance(r[list(CFG["universe"])], 156, 52)
+    erc = pf.equal_risk_contribution(cov)
+    rc = erc * (cov.to_numpy() @ erc.to_numpy())
+    assert np.allclose(rc / rc.sum(), 1 / len(cov), atol=1e-4)  # equal risk contributions
+    for fn in pf.ALTERNATIVES.values():
+        w = fn(cov)
+        assert w.sum() == pytest.approx(1) and (w >= -1e-9).all()
+    mv = pf.min_variance(cov)
+    assert float(mv @ cov @ mv) <= float(erc @ cov @ erc) + 1e-12
+    hrp = pf.hierarchical_risk_parity(cov)
+    assert hrp["BIL"] > hrp["HYNIX"]  # the lowest-variance asset gets more than a volatile stock

@@ -1,9 +1,11 @@
 name: portfolio-monitor
-# Hourly risk check of the paper portfolio during market hours (Seoul opens 00:00 UTC, New York
-# closes 21:00 UTC), weekdays. It checks and alerts; the daily rebalance runs in refresh.yml.
+# Every two hours, every day: score the latest headlines with FinBERT (archive/news_scored.csv) and
+# check the paper portfolio's drawdown and day's loss. It checks and alerts; the daily rebalance runs
+# in refresh.yml. Every two hours rather than hourly to stay inside the free Actions minutes of a
+# private repository (about 360 runs a month of 2-3 minutes).
 on:
   schedule:
-    - cron: "23 0-21 * * 1-5"
+    - cron: "23 */2 * * *"
   workflow_dispatch:
 permissions:
   contents: write
@@ -14,29 +16,45 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     env:
       MACRO_MODE: live
+      HF_HUB_DISABLE_TELEMETRY: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
           cache: pip
+      - name: Cache the FinBERT model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: finbert-prosusai-v1
       - name: Install
         run: |
           pip install -r requirements.txt
+          pip install --index-url https://download.pytorch.org/whl/cpu torch==2.15.0
+          pip install -r requirements-news.txt
           pip install -e . --no-deps
+      - name: Score the news (opens an issue on an extreme score for a holding)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/score_news.py --issue
       - name: Check drawdown and daily loss
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/portfolio_monitor.py --issue
-      - name: Commit the alert state when it changed
+      - name: Commit the news archive and alert states
         run: |
-          if [ -n "$(git status --porcelain archive/portfolio_alerts.json 2>/dev/null)" ]; then
-            git config user.name "macro-monitor-bot"
-            git config user.email "actions@users.noreply.github.com"
-            git add archive/portfolio_alerts.json
-            git commit -m "chore(portfolio): alert state"
-            git pull --rebase origin main && git push
+          git config user.name "macro-monitor-bot"
+          git config user.email "actions@users.noreply.github.com"
+          for f in archive/news_scored.csv archive/news_alerts.json archive/portfolio_alerts.json; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(news): scored headlines and alert state"
+            for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
           fi

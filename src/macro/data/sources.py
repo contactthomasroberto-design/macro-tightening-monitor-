@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -29,6 +30,8 @@ ECB_API = "https://data-api.ecb.europa.eu/service/data"
 YAHOO_API = "https://query1.finance.yahoo.com/v8/finance/chart"
 SEC_FACTS = "https://data.sec.gov/api/xbrl/companyfacts"
 GDELT_DOC = "https://api.gdeltproject.org/api/v2/doc/doc"
+GDELT_SPACING = 5.5  # seconds between requests
+_gdelt_last = 0.0
 CFTC_TFF = "https://publicreporting.cftc.gov/resource/gpe5-46if.json"  # TFF futures only (verify)
 
 # Published research files. URLs must be checked by the live smoke test; when a URL moves,
@@ -235,6 +238,11 @@ def fetch_gdelt(spec: SeriesSpec, vintage: str | None = None) -> pd.DataFrame:
     """GDELT 2.0 DOC API: daily average tone of worldwide online news matching a query, since 2017
     (GDELT indexes Reuters, Bloomberg, the BBC, CNBC and thousands of others; only the tone
     statistic is kept, no article text). source_id = the query."""
+    global _gdelt_last
+    wait = GDELT_SPACING - (time.monotonic() - _gdelt_last)
+    if wait > 0:  # GDELT asks for at most one request every 5 seconds
+        time.sleep(wait)
+    _gdelt_last = time.monotonic()
     now = pd.Timestamp.now(tz="UTC")
     params = {
         "query": f"{spec.source_id} sourcelang:english",

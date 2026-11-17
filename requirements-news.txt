@@ -1,0 +1,3 @@
+# Extra package for scoring headlines with FinBERT (GitHub Actions only; the dashboard does not need it).
+# torch is installed separately from the CPU index: pip install --index-url https://download.pytorch.org/whl/cpu torch==2.15.0
+transformers==5.23.0

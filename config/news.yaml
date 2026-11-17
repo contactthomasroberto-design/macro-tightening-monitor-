@@ -29,3 +29,35 @@ tags:
   Recession and jobs: ["recession", "jobs", "payrolls", "unemployment", "layoffs"]
   Oil and energy: ["oil", "Brent", "OPEC", "crude", "energy"]
   Tariffs and trade: ["tariff", "tariffs", "export controls", "trade war"]
+
+# Scoring (src/macro/news_scoring.py), in the spirit of commercial news analytics (RavenPack:
+# event weight ∝ relevance² × novelty²) and of the evidence that news is priced within about two
+# days (Ke, Kelly and Xiu, 2019). Sentiment: FinBERT (Araci, 2019), P(positive) − P(negative).
+scoring:
+  half_life_hours: 24
+  novelty_jaccard: 0.5        # a headline this similar to an earlier one (72 h) is a repeat
+  credibility:                # by feed; unknown publishers inside Google News feeds get `other`
+    Federal Reserve: 1.0
+    ECB: 1.0
+    Reuters (via Google News): 1.0
+    Bloomberg (via Google News): 1.0
+    CNBC: 0.8
+    CNBC Economy: 0.8
+    BBC Business: 0.8
+    MarketWatch: 0.7
+    other: 0.5
+  # tag → assets it concerns and how directly (1 = the company itself, 0.6 its sector, 0.3 the market)
+  entities:
+    SK Hynix: {assets: [HYNIX], relevance: 1.0}
+    Samsung: {assets: [SAMSUNG], relevance: 1.0}
+    Micron: {assets: [MU], relevance: 1.0}
+    TSMC: {assets: [TSM], relevance: 1.0}
+    NVIDIA: {assets: [NVDA], relevance: 1.0}
+    ASML: {assets: [ASML], relevance: 1.0}
+    Memory chips: {assets: [HYNIX, SAMSUNG, MU], relevance: 0.6}
+    Semiconductors: {assets: [HYNIX, SAMSUNG, MU, TSM, NVDA, ASML], relevance: 0.6}
+    Fed: {assets: [MARKET], relevance: 0.3}
+    ECB: {assets: [MARKET], relevance: 0.3}
+    BoJ: {assets: [MARKET], relevance: 0.3}
+    Recession and jobs: {assets: [MARKET], relevance: 0.3}
+    Tariffs and trade: {assets: [MARKET, HYNIX, SAMSUNG, TSM], relevance: 0.3}
