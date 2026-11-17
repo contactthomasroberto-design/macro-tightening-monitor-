@@ -103,6 +103,7 @@ SECTIONS = [
             ("portfolio_overview.py", "Positions and performance"),
             ("portfolio_risk.py", "Risk"),
             ("portfolio_backtest.py", "Track record and backtest"),
+            ("portfolio_health.py", "Model health"),
             ("portfolio_research.py", "Research"),
             ("portfolio_news.py", "News"),
             ("portfolio_team.py", "Team"),

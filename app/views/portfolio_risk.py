@@ -2,7 +2,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from components import footer, header, sidebar_controls, theme
+from components import footer, header, show_status, sidebar_controls, theme
 from macro import plotting as pl
 from markets_ui import NAVY
 from portfolio_ui import DISCLAIMER, bundle, name
@@ -71,6 +71,42 @@ if rb is not None and not rb.empty:
     st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
     with st.expander("Risk budget table"):
         st.dataframe(rb.style.format("{:.1%}"), use_container_width=True)
+
+
+lq = b.get("liquidity")
+if lq is not None and not lq.empty:
+    cfg_l = b["config"].get("liquidity", {})
+    notional = b["config"]["live"].get("notional_usd", 1e8)
+    st.subheader("Liquidity: could we get out?")
+    flagged = lq[lq["flag"].astype(str) != ""]
+    show_status(
+        "warning" if len(flagged) else "good",
+        f"{len(flagged)} of {len(lq)} positions flagged for a fund of USD {notional / 1e6:,.0f} million"
+        + (f": {', '.join(name(b, a) for a in flagged.index[:6])}." if len(flagged) else "."),
+    )
+    view = lq.copy()
+    view.index = [name(b, a) for a in view.index]
+    with st.expander("Liquidity table"):
+        st.dataframe(
+            view.style.format(
+                {
+                    "weight": "{:+.1%}",
+                    "position (USD m)": "{:,.1f}",
+                    "ADV (USD m)": "{:,.0f}",
+                    "share of ADV": "{:.2%}",
+                    "days to liquidate": "{:.2f}",
+                },
+                na_rep="",
+            ),
+            use_container_width=True,
+        )
+    st.caption(
+        f"Days to liquidate = position / ({cfg_l.get('participation', 0.1):.0%} of average daily traded value). "
+        f"Flag above {cfg_l.get('max_days', 1):g} day or {cfg_l.get('max_share_adv', 0.01):.0%} of one day's volume. "
+        f"ADV figures are rounded estimates dated {b.get('liquidity_as_of') or 'n/a'} (config/portfolio.yaml), "
+        "not live data: a check on orders of magnitude."
+    )
+
     st.caption(
         "Euler contributions (weight × marginal risk) summed by source; the shares add up to 100%, a negative share "
         "is a source that hedges the rest. Ex ante with the model covariance, realised with the sample covariance of "

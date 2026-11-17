@@ -172,6 +172,10 @@ series:
   - {id: IGF, source: yahoo, source_id: "IGF", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: iShares Global Infrastructure ETF, terms: *yahoo, optional: true}
   - {id: DBMF, source: yahoo, source_id: "DBMF", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: iMGP DBi Managed Futures Strategy ETF, terms: *yahoo, optional: true}
   - {id: KMLM, source: yahoo, source_id: "KMLM", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: KFA Mount Lucas Managed Futures Index Strategy ETF, terms: *yahoo, optional: true}
+  # ---- secondary benchmarks: products an investor can buy (fund_checks.FUND_BENCHMARKS)
+  - {id: RPAR, source: yahoo, source_id: "RPAR", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: RPAR Risk Parity ETF (secondary benchmark), terms: *yahoo, optional: true}
+  - {id: QAI, source: yahoo, source_id: "QAI", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: NYLI Hedge Multi-Strategy Tracker ETF (hedge-fund replication; secondary benchmark), terms: *yahoo, optional: true}
+  - {id: HDG, source: yahoo, source_id: "HDG", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: ProShares Hedge Replication ETF (secondary benchmark), terms: *yahoo, optional: true}
   - {id: TAIL, source: yahoo, source_id: "TAIL", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: Cambria Tail Risk ETF, terms: *yahoo, optional: true}
   - {id: UUP, source: yahoo, source_id: "UUP", freq: D, units: USD, release_lag_days: 1, region: US, category: portfolio, description: Invesco DB US Dollar Index Bullish Fund, terms: *yahoo, optional: true}
   - {id: FXY, source: yahoo, source_id: "FXY", freq: D, units: USD, release_lag_days: 1, region: GLOBAL, category: portfolio, description: Invesco CurrencyShares Japanese Yen Trust, terms: *yahoo, optional: true}

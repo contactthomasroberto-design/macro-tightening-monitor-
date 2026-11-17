@@ -42,7 +42,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/score_news.py --issue
-      - name: Check drawdown and daily loss
+      - name: Check price anomalies (second source), drawdown and daily loss
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +51,7 @@ jobs:
         run: |
           git config user.name "macro-monitor-bot"
           git config user.email "actions@users.noreply.github.com"
-          for f in archive/news_scored.csv archive/news_alerts.json archive/portfolio_alerts.json archive/research_tracker.csv; do
+          for f in archive/news_scored.csv archive/news_alerts.json archive/portfolio_alerts.json archive/research_tracker.csv archive/price_anomalies.csv archive/price_anomaly_alerts.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           if ! git diff --cached --quiet; then

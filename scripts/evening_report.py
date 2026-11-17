@@ -377,6 +377,33 @@ def main() -> int:
             )
     else:
         L.append("Pas encore d'archive de publications.")
+
+    # ---------------------------------------------------------------- data and model health
+    from macro import fund_checks as fchk
+
+    L += ["", "## 5. Qualité des données et santé du modèle", ""]
+    an = fchk.read_anomalies(ROOT / "archive" / "price_anomalies.csv", days=2)
+    if an.empty:
+        L.append("Aucune anomalie de prix sur les deux derniers jours (sauts isolés, écarts Yahoo/Stooq).")
+    for _, a_ in an.iterrows():
+        kind = "saut sans mouvement du secteur" if a_["kind"] == "jump" else "écart entre sources"
+        L.append(f"- {name(a_['asset'])} ({a_['date']:%d/%m}) : {kind}, {a_['detail']}")
+    lq = b.get("liquidity")
+    if lq is not None and not lq.empty:
+        flagged = lq[lq["flag"].astype(str) != ""]
+        if not flagged.empty:
+            L.append(
+                "Liquidité (fonds notionnel de "
+                f"{cfg['live'].get('notional_usd', 1e8) / 1e6:.0f} M$) : "
+                + "; ".join(f"{name(a)} {row['flag']}" for a, row in flagged.head(6).iterrows())
+            )
+    hl = b.get("health") or {}
+    if hl:
+        L.append(
+            f"Santé du modèle : rotation moyenne {100 * hl['turnover last 13 rebalances']:.1f} % (13 dernières "
+            f"semaines), volatilité réalisée / prévue {hl['vol bias ratio']:.2f}, contraintes relâchées "
+            f"{hl['relaxed last 52']} fois sur 52 semaines, statut du jour « {hl['target status']} »."
+        )
     L += [
         "",
         "---",

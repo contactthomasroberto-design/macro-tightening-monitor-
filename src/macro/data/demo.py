@@ -763,6 +763,12 @@ _PF = {
     "FXE": ("2005-12-12", 0.1, 0.0, 0.0, 0.005, 0.0),
     "FXF": ("2006-06-26", 0.0, 0.2, 0.0, 0.005, 0.01),
 }
+# secondary benchmarks (fund_checks.FUND_BENCHMARKS): own generator so the series above are unchanged
+_PF_EXTRA = {
+    "RPAR": ("2019-12-13", 0.35, 0.9, 0.0, 0.004, 0.04),
+    "QAI": ("2009-03-25", 0.3, 0.2, 0.0, 0.002, 0.03),
+    "HDG": ("2011-07-14", 0.4, 0.0, 0.0, 0.002, 0.03),
+}
 
 
 def _portfolio_block(seed: int, out: dict) -> dict[str, pd.Series]:
@@ -793,5 +799,9 @@ def _portfolio_block(seed: int, out: dict) -> dict[str, pd.Series]:
     nd = days[days >= "2017-01-02"]
     for k in ("MEMORY", "RECESSION", "INFLATION", "HYNIX", "SAMSUNG", "MICRON", "TSMC", "NVIDIA", "ASML"):
         res[f"NEWS_TONE_{k}"] = pd.Series(-1.5 + _ar1(len(nd), 0.95, 0.3, g), index=nd)
+    g2 = np.random.default_rng(seed + 2001)
+    for sid, (first, b_eq, b_dur, b_semi, sd, mu) in _PF_EXTRA.items():
+        r = mu / 252 + b_eq * eq + b_dur * dur + b_semi * semi + g2.normal(0, sd, n)
+        res[sid] = pd.Series(100 * np.exp(np.cumsum(r)), index=days).loc[first:]
     assert not set(res) & set(out), "portfolio demo ids collide with earlier demo series"
     return res

@@ -68,6 +68,32 @@ et à comprendre pourquoi (page Research).
 - **Optimisation rééchantillonnée** (Michaud) : en test seulement (H47). Elle serait adoptée si elle réduit
   la rotation d'au moins 20 % sans coûter plus de 0,05 de Sharpe.
 
+## 4 ter. Les contrôles de fonctionnement
+- **Face à des fonds qu'on peut acheter.** Le modèle est comparé, sur leur historique commun et nets
+  de leurs frais, à quatre ETF :
+  - DBMF (managed futures) ;
+  - RPAR (risk parity) ;
+  - QAI et HDG (réplication de hedge funds).
+
+  Si le fonds ne fait pas mieux que ces produits, sa complexité ne paie pas. C'est sur la page
+  Portfolio → Backtest.
+- **Liquidité.** Pour un fonds notionnel de 100 M$, on calcule combien de jours il faudrait pour sortir
+  de chaque ligne à 10 % du volume quotidien. Une ligne est signalée au-delà d'un jour ou de 1 % du volume
+  d'une journée. Les volumes sont des estimations arrondies et datées, pas des données en direct :
+  l'ordre de grandeur compte, pas la décimale. C'est sur la page Risk.
+- **Qualité des prix.** Toutes les deux heures, deux contrôles :
+  - un saut de plus de 6 écarts-types que le secteur ne confirme pas ;
+  - un cours de clôture qui diffère de plus de 2 % entre Yahoo et Stooq.
+
+  Chaque anomalie est archivée et ouvre une alerte GitHub. Elle apparaît aussi dans le rapport du soir.
+  Elle ne modifie jamais une position d'elle-même.
+- **Santé du modèle.** La page Portfolio → Model health suit :
+  - la rotation des poids ;
+  - la volatilité prévue face à la volatilité réalisée ;
+  - les limites saturées ;
+  - les contraintes relâchées par l'optimiseur ;
+  - l'écart entre le carnet papier et le backtest.
+
 ## 5. Limites, sans fard
 - Biais du survivant : les six valeurs semis ont été choisies en 2026.
 - Les puts sont synthétiques (Black-Scholes au VIX majoré). Les ETF sur pétrole et managed futures
