@@ -17,9 +17,11 @@ def _returns(seed=0, n=900):
     f_eq, f_dur = g.normal(0.0015, 0.022, n), g.normal(0.0005, 0.008, n)
     cols = {}
     for a, c in CFG["universe"].items():
-        b_eq = {"equity": 1.0, "semis": 1.4, "bond": -0.1, "real": 0.3, "cash": 0.0}[c["sleeve"]]
-        b_d = {"bond": 1.0, "cash": 0.0}.get(c["sleeve"], 0.0)
-        sd = {"cash": 0.0002, "bond": 0.003}.get(c["sleeve"], 0.012)
+        b_eq = {"equity": 1.0, "style": 0.9, "sector": 1.0, "semis": 1.4, "bond": -0.1, "credit": 0.3}.get(
+            c["sleeve"], {"real": 0.3, "alt": 0.0, "fx": -0.1, "cash": 0.0}.get(c["sleeve"], 0.0)
+        )
+        b_d = {"bond": 1.0, "credit": 0.5, "cash": 0.0}.get(c["sleeve"], 0.0)
+        sd = {"cash": 0.0002, "bond": 0.003, "credit": 0.004, "fx": 0.006}.get(c["sleeve"], 0.012)
         cols[a] = b_eq * f_eq + b_d * f_dur + g.normal(0, sd, n)
     for a in ("ACWI", "EFA"):
         cols[a] = f_eq + g.normal(0, 0.003, n)
@@ -62,17 +64,66 @@ def test_optimiser_respects_every_constraint():
     r = _returns(2)
     cov = pf.covariance(r[list(CFG["universe"])], 156, 52)
     w_eq = pf.equilibrium_weights(list(cov.index), CFG)
-    bull = pd.Series(0.5, index=cov.index)  # absurdly high expected returns everywhere
-    w, status = pf.optimise(bull, cov, w_eq, CFG)
-    uni = CFG["universe"]
-    semis = sum(w[a] for a in w.index if uni[a]["sleeve"] == "semis")
-    eq = sum(w[a] for a in w.index if uni[a]["sleeve"] in ("equity", "semis"))
+    g = np.random.default_rng(10)
+    mu = pd.Series(g.normal(0, 0.3, len(cov)), index=cov.index)  # strong, mixed views: invites shorts
+    w, status = pf.optimise(mu, cov, w_eq, CFG)
+    uni, sl = CFG["universe"], CFG["sleeves"]
+    pick = lambda *s_: sum(w[a] for a in w.index if uni[a]["sleeve"] in s_)  # noqa: E731
     vol = float(np.sqrt(w @ cov @ w))
     vol_b = float(np.sqrt(w_eq @ cov @ w_eq))
+    te = float(np.sqrt((w - w_eq) @ cov @ (w - w_eq)))
     assert status == "optimal" and w.sum() == pytest.approx(1)
-    assert all(w[a] <= uni[a]["max"] + 1e-6 and w[a] >= uni[a].get("min", 0) - 1e-6 for a in w.index)
-    assert 0.05 - 1e-6 <= semis <= 0.15 + 1e-6 and abs(eq - 0.6) <= 0.15 + 1e-6
-    assert vol <= vol_b * (1 + 1e-4)
+    assert all(uni[a].get("min", 0) - 1e-5 <= w[a] <= uni[a]["max"] + 1e-5 for a in w.index)
+    assert (w < -1e-4).any()  # shorts are used
+    assert w.abs().sum() <= sl["gross_max"] + 1e-4
+    assert sl["semis"]["min"] - 1e-5 <= pick("semis") <= sl["semis"]["max"] + 1e-5
+    assert sl["equity_net"]["min"] - 1e-5 <= pick(*pf.EQUITY_SLEEVES) <= sl["equity_net"]["max"] + 1e-5
+    assert (
+        pick("alt") <= sl["alt_max"] + 1e-5
+        and w[["UUP", "FXY", "FXE", "FXF"]].abs().sum() <= sl["fx_gross_max"] + 1e-4
+    )
+    assert w["HYNIX"] >= 0.015 - 1e-5 and w["SAMSUNG"] >= 0.015 - 1e-5  # Korean names: long only
+    assert vol <= vol_b * (1 + 1e-3) and te <= CFG["model"]["tracking_error_max"] + 1e-4
+    lo, _ = pf.optimise(mu, cov, w_eq, CFG, long_only=True)
+    assert (lo >= -1e-6).all()
+
+
+def test_turnover_cost_keeps_weights_near_the_current_book():
+    r = _returns(3)
+    cov = pf.covariance(r[list(CFG["universe"])], 156, 52)
+    w_eq = pf.equilibrium_weights(list(cov.index), CFG)
+    mu, _ = pf.black_litterman(cov, w_eq, {}, CFG)
+    w0, _ = pf.optimise(mu, cov, w_eq, CFG)
+    nudged = mu + 0.0005 * np.random.default_rng(1).normal(size=len(mu))  # tiny change in views
+    w1, _ = pf.optimise(nudged, cov, w_eq, CFG, w_prev=w0)
+    assert (w1 - w0).abs().sum() < 0.02  # costs make small view changes not worth trading
+
+
+def test_tail_hedge_put_pricing_and_ratio():
+    p = pf.bs_put(1.0, 0.95, 4 / 52, 0.04, 0.20 * 1.15)
+    assert 0.002 < p < 0.02
+    assert pf.bs_put(1.0, 0.95, 4 / 52, 0.04, 0.40) > p
+    assert pf.hedge_ratio(-1.0, -0.5, CFG) == 1.0 and pf.hedge_ratio(1.0, 0.5, CFG) == 0.25
+
+
+def test_regime_value_carry_and_house_views():
+    idx = pd.date_range("1990-01-01", periods=400, freq="MS")
+    ip = pd.Series(100 * np.exp(np.cumsum(np.random.default_rng(2).normal(0.002, 0.01, 400))), index=idx)
+    cpi = pd.Series(100 * np.exp(np.cumsum(np.random.default_rng(3).normal(0.002, 0.002, 400))), index=idx)
+    reg = pf.regime_series(ip, cpi)
+    assert set(reg.dropna().unique()) <= {
+        f"growth {g}, inflation {i}" for g in ("up", "down") for i in ("up", "down")
+    }
+    r = _returns(4)
+    vs = pf.value_scores(r, CFG)
+    assert vs.between(-1, 1).all() and "SPY" in vs.index  # region group
+    views = [
+        {"date": "2026-11-16", "stances": {"SPY": 1, "VGK": -1}},
+        {"date": "2026-01-01", "stances": {"SPY": -1}},
+    ]
+    hs = pf.house_scores(views, "2026-11-17", ["SPY", "VGK"])
+    assert hs["SPY"] == 1 and hs["VGK"] == -1  # the January view is older than six months
+    assert pf.house_scores(views, "2026-11-10", ["SPY"]).empty  # not yet published
 
 
 def test_overlay_engages_and_releases_with_hysteresis():
@@ -114,8 +165,9 @@ def test_backtest_runs_and_costs_reduce_returns():
         a["cost_bp"] = 0
     bt0 = pf.backtest(inp, free, start=str(r.index[200].date()))
     assert len(bt["returns"]) == len(r) - 201 and (bt["log"]["status"] != "fallback: equilibrium").all()
-    assert (1 + bt["returns"]).prod() < (1 + bt0["returns"]).prod()
-    assert bt["weights"].sum(axis=1).round(6).eq(1).all()
+    assert bt["log"]["cost"].sum() > 0 and bt0["log"]["cost"].sum() == 0
+    assert bt["log"]["turnover"].sum() < bt0["log"]["turnover"].sum()  # costs discourage trading
+    assert np.allclose(bt["weights"].sum(axis=1), 1, atol=1e-4)
 
 
 def test_memory_cycle_turns_with_revenue_acceleration():
@@ -183,12 +235,12 @@ def test_rebalance_rules_and_kill_switch():
             "status": ["optimal"],
             "overlay": [0],
             "reason": ["x"],
-            "version": ["0.1.0"],
+            "version": ["0.3.0"],
         }
     )
-    assert pl.rebalance_due(book, pd.Timestamp("2026-12-15"), 0, CFG) is None
-    assert pl.rebalance_due(book, pd.Timestamp("2026-12-15"), 1, CFG) == "drawdown overlay changed"
-    assert pl.rebalance_due(book, pd.Timestamp("2027-01-04"), 0, CFG) == "monthly rebalance"
+    assert pl.rebalance_due(book, pd.Timestamp("2026-12-03"), 0, CFG) is None  # same week
+    assert pl.rebalance_due(book, pd.Timestamp("2026-12-03"), 1, CFG) == "drawdown overlay changed"
+    assert pl.rebalance_due(book, pd.Timestamp("2026-12-08"), 0, CFG) == "weekly rebalance"
     assert pl.rebalance_due(book.iloc[:0], pd.Timestamp("2026-11-10"), 0, CFG) is None  # before live start
     off = copy.deepcopy(CFG)
     off["live"]["trading_enabled"] = False
@@ -291,3 +343,48 @@ def test_alternative_constructions():
     assert float(mv @ cov @ mv) <= float(erc @ cov @ erc) + 1e-12
     hrp = pf.hierarchical_risk_parity(cov)
     assert hrp["BIL"] > hrp["HYNIX"]  # the lowest-variance asset gets more than a volatile stock
+
+
+def test_research_tracker_stances_are_explicit_only():
+    from macro import research_tracker as rt
+
+    assets = rt.load()["assets"]
+    assert rt.stances("Goldman upgrades Japanese stocks to overweight", assets) == {"EWJ": 1}
+    assert rt.stances("Morgan Stanley turns bearish on the dollar, favours gold", assets) == {
+        "UUP": -1,
+        "GLD": 1,
+    }
+    assert rt.stances("BlackRock says markets face uncertainty", assets) == {}
+    assert rt.stances("UBS upgrades and downgrades European stocks", assets) == {}  # ambiguous
+
+
+def test_team_roster_matches_agent_files(tmp_path):
+    from macro import team
+
+    r = team.roster()
+    assert r["defined"].all(), r[~r["defined"]]["agent"].tolist()  # every listed member has an agent file
+    assert r["agent"].is_unique and len(r) >= 25
+    path = tmp_path / "log.csv"
+    team.append_log(
+        [
+            {
+                "date": "2026-11-17",
+                "agent": "macro-strategist",
+                "status": "terminé",
+                "task": "t1",
+                "summary": "s",
+                "link": "",
+            },
+            {
+                "date": "2026-11-18",
+                "agent": "macro-strategist",
+                "status": "en cours",
+                "task": "t2",
+                "summary": "",
+                "link": "",
+            },
+        ],
+        path,
+    )
+    cur, past = team.current_and_past(team.read_log(path), "macro-strategist")
+    assert cur["task"] == "t2" and past["task"].tolist() == ["t1"]

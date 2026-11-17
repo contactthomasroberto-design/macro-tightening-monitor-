@@ -8,19 +8,29 @@ import streamlit as st
 from components import CACHE_TTL
 from macro.pipeline import portfolio_bundle
 
-SLEEVE_ORDER = ["equity", "semis", "bond", "real", "cash"]
+SLEEVE_ORDER = ["equity", "style", "sector", "semis", "bond", "credit", "real", "alt", "fx", "cash"]
 SLEEVE_LABEL = {
-    "equity": "Equities",
+    "equity": "Equity regions",
+    "style": "Equity styles",
+    "sector": "Equity sectors",
     "semis": "Semiconductors (conviction)",
-    "bond": "Bonds",
-    "real": "Gold and commodities",
+    "bond": "Government bonds",
+    "credit": "Credit and EM debt",
+    "real": "Real assets",
+    "alt": "Alternatives",
+    "fx": "Currencies",
     "cash": "Cash",
 }
 SLEEVE_COLOR = {  # sober palette: no alarm colours for ordinary holdings
     "equity": "#002855",
+    "style": "#2f5584",
+    "sector": "#5677a6",
     "semis": "#7391b5",
-    "bond": "#8c8c8c",
+    "bond": "#6e6e6e",
+    "credit": "#9a9a9a",
     "real": "#b08d3c",
+    "alt": "#4e7d6b",
+    "fx": "#8a6f9e",
     "cash": "#d0d0d0",
 }
 DISCLAIMER = (

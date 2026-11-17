@@ -1,0 +1,105 @@
+# Research tracker (src/macro/research_tracker.py): the latest published views of banks, asset
+# managers and hedge funds, collected every two hours from Google News search feeds (last 3 days) and from the official
+# research feeds of central banks, asset managers and academic outlets (headline, date, link). Their own sites are not scraped. Stances are extracted from headlines by
+# explicit wording only (overweight, underweight, upgrade, downgrade, favour, prefer, bullish, bearish,
+# sell, buy) and compared with the model's views on the Research page.
+institutions:
+  Goldman Sachs: '"Goldman Sachs" (outlook OR overweight OR underweight OR forecast OR target OR strategist)'
+  Morgan Stanley: '"Morgan Stanley" (outlook OR overweight OR underweight OR forecast OR target OR strategist)'
+  J.P. Morgan: '("JPMorgan" OR "J.P. Morgan") (outlook OR overweight OR underweight OR forecast OR strategist)'
+  BlackRock: '"BlackRock Investment Institute" OR ("BlackRock" (overweight OR underweight OR outlook))'
+  Bank of America: '("Bank of America" OR "BofA") (strategist OR overweight OR underweight OR outlook OR "fund manager survey")'
+  UBS: '"UBS" (CIO OR "house view" OR overweight OR underweight OR outlook OR strategist)'
+  Citi: '"Citi" (strategist OR overweight OR underweight OR outlook)'
+  Barclays: '"Barclays" (strategist OR overweight OR underweight OR outlook)'
+  Deutsche Bank: '"Deutsche Bank" (strategist OR overweight OR underweight OR outlook)'
+  HSBC: '"HSBC" (strategist OR overweight OR underweight OR outlook)'
+  Amundi: '"Amundi" (outlook OR overweight OR underweight OR views)'
+  PIMCO: '"PIMCO" (outlook OR bonds OR duration OR views)'
+  Bridgewater: '"Bridgewater" (Dalio OR Jensen OR Prince OR outlook OR views OR markets)'
+  AQR: '"AQR" (Asness OR outlook OR markets OR factor)'
+  Man Group: '"Man Group" (outlook OR markets OR views OR trend)'
+  Citadel: '"Citadel" (Griffin OR markets OR outlook OR strategist)'
+  Elliott: '"Elliott Management" (markets OR outlook OR letter)'
+  Nomura: '"Nomura" (strategist OR outlook OR overweight OR underweight)'
+  Societe Generale: '("Societe Generale" OR "SocGen") (strategist OR outlook OR overweight OR underweight)'
+  BNP Paribas: '"BNP Paribas" (strategist OR outlook OR overweight OR underweight)'
+  Vanguard: '"Vanguard" (outlook OR economists OR forecast OR "capital markets")'
+  Fidelity: '"Fidelity International" OR "Fidelity Investments" (outlook OR strategist OR views)'
+  Schroders: '"Schroders" (outlook OR economist OR views OR markets)'
+  Invesco: '"Invesco" (strategist OR outlook OR views)'
+  Wellington: '"Wellington Management" (outlook OR views OR markets)'
+  T. Rowe Price: '"T. Rowe Price" (outlook OR strategist OR views)'
+  Allianz GI: '("Allianz Global Investors" OR "Allianz GI") (outlook OR views)'
+  AXA IM: '("AXA IM" OR "AXA Investment Managers") (outlook OR views)'
+  Robeco: '"Robeco" (outlook OR views OR markets)'
+  Nuveen: '"Nuveen" (outlook OR strategist OR views)'
+  Wells Fargo Investment Institute: '"Wells Fargo Investment Institute" OR ("Wells Fargo" strategist)'
+  Jefferies: '"Jefferies" (strategist OR outlook OR overweight OR underweight)'
+  Macquarie: '"Macquarie" (strategist OR outlook OR overweight OR underweight)'
+  Capital Economics: '"Capital Economics" (forecast OR expects OR economist)'
+  Oxford Economics: '"Oxford Economics" (forecast OR expects)'
+  BCA Research: '"BCA Research" (strategist OR expects OR outlook)'
+  Gavekal: '"Gavekal" (expects OR outlook OR markets)'
+  TS Lombard: '"TS Lombard" (expects OR outlook)'
+  Ned Davis Research: '"Ned Davis Research" (expects OR outlook OR strategist)'
+  Fundstrat: '"Fundstrat" (Lee OR outlook OR target)'
+  Morningstar: '"Morningstar" (strategist OR outlook OR "fair value")'
+  Two Sigma: '"Two Sigma" (markets OR outlook OR research)'
+  Millennium: '"Millennium Management" (markets OR outlook)'
+  Point72: '"Point72" (markets OR outlook OR research)'
+
+# Official research feeds read directly (RSS): central-bank research, academic working papers,
+# asset managers' and quant research blogs. Shown on the Research page and in the nightly digest.
+publications:
+  - {name: Federal Reserve FEDS Notes, kind: central bank, url: "https://www.federalreserve.gov/feeds/feds_notes.xml"}
+  - {name: Federal Reserve working papers, kind: central bank, url: "https://www.federalreserve.gov/feeds/working_papers.xml"}
+  - {name: New York Fed Liberty Street, kind: central bank, url: "https://libertystreeteconomics.newyorkfed.org/feed/"}
+  - {name: ECB working papers, kind: central bank, url: "https://www.ecb.europa.eu/rss/wppub.html"}
+  - {name: BIS working papers, kind: central bank, url: "https://www.bis.org/doclist/wppubls.rss"}
+  - {name: BIS FSI, kind: central bank, url: "https://www.bis.org/doclist/bis_fsi_publs.rss"}
+  - {name: NBER new working papers, kind: academic, url: "https://www.nber.org/rss/new.xml"}
+  - {name: CEPR, kind: academic, url: "https://cepr.org/rss.xml"}
+  - {name: arXiv quantitative finance, kind: quant, url: "https://export.arxiv.org/rss/q-fin"}
+  - {name: Alpha Architect, kind: quant, url: "https://alphaarchitect.com/feed/"}
+  - {name: Quantpedia, kind: quant, url: "https://quantpedia.com/feed/"}
+
+# Words → instruments of the universe (case-insensitive, whole words); the whole market is covered,
+# not only current holdings.
+assets:
+  SPY: ["US stocks", "US equities", "S&P 500", "American stocks"]
+  VGK: ["European stocks", "European equities", "Europe stocks", "Stoxx", "European shares"]
+  EWJ: ["Japanese stocks", "Japan stocks", "Japanese equities", "Topix", "Nikkei"]
+  MCHI: ["Chinese stocks", "China stocks", "Chinese equities", "Hang Seng", "China equities"]
+  INDA: ["Indian stocks", "India stocks", "Indian equities", "Nifty", "Sensex"]
+  EWT: ["Taiwan stocks", "Taiwanese stocks", "Taiex"]
+  EWY: ["Korean stocks", "Korea stocks", "Kospi"]
+  EWZ: ["Brazilian stocks", "Brazil stocks", "Bovespa"]
+  EEM: ["emerging markets", "emerging-market stocks", "EM stocks", "EM equities"]
+  QUAL: ["quality stocks"]
+  VLUE: ["value stocks"]
+  SOXX: ["chip stocks", "semiconductor stocks", "chipmakers", "semiconductors"]
+  HYNIX: ["SK Hynix", "Hynix"]
+  SAMSUNG: ["Samsung"]
+  MU: ["Micron"]
+  NVDA: ["Nvidia"]
+  TSM: ["TSMC"]
+  ASML: ["ASML"]
+  XLE: ["energy stocks"]
+  XLF: ["bank stocks", "financials"]
+  IEF: ["Treasuries", "US bonds", "duration", "10-year"]
+  TLT: ["long bonds", "long-dated Treasuries", "30-year"]
+  SHY: ["short-term Treasuries", "front end", "two-year"]
+  TIP: ["TIPS", "inflation-linked"]
+  HYG: ["high yield", "junk bonds", "high-yield"]
+  LQD: ["investment grade", "corporate bonds", "credit"]
+  EMB: ["emerging-market debt", "EM bonds", "EM debt"]
+  BWX: ["Bunds", "gilts", "JGBs", "European bonds"]
+  GLD: ["gold"]
+  SLV: ["silver"]
+  BNO: ["oil", "Brent", "crude"]
+  CPER: ["copper"]
+  DBC: ["commodities"]
+  UUP: ["dollar", "greenback"]
+  FXY: ["yen"]
+  FXE: ["euro"]

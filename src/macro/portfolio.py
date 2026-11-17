@@ -1,4 +1,6 @@
-"""Systematic balanced portfolio: macro and micro signals into a 60/40-benchmarked allocation.
+"""Systematic multi-asset alternative fund: macro and micro signals into a long/short allocation
+benchmarked on 60/40 (version 0.3: weekly, gross ≤ 160%, tracking error ≤ 8%; the steps below
+describe the construction, config/portfolio.yaml holds the current parameters).
 
 A model portfolio tracked on paper (config/portfolio.yaml); it places no orders. Pure functions:
 prices in, weights and diagnostics out.
@@ -39,13 +41,13 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 import yaml
-from scipy import optimize, stats
+from scipy import stats
 
 from macro.config import ROOT
 
 PATH = ROOT / "config" / "portfolio.yaml"
 WEEKS = 52
-FAMILIES = ("trend", "macro", "micro", "news")
+FAMILIES = ("trend", "macro", "regime", "value", "carry", "micro", "house", "news")
 MEMORY_BASKET = ("HYNIX", "SAMSUNG", "MU")
 
 
@@ -110,11 +112,17 @@ def ledoit_wolf_corr(x: np.ndarray) -> tuple[np.ndarray, float]:
     return c / np.outer(d, d), float(delta)
 
 
-def covariance(r: pd.DataFrame, window: int, min_weeks: int) -> pd.DataFrame:
-    """Annualised covariance of the assets with at least `min_weeks` of the last `window` weeks."""
+def covariance(r: pd.DataFrame, window: int, min_weeks: int, halflife: float | None = None) -> pd.DataFrame:
+    """Annualised covariance of the assets with at least `min_weeks` of the last `window` weeks.
+    With `halflife` (weeks), volatilities are exponentially weighted (faster reaction, research log
+    H36); correlations stay Ledoit-Wolf on the window."""
     h = r.iloc[-window:]
     h = h.loc[:, h.notna().sum() >= min_weeks]
     vol = h.std() * np.sqrt(WEEKS)
+    if halflife:
+        vol = np.sqrt((h**2).ewm(halflife=halflife, min_periods=min_weeks).mean().iloc[-1] * WEEKS).fillna(
+            vol
+        )
     z = ((h - h.mean()) / h.std()).fillna(0.0).to_numpy()  # missing weeks: no information
     corr, _ = ledoit_wolf_corr(z)
     cov = corr * np.outer(vol, vol)
@@ -126,8 +134,16 @@ def _cum(r: pd.DataFrame) -> pd.Series:
     return (1 + r.fillna(0)).prod() - 1
 
 
-def trend_scores(r: pd.DataFrame) -> pd.Series:
-    """12-month return skipping the last month, over its annual volatility, squashed by tanh."""
+def trend_scores(r: pd.DataFrame, horizons: list[int] | None = None) -> pd.Series:
+    """12-month return skipping the last month, over its annual volatility, squashed by tanh.
+    With `horizons` (weeks, e.g. [4, 13, 52]), the equal-weight average of each horizon's return over
+    its volatility (Hurst, Ooi and Pedersen, 2017; research log H37)."""
+    if horizons:
+        h = r.iloc[-WEEKS:]
+        ok = h.notna().sum() >= 48
+        vol = h.std() * np.sqrt(WEEKS)
+        parts = [np.tanh(_cum(h.iloc[-k:]) / (vol * np.sqrt(k / WEEKS)).replace(0, np.nan)) for k in horizons]
+        return pd.concat(parts, axis=1).mean(axis=1).where(ok).dropna()
     h = r.iloc[-WEEKS:]
     ok = h.notna().sum() >= 48
     r12_1 = _cum(h.iloc[:-4])
@@ -135,17 +151,51 @@ def trend_scores(r: pd.DataFrame) -> pd.Series:
     return np.tanh(r12_1 / vol.replace(0, np.nan)).where(ok).dropna()
 
 
+def trend_series(r: pd.Series) -> pd.Series:
+    """Weekly trend of one asset (12-month return skipping a month, over its volatility), dated at t."""
+    lr = np.log1p(r.fillna(0))
+    r12_1 = np.expm1(lr.rolling(48).sum().shift(4))
+    vol = r.rolling(WEEKS).std() * np.sqrt(WEEKS)
+    return np.tanh(r12_1 / vol)
+
+
 # macro loadings: score = Σ loading × factor; factors in [-1, 1]
 MACRO_LOADINGS = {
     "equity": {"recession": -0.5, "stress": -0.5},
+    "style": {"recession": -0.4, "stress": -0.4},
+    "sector": {"recession": -0.4, "stress": -0.4},
     "semis": {"recession": -0.5, "stress": -0.5},
+    "USMV": {"recession": 0.2, "stress": 0.2},
+    "QUAL": {"recession": 0.1, "stress": 0.1},
+    "VLUE": {"inflation": 0.3, "recession": -0.3},
+    "XLE": {"inflation": 0.5, "recession": -0.3},
+    "XLU": {"recession": 0.3, "inflation": -0.2},
+    "XLV": {"recession": 0.3},
+    "XLF": {"recession": -0.5, "stress": -0.4},
+    "ITA": {"stress": 0.1},
     "LQD": {"recession": -0.4, "stress": -0.4},
+    "HYG": {"recession": -0.6, "stress": -0.6},
+    "EMB": {"recession": -0.4, "stress": -0.5},
+    "EMLC": {"recession": -0.4, "stress": -0.5},
     "AGG": {"recession": 0.3, "inflation": -0.3},
+    "SHY": {"recession": 0.2},
     "IEF": {"recession": 0.5, "inflation": -0.4},
     "TLT": {"recession": 0.5, "inflation": -0.5},
+    "BWX": {"recession": 0.2, "inflation": -0.2},
     "TIP": {"inflation": 0.5},
     "GLD": {"inflation": 0.3, "stress": 0.3},
+    "SLV": {"inflation": 0.3, "recession": -0.2},
     "DBC": {"inflation": 0.5, "recession": -0.3},
+    "CPER": {"recession": -0.5, "inflation": 0.2},
+    "BNO": {"inflation": 0.5, "recession": -0.4},
+    "VNQ": {"recession": -0.4, "inflation": -0.2},
+    "IGF": {"inflation": 0.2},
+    "alt": {"stress": 0.4, "recession": 0.2},
+    "TAIL": {"stress": 0.6, "recession": 0.4},
+    "UUP": {"stress": 0.3, "recession": 0.2},
+    "FXY": {"stress": 0.5, "recession": 0.3},
+    "FXF": {"stress": 0.4},
+    "FXE": {"stress": -0.2},
 }
 
 
@@ -307,6 +357,163 @@ def news_confidence(test: dict) -> float:
     return 0.10 if test.get("n", 0) >= 30 and test.get("IC", 0) > 0 and test.get("t", 0) > 2 else 0.0
 
 
+# ------------------------------------------------------------------ regime, value, carry, house views
+def regime_series(indpro: pd.Series | None, cpi: pd.Series | None) -> pd.Series:
+    """Weekly macro quadrant from growth (industrial production y/y) and inflation (CPI y/y), each
+    'up' when its 3-month change is positive; known two months after the reference month."""
+    if indpro is None or cpi is None or indpro.dropna().empty or cpi.dropna().empty:
+        return pd.Series(dtype=object)
+    out = {}
+    for k, x in (("growth", indpro), ("inflation", cpi)):
+        mth = x.dropna().resample("MS").last()
+        yoy = 100 * (mth / mth.shift(12) - 1)
+        up = (yoy - yoy.shift(3)) > 0
+        up.index = up.index + pd.DateOffset(months=3) - pd.Timedelta(days=1)  # published ~6 weeks later
+        out[k] = up.where(yoy.notna() & yoy.shift(3).notna())
+    df = pd.DataFrame(out).dropna()
+    lab = (
+        df["growth"].map({True: "growth up", False: "growth down"})
+        + ", "
+        + df["inflation"].map({True: "inflation up", False: "inflation down"})
+    )
+    return lab.resample("W-FRI").last().ffill()
+
+
+def regime_scores(r: pd.DataFrame, regime: pd.Series, t, shrink_weeks: int = 260) -> pd.Series:
+    """Empirical regime view: each asset's average weekly return in the current quadrant minus its
+    average in all weeks, both on data up to t, shrunk towards zero by n / (n + 260), in Sharpe units."""
+    if regime.empty:
+        return pd.Series(dtype=float)
+    reg = regime.loc[:t]
+    if reg.empty:
+        return pd.Series(dtype=float)
+    now = reg.iloc[-1]
+    h = r.loc[:t]
+    lab = reg.reindex(h.index, method="ffill")
+    out = {}
+    for a in h.columns:
+        x = h[a].dropna()
+        if len(x) < 156:
+            continue
+        inr = x[lab.reindex(x.index) == now]
+        if len(inr) < 52:
+            continue
+        sd = x.std()
+        diff = (inr.mean() - x.mean()) / sd * np.sqrt(WEEKS) if sd > 0 else 0.0
+        out[a] = float(np.tanh(diff * len(inr) / (len(inr) + shrink_weeks) / 0.5))
+    return pd.Series(out, dtype=float)
+
+
+def value_scores(r: pd.DataFrame, cfg: dict) -> pd.Series:
+    """Value as 5-year reversal (Asness, Moskowitz and Pedersen, 2013, for asset classes): within
+    each peer group, the assets with the weakest returns from 5 years to 1 year ago score highest."""
+    h = r.iloc[-5 * WEEKS :]
+    out = {}
+    groups: dict[str, list[str]] = {}
+    for a in h.columns:
+        g = cfg["universe"].get(a, {}).get("group")
+        if g and h[a].notna().sum() >= 4.5 * WEEKS:
+            groups.setdefault(g, []).append(a)
+    for _g, names in groups.items():
+        if len(names) < 3:
+            continue
+        past = np.log1p(h[names].iloc[:-WEEKS].fillna(0)).sum()
+        out.update((-_rank(past)).to_dict())
+    return pd.Series(out, dtype=float)
+
+
+def carry_frame(get: Callable[[str], pd.Series | None]) -> pd.DataFrame:
+    """Weekly carry proxies in percentage points a year: term spreads for Treasuries, the real
+    yield for TIPS, credit spreads, and short-rate differentials for currencies against the dollar."""
+
+    def w(sid):
+        s = get(sid)
+        return None if s is None or s.dropna().empty else s.dropna().resample("W-FRI").last()
+
+    c3, d2, d10, d30 = w("DGS3MO"), w("DGS2"), w("DGS10"), w("DGS30")
+    cols = {}
+    if c3 is not None:
+        if d2 is not None:
+            cols["SHY"] = d2 - c3
+        if d10 is not None:
+            cols["IEF"] = d10 - c3
+            cols["AGG"] = d10 - c3
+        if d30 is not None:
+            cols["TLT"] = d30 - c3
+    if (ry := w("DFII10")) is not None:
+        cols["TIP"] = ry - 1.0
+    if (hy := w("BAMLH0A0HYM2")) is not None:
+        cols["HYG"] = hy - hy.rolling(260, min_periods=104).mean()
+    if (ig := w("BAMLC0A0CM")) is not None:
+        cols["LQD"] = ig - ig.rolling(260, min_periods=104).mean()
+    sofr = w("SOFR")
+    usd3 = sofr if sofr is not None else c3
+    if usd3 is not None:
+        if (jp := w("JP_CALL_D")) is not None:
+            cols["FXY"] = jp - usd3
+        if (eu := w("EA_ESTR")) is not None:
+            cols["FXE"] = eu - usd3
+            cols["UUP"] = usd3 - eu
+    if not cols:
+        return pd.DataFrame()
+    return pd.DataFrame(cols).shift(1).ffill(limit=8)  # known with a one-week lag
+
+
+def carry_scores(carry: pd.DataFrame, t) -> pd.Series:
+    if carry.empty:
+        return pd.Series(dtype=float)
+    c = carry.loc[:t]
+    if c.empty:
+        return pd.Series(dtype=float)
+    return np.tanh(c.iloc[-1].dropna() / 1.5)
+
+
+def load_house_views(path=None) -> list[dict]:
+    """Dated, sourced stances of banks and asset managers (config/house_views.yaml)."""
+    p = path or (ROOT / "config" / "house_views.yaml")
+    if not p.exists():
+        return []
+    with open(p, encoding="utf-8") as fh:
+        return yaml.safe_load(fh).get("views", [])
+
+
+def house_scores(views: list[dict], t, assets: list[str], max_age_days: int = 180) -> pd.Series:
+    """Average stance (+1 overweight, 0 neutral, −1 underweight) of the views published by t and less
+    than six months old, per asset. Not backtestable: before the first view there is no score."""
+    acc: dict[str, list[float]] = {}
+    t = pd.Timestamp(t)
+    for v in views:
+        d = pd.Timestamp(v["date"])
+        if d > t or (t - d).days > max_age_days:
+            continue
+        for a, st in v.get("stances", {}).items():
+            if a in assets:
+                acc.setdefault(a, []).append(float(st))
+    return pd.Series({a: float(np.clip(np.mean(x), -1, 1)) for a, x in acc.items()}, dtype=float)
+
+
+# ------------------------------------------------------------------ tail hedge (synthetic puts)
+def bs_put(s: float, k: float, t: float, r: float, vol: float) -> float:
+    """Black-Scholes European put price."""
+    if t <= 0 or vol <= 0:
+        return max(k - s, 0.0)
+    d1 = (np.log(s / k) + (r + vol**2 / 2) * t) / (vol * np.sqrt(t))
+    d2 = d1 - vol * np.sqrt(t)
+    return float(k * np.exp(-r * t) * stats.norm.cdf(-d2) - s * stats.norm.cdf(-d1))
+
+
+def hedge_ratio(stress: float, trend_us: float, cfg: dict) -> float:
+    """Share of net equity exposure to hedge (H34): a base, more when US trend is negative, and more
+    again when volatility is cheap (stress index below 0) while the trend is negative."""
+    th = cfg["model"]["tail_hedge"]
+    h = th["base_ratio"]
+    if trend_us < 0:
+        h += th["trend_ratio"]
+        if stress < 0:
+            h += th["added_ratio"]
+    return float(min(h, 1.0))
+
+
 # ------------------------------------------------------------------ Black-Litterman
 def equilibrium_weights(assets: list[str], cfg: dict) -> pd.Series:
     """Benchmark mapped on the available assets; a missing equity region's weight goes to SPY,
@@ -316,6 +523,8 @@ def equilibrium_weights(assets: list[str], cfg: dict) -> pd.Series:
     for a, v in w.items():
         if a in out.index:
             out[a] += v
+        elif a in ("MCHI", "INDA", "EWT", "EWY", "EWZ") and "EEM" in out.index:
+            out["EEM"] += v
         elif cfg["universe"][a]["sleeve"] == "equity" and "SPY" in out.index:
             out["SPY"] += v
         elif "AGG" in out.index:
@@ -357,6 +566,15 @@ def black_litterman(
 
 
 # ------------------------------------------------------------------ optimiser
+EQUITY_SLEEVES = ("equity", "style", "sector", "semis")
+
+
+def _psd_root(S: np.ndarray) -> np.ndarray:
+    """A matrix L with L Lᵀ = S (eigen-decomposition; tolerates a singular S)."""
+    vals, vecs = np.linalg.eigh((S + S.T) / 2)
+    return vecs * np.sqrt(np.clip(vals, 0, None))
+
+
 def optimise(
     mu: pd.Series,
     cov: pd.DataFrame,
@@ -364,82 +582,82 @@ def optimise(
     cfg: dict,
     vol_scale: float = 1.0,
     w_prev: pd.Series | None = None,
+    long_only: bool = False,
 ) -> tuple[pd.Series, str]:
-    """Mean-variance under the configured constraints. Returns weights and a status: 'optimal',
-    or the constraint that had to be relaxed."""
+    """Long/short mean-variance with costs, as a convex program (cvxpy, Clarabel solver):
+
+        max  μ'w − δ/2 w'Σw − borrow'·max(−w, 0) − k·cost'·|w − w_prev|
+        s.t. Σw = 1; bounds per line; Σ|w| ≤ gross; semiconductors net in [5%, 15%]; net equity in
+             [20% × scale, 90%]; alternatives ≤ 15%; currency gross ≤ 20%; cash ≤ 10% outside the
+             overlay; σ(w) ≤ σ(benchmark) × scale; tracking error ≤ 8%.
+
+    If infeasible, the tracking-error cap, then the volatility cap are dropped (status says which)."""
+    import cvxpy as cp
+
     m, uni, sl = cfg["model"], cfg["universe"], cfg["sleeves"]
     a = list(cov.index)
-    S, mv, we = cov.to_numpy(), mu.to_numpy(), w_eq.reindex(a).fillna(0).to_numpy()
-    delta = m["risk_aversion"]
-    vol_b = float(np.sqrt(we @ S @ we))
-    vol_cap = m["vol_cap_vs_benchmark"] * vol_scale * vol_b
-    semis = np.array([uni[x]["sleeve"] == "semis" for x in a], float)
-    eqmask = np.array([uni[x]["sleeve"] in ("equity", "semis") for x in a], float)
-    eq_b = float(we @ eqmask)
-    lo = np.array([uni[x].get("min", 0.0) for x in a])
-    hi = np.array([uni[x]["max"] for x in a])
+    n = len(a)
+    S = cov.to_numpy()
+    L = _psd_root(S)
+    we = w_eq.reindex(a).fillna(0).to_numpy()
+    w0 = w_prev.reindex(a).fillna(0).to_numpy() if w_prev is not None else we
+    sleeve = np.array([uni[x]["sleeve"] for x in a])
+    lo = np.array([float(uni[x].get("min", 0.0)) for x in a])
+    hi = np.array([float(uni[x]["max"]) for x in a])
+    if long_only:
+        lo = np.maximum(lo, 0.0)
     if vol_scale >= 1.0:  # cash is a de-risking tool, not a default holding
-        hi = np.where([uni[x]["sleeve"] == "cash" for x in a], np.minimum(hi, sl.get("cash_max", 1.0)), hi)
-    has_semis = semis.sum() > 0
-    s_lo = min(sl["semis"]["min"], float(hi @ semis)) if has_semis else 0.0
-    band = sl["equity_total_band"]
+        hi = np.where(sleeve == "cash", np.minimum(hi, sl.get("cash_max", 1.0)), hi)
+    borrow = np.array([uni[x].get("borrow_bp", 0) / 1e4 for x in a])
+    tc = np.array([uni[x]["cost_bp"] / 1e4 for x in a]) * m.get("turnover_aversion", 1.0)
+    eqm = np.isin(sleeve, EQUITY_SLEEVES).astype(float)
+    semis = (sleeve == "semis").astype(float)
+    alt = (sleeve == "alt").astype(float)
+    fx = sleeve == "fx"
+    vol_b = float(np.linalg.norm(L.T @ we))
+    vol_cap = m["vol_cap_vs_benchmark"] * vol_scale * vol_b
 
-    def cons(with_te: bool, with_vol: bool):
-        """Constraints with analytic gradients (finite differences made SLSQP ten times slower)."""
-        ones = np.ones(len(a))
-        c = [{"type": "eq", "fun": lambda w: w.sum() - 1, "jac": lambda w: ones}]
-        if has_semis:
-            c += [
-                {"type": "ineq", "fun": lambda w: w @ semis - s_lo, "jac": lambda w: semis},
-                {"type": "ineq", "fun": lambda w: sl["semis"]["max"] - w @ semis, "jac": lambda w: -semis},
-            ]
-        c += [
-            {
-                "type": "ineq",
-                "fun": lambda w: w @ eqmask - (eq_b - band) * vol_scale,
-                "jac": lambda w: eqmask,
-            },
-            {"type": "ineq", "fun": lambda w: eq_b + band - w @ eqmask, "jac": lambda w: -eqmask},
-        ]
-        if with_vol:
-            c.append({"type": "ineq", "fun": lambda w: vol_cap**2 - w @ S @ w, "jac": lambda w: -2 * S @ w})
-        if with_te:
-            te2 = m["tracking_error_max"] ** 2
-            c.append(
-                {
-                    "type": "ineq",
-                    "fun": lambda w: te2 - (w - we) @ S @ (w - we),
-                    "jac": lambda w: -2 * S @ (w - we),
-                }
-            )
-        return c
-
-    def obj(w):
-        return -(w @ mv) + delta / 2 * (w @ S @ w)
-
-    def jac(w):
-        return -mv + delta * (S @ w)
-
-    x0 = np.clip(w_prev.reindex(a).fillna(0).to_numpy() if w_prev is not None else we, lo, hi)
-    x0 = x0 / x0.sum() if x0.sum() > 0 else np.full(len(a), 1 / len(a))
-    for status, te, vol in (
-        ("optimal", True, True),
-        ("tracking error relaxed", False, True),
-        ("vol cap relaxed", False, False),
+    w = cp.Variable(n)
+    short = cp.Variable(n, nonneg=True)
+    obj = cp.Maximize(
+        mu.to_numpy() @ w
+        - m["risk_aversion"] / 2 * cp.sum_squares(L.T @ w)
+        - borrow @ short
+        - tc @ cp.abs(w - w0)
+    )
+    base = [
+        cp.sum(w) == 1,
+        w >= lo,
+        w <= hi,
+        short >= -w,
+        cp.norm1(w) <= sl.get("gross_max", 1.0),
+        eqm @ w >= sl["equity_net"]["min"] * vol_scale,
+        eqm @ w <= sl["equity_net"]["max"],
+    ]
+    if semis.sum():
+        s_lo = min(sl["semis"]["min"], float(hi @ semis))
+        base += [semis @ w >= s_lo, semis @ w <= sl["semis"]["max"]]
+    if alt.sum():
+        base.append(alt @ w <= sl.get("alt_max", 1.0))
+    if fx.any():
+        base.append(cp.norm1(w[np.where(fx)[0]]) <= sl.get("fx_gross_max", 1.0))
+    vol_c = cp.norm(L.T @ w) <= vol_cap
+    te_c = cp.norm(L.T @ (w - we)) <= m["tracking_error_max"]
+    for status, extra in (
+        ("optimal", [vol_c, te_c]),
+        ("tracking error relaxed", [vol_c]),
+        ("vol cap relaxed", []),
     ):
-        res = optimize.minimize(
-            obj,
-            x0,
-            jac=jac,
-            method="SLSQP",
-            bounds=list(zip(lo, hi, strict=True)),
-            constraints=cons(te, vol),
-            options={"maxiter": 300, "ftol": 1e-10},
-        )
-        if res.success:
-            w = np.clip(res.x, 0, None)
-            return pd.Series(w / w.sum(), index=a), status
-    return pd.Series(np.clip(we, lo, hi) / np.clip(we, lo, hi).sum(), index=a), "fallback: equilibrium"
+        prob = cp.Problem(obj, base + extra)
+        try:
+            prob.solve(solver=cp.CLARABEL)
+        except cp.SolverError:
+            continue
+        if prob.status in ("optimal", "optimal_inaccurate") and w.value is not None:
+            x = np.where(np.abs(w.value) < 1e-6, 0.0, w.value)
+            return pd.Series(x / x.sum(), index=a), status
+    x = np.clip(we, lo, hi)
+    return pd.Series(x / x.sum(), index=a), "fallback: equilibrium"
 
 
 def apply_band(target: pd.Series, current: pd.Series, band: float, cash: str = "BIL") -> pd.Series:
@@ -476,36 +694,53 @@ class Inputs:
     macro: pd.DataFrame  # weekly macro factors
     fundamentals: dict[str, pd.Series] = field(default_factory=dict)
     tone: dict[str, pd.Series] = field(default_factory=dict)
+    regime: pd.Series = field(default_factory=lambda: pd.Series(dtype=object))
+    carry: pd.DataFrame = field(default_factory=pd.DataFrame)
+    house: list = field(default_factory=list)
+    hedge: pd.DataFrame = field(default_factory=pd.DataFrame)  # weekly SPY price, VIX, cash yield (%)
     cache: dict = field(default_factory=dict, repr=False)  # covariance and views by date, shared by variants
 
 
 def views_at(inp: Inputs, t, assets: list[str], cfg: dict) -> dict[str, pd.Series]:
     r = inp.r.loc[:t, assets]
-    v = {"trend": trend_scores(r)}
+    v = {"trend": trend_scores(r, cfg["model"].get("trend_horizons"))}
     if not inp.macro.empty:
         f = inp.macro.loc[:t]
         if not f.empty:
             v["macro"] = macro_scores(f.iloc[-1], assets, cfg)
+    v["regime"] = regime_scores(r, inp.regime, t)
+    v["value"] = value_scores(r, cfg)
+    v["carry"] = carry_scores(inp.carry, t).reindex([a for a in assets if a in inp.carry]).dropna()
     semis = [a for a in assets if cfg["universe"][a]["sleeve"] == "semis"]
     if semis:
         v["micro"] = micro_scores(r, semis, inp.fundamentals, t)
+    v["house"] = house_scores(inp.house, t, assets)
     v["news"] = news_scores(inp.tone, t, assets, cfg)
     return v
 
 
 def target_at(
-    inp: Inputs, t, cfg: dict, families=FAMILIES, vol_scale: float = 1.0, w_prev: pd.Series | None = None
+    inp: Inputs,
+    t,
+    cfg: dict,
+    families=FAMILIES,
+    vol_scale: float = 1.0,
+    w_prev: pd.Series | None = None,
+    long_only: bool = False,
 ) -> dict:
     m = cfg["model"]
-    if t not in inp.cache:
+    key = (t, m.get("cov_halflife_weeks"), tuple(m.get("trend_horizons") or ()))
+    if key not in inp.cache:
         assets = [a for a in cfg["universe"] if a in inp.r.columns]
-        c = covariance(inp.r.loc[:t, assets], m["cov_window_weeks"], m["cov_min_weeks"])
-        inp.cache[t] = (c, views_at(inp, t, list(c.index), cfg))
-    cov, all_views = inp.cache[t]
+        c = covariance(
+            inp.r.loc[:t, assets], m["cov_window_weeks"], m["cov_min_weeks"], m.get("cov_halflife_weeks")
+        )
+        inp.cache[key] = (c, views_at(inp, t, list(c.index), cfg))
+    cov, all_views = inp.cache[key]
     w_eq = equilibrium_weights(list(cov.index), cfg)
     views = {k: v for k, v in all_views.items() if k in families}
     mu, pi = black_litterman(cov, w_eq, views, cfg)
-    w, status = optimise(mu, cov, w_eq, cfg, vol_scale, w_prev)
+    w, status = optimise(mu, cov, w_eq, cfg, vol_scale, w_prev, long_only)
     return {"weights": w, "status": status, "mu": mu, "pi": pi, "cov": cov, "w_eq": w_eq, "views": views}
 
 
@@ -521,24 +756,37 @@ def backtest(
     families=FAMILIES,
     overlay: bool = True,
     views: bool = True,
+    long_only: bool = False,
+    tail_hedge: bool = True,
+    rebalance: str | None = None,
 ) -> dict:
-    """Walk-forward simulation: monthly rebalance (first Friday of the month, or when the overlay
-    state changes), weights drift in between, costs on every trade."""
+    """Walk-forward simulation. Rebalance every week (or the first week of each month with
+    rebalance='monthly'), and whenever the drawdown overlay changes state; weights drift in between;
+    trading costs on every trade, borrow costs on shorts, and the tail-hedge puts' premium and payoff."""
     r = inp.r
     start = pd.Timestamp(start or cfg["backtest"]["start"])
     weeks = r.loc[start:].index
     fam = families if views else ()
+    freq = rebalance or cfg["model"].get("rebalance", "monthly")
+    uni = cfg["universe"]
+    borrow = pd.Series({a: uni[a].get("borrow_bp", 0) / 1e4 / WEEKS for a in uni})
+    eq_names = [a for a in uni if uni[a]["sleeve"] in EQUITY_SLEEVES]
+    th = cfg["model"].get("tail_hedge")
+    hedge_on = tail_hedge and th is not None and not inp.hedge.empty
     w = pd.Series(dtype=float)
     nav, peak, state = 1.0, 1.0, 0
-    rets, hist, log = [], {}, []
+    rets, hist, log, hedges = [], {}, [], []
     prev_month = None
+    put = None  # (notional share of NAV, strike/spot, spot at purchase, premium as share of spot)
     for t in weeks[:-1]:
         nxt = r.index[r.index.get_loc(t) + 1]
         dd = 1 - nav / peak
         new_state = overlay_scale(dd, state, cfg) if overlay else 0
-        monthly = t.month != prev_month
-        if monthly or new_state != state or w.empty:
-            tg = target_at(inp, t, cfg, fam, scale_of(new_state, cfg), w if not w.empty else None)
+        new_month = t.month != prev_month
+        due = freq == "weekly" or new_month
+        cost, hedge_pnl = 0.0, 0.0
+        if due or new_state != state or w.empty:
+            tg = target_at(inp, t, cfg, fam, scale_of(new_state, cfg), w if not w.empty else None, long_only)
             target = tg["weights"]
             if not w.empty:
                 target = apply_band(target, w, cfg["model"]["no_trade_band"])
@@ -546,17 +794,31 @@ def backtest(
             tgt = target.reindex(cur.index).fillna(0.0)
             cost = float(((tgt - cur).abs() * _costs(cfg, cur.index)).sum())
             turnover = float((tgt - cur).abs().sum() / 2)
-            w = tgt[tgt > 1e-6]
+            w = tgt[tgt.abs() > 1e-6]
             hist[t] = w
             log.append(
                 {"date": t, "status": tg["status"], "overlay": new_state, "turnover": turnover, "cost": cost}
             )
-            state, prev_month = new_state, t.month
-        else:
-            cost = 0.0
+            state = new_state
+        if hedge_on and new_month and t in inp.hedge.index:
+            hx = inp.hedge.loc[t]
+            if put is not None:  # the previous month's put expires: payoff
+                hedge_pnl += put[0] * max(put[1] - hx["spot"] / put[2], 0.0)
+            ratio = hedge_ratio(float(hx.get("stress", 0.0)), float(hx.get("trend", 0.0)), cfg)
+            eq_net = max(float(w.reindex(eq_names).fillna(0).sum()), 0.0)
+            vol = float(hx["vix"]) / 100 * (1 + th["skew_premium"])
+            k = th["moneyness"]
+            prem = bs_put(1.0, k, 4 / WEEKS, float(hx["rate"]) / 100, vol)
+            notional = ratio * eq_net
+            hedge_pnl -= notional * prem
+            put = (notional, k, float(hx["spot"]), prem)
+            hedges.append({"date": t, "hedged share of NAV": notional, "premium (% of NAV)": notional * prem})
+        if new_month:
+            prev_month = t.month
         rn = r.loc[nxt, w.index].fillna(0.0)
         gross = float((w * rn).sum())
-        net = (1 - cost) * (1 + gross) - 1
+        carry_cost = float((w.clip(upper=0).abs() * borrow.reindex(w.index).fillna(0)).sum())
+        net = (1 - cost) * (1 + gross) - 1 - carry_cost + hedge_pnl
         w = w * (1 + rn) / (1 + gross)
         nav *= 1 + net
         peak = max(peak, nav)
@@ -566,9 +828,23 @@ def backtest(
         "returns": ret,
         "weights": pd.DataFrame(hist).T.fillna(0.0),
         "log": pd.DataFrame(log).set_index("date"),
+        "hedges": pd.DataFrame(hedges).set_index("date") if hedges else pd.DataFrame(),
         "final_weights": w,
         "overlay_state": state,
     }
+
+
+def factor_exposures(w: pd.Series, r: pd.DataFrame, factors=("SPY", "IEF", "UUP", "DBC", "GLD")) -> pd.Series:
+    """Betas of today's weights to the main risk factors, by regression of the portfolio's weekly
+    returns over the last three years on factor returns."""
+    a = [x for x in w.index if x in r]
+    f = [x for x in factors if x in r]
+    h = r.iloc[-156:]
+    y = (h[a].fillna(0) @ w.reindex(a).fillna(0)).to_numpy()
+    X = h[f].fillna(0).to_numpy()
+    X1 = np.column_stack([np.ones(len(X)), X])
+    coef, *_ = np.linalg.lstsq(X1, y, rcond=None)
+    return pd.Series(coef[1:], index=f)
 
 
 # ------------------------------------------------------------------ metrics
@@ -653,19 +929,14 @@ def information_coefficient(signal: pd.Series, fwd: pd.Series) -> dict:
 
 # ------------------------------------------------------------------ alternative constructions
 def min_variance(cov: pd.DataFrame) -> pd.Series:
-    """Long-only minimum variance."""
-    S = cov.to_numpy()
-    n = len(S)
-    res = optimize.minimize(
-        lambda w: w @ S @ w,
-        np.full(n, 1 / n),
-        jac=lambda w: 2 * S @ w,
-        method="SLSQP",
-        bounds=[(0, 1)] * n,
-        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1, "jac": lambda w: np.ones(n)}],
-    )
-    w = np.clip(res.x, 0, None)
-    return pd.Series(w / w.sum(), index=cov.index)
+    """Long-only minimum variance (convex program)."""
+    import cvxpy as cp
+
+    L = _psd_root(cov.to_numpy())
+    w = cp.Variable(len(cov))
+    cp.Problem(cp.Minimize(cp.sum_squares(L.T @ w)), [cp.sum(w) == 1, w >= 0]).solve(solver=cp.CLARABEL)
+    x = np.clip(w.value, 0, None)
+    return pd.Series(x / x.sum(), index=cov.index)
 
 
 def equal_risk_contribution(cov: pd.DataFrame, iters: int = 500) -> pd.Series:

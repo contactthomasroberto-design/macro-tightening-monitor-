@@ -1,0 +1,18 @@
+date,agent,status,task,summary,link
+2026-11-17,chief-investment-officer,terminé,"Comité du 17/11 : synthèse, 11 vues publiées ajoutées, correction Morgan Stanley EM",Régime de surchauffe ; krach des semis confirmé ; risque Nvidia ce soir.,docs/research/daily/2026-11-17.md
+2026-11-17,macro-strategist,terminé,Régime macro mondial,"Croissance et inflation en hausse ; Fed +25 pb pricée le 9/12 ; BoJ >80 % le 18/12 ; zone euro à 4,0 %.",docs/research/daily/2026-11-17.md
+2026-11-17,semis-tech-analyst,terminé,Cycle mémoire et résultats Nvidia,"Fin de phase haussière : DRAM contrat +10-15 % au T4, spot en baisse ; SOX −34 % ; Goldman Achat Samsung et SK Hynix.",docs/research/daily/2026-11-17.md
+2026-11-17,rates-credit-analyst,terminé,"Courbe US, TIPS, crédit, dette EM","10 ans à 5,15 %, réel à 2,91 % ; TIPS bon marché ; sous-pondérer le haut rendement ; préférer le 5 ans.",docs/research/daily/2026-11-17.md
+2026-11-17,us-equity-analyst,terminé,"Actions US : bénéfices, valorisation, styles","BPA T3 +31,9 % ; prime de risque proche de 0 face au 10 ans ; préférer équipondéré et qualité.",docs/research/daily/2026-11-17.md
+2026-11-17,europe-analyst,terminé,"Europe : BCE, France, banques, euro","HICP 4,0 % ; OAT-Bund environ 147 pb ; budget français rejeté ; Deutsche Bank −5 %.",docs/research/daily/2026-11-17.md
+2026-11-17,japan-asia-analyst,terminé,"Japon, Corée, Taïwan, yen","BoJ 1,25 %, hausse probable le 18/12 ; USD/JPY 159 ; exportations coréennes record.",docs/research/daily/2026-11-17.md
+2026-11-17,emerging-markets-analyst,terminé,"Chine, Inde, Brésil, dette émergente","Chine en déflation intérieure ; prime indienne de 72 % ; Selic 13,75 % ; spreads EM +35 pb.",docs/research/daily/2026-11-17.md
+2026-11-17,energy-commodities-analyst,terminé,"Pétrole, or, métaux",Brent 92 $ (pic 138 $) ; AIE : excédent en 2027 ; or −27 % depuis son pic.,docs/research/daily/2026-11-17.md
+2026-11-17,fx-strategist,terminé,"Dollar, yen, euro, franc, won","DXY 103,6 ; risque d'intervention près de 160 ; euro sous pression du risque français.",docs/research/daily/2026-11-17.md
+2026-11-17,financials-analyst,terminé,"Banques, crédit privé, immobilier","Rachats plafonnés chez BCRED ; CMBS en gestion spéciale 11,7 % ; foncières légèrement négatives.",docs/research/daily/2026-11-17.md
+2026-11-17,risk-manager,terminé,Revue de risque du mandat v0.3,Concentration semis non couverte par le put S&P ; levée silencieuse des contraintes ; 5 hypothèses (H41-H45).,docs/research/daily/2026-11-17.md
+2026-11-17,quant-researcher,terminé,Pourquoi la tendance a aggravé le drawdown ; DSR,"Horizon unique lent, vues corrélées comptées plusieurs fois, plafond de vol en retard ; 5 hypothèses (H36-H40).",docs/research/daily/2026-11-17.md
+2026-11-18,quant-researcher,en cours,"Tester H40 puis H36 (évaluation honnête, vol-target EWMA)",,
+2026-11-18,data-quality-engineer,en cours,Vérifier les séries coréennes (sauts du 31/07) et les nouvelles séries de l'univers v0.3,,
+2026-11-18,research-librarian,en cours,"Revérifier les vues écartées : Neuberger Berman, SSGA, MUFG, UBS matières premières",,
+2026-11-18,semis-tech-analyst,en cours,Lire les résultats de Nvidia et leur effet sur la poche mémoire,,

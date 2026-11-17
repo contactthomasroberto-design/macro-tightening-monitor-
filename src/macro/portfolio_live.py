@@ -41,11 +41,11 @@ def paper_nav(book: pd.DataFrame, px: pd.DataFrame) -> tuple[pd.Series, pd.Serie
     p = p.loc[h.index[0] :]
     rets = p.pct_change(fill_method=None).fillna(0.0)
     nav, out = 1.0, {}
-    w = h.iloc[0][h.iloc[0] > 0]  # p starts at the first rebalance date
+    w = h.iloc[0][h.iloc[0] != 0]  # p starts at the first rebalance date
     for d in p.index:
         if d in h.index:
             w = h.loc[d]
-            w = w[w > 0]
+            w = w[w != 0]
             out[d] = nav
             continue
         rn = rets.loc[d, w.index]
@@ -74,6 +74,8 @@ def rebalance_due(book: pd.DataFrame, today: pd.Timestamp, overlay: int, cfg: di
     if book.empty:
         return "first paper rebalance"
     last = book["date"].max()
+    if cfg["model"].get("rebalance") == "weekly" and today.isocalendar()[:2] != last.isocalendar()[:2]:
+        return "weekly rebalance"
     if (today.year, today.month) != (last.year, last.month):
         return "monthly rebalance"
     if int(book.loc[book["date"] == last, "overlay"].iloc[0]) != overlay:
