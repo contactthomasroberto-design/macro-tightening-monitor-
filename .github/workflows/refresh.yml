@@ -57,6 +57,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/process_controls.py --issue
+      - name: Strategy record and monthly factsheet
+        continue-on-error: true
+        run: python scripts/strategy_record.py
       - name: GitHub desk (computed analyst notes across all markets, no AI tokens)
         continue-on-error: true
         run: python scripts/desk_run.py
@@ -93,7 +96,7 @@ jobs:
           git config user.name "macro-monitor-bot"
           git config user.email "actions@users.noreply.github.com"
           git add archive/forecasts.csv README.md docs/figures snapshot/live
-          for f in archive/forecast_book.csv archive/signposts_state.json archive/portfolio_book.csv archive/portfolio_daily docs/reports/daily archive/decisions.csv archive/process_alerts.json docs/research/postmortems docs/research/desk archive/desk_log.csv; do
+          for f in archive/forecast_book.csv archive/signposts_state.json archive/portfolio_book.csv archive/portfolio_daily docs/reports/daily archive/decisions.csv archive/process_alerts.json docs/research/postmortems docs/research/desk archive/desk_log.csv archive/strategy_metrics.csv docs/factsheets; do
             if [ -e "$f" ]; then git add "$f"; fi
           done
           if ! git diff --cached --quiet; then
