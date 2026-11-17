@@ -541,11 +541,13 @@ def black_litterman(
     S = cov.to_numpy()
     pi = delta * S @ w_eq.to_numpy()
     sig = np.sqrt(np.diag(S))
-    rows, q, om = [], [], []
+    rows, q, om, blocks = [], [], [], []
+    correlated = m.get("omega") == "correlated"  # research log H38
     for fam, sc in views.items():
         c = float(m["confidence"].get(fam, 0.0))
         if c <= 0:
             continue
+        idx = []
         for a, s in sc.items():
             if a not in cov.index or s != s:
                 continue
@@ -555,9 +557,19 @@ def black_litterman(
             rows.append(p)
             q.append(pi[i] + kappa * sig[i] * s)
             om.append(tau * sig[i] ** 2 * (1 - c) / c)
+            idx.append(i)
+        blocks.append((idx, c))
     if not rows:
         return pd.Series(pi, index=cov.index), pd.Series(pi, index=cov.index)
     P, Q, Om = np.array(rows), np.array(q), np.diag(om)
+    if correlated:  # Ω = (1 − c)/c · P τΣ Pᵀ within each family: correlated views count once, not n times
+        Om = np.zeros((len(rows), len(rows)))
+        k = 0
+        for idx, c in blocks:
+            n = len(idx)
+            Om[k : k + n, k : k + n] = tau * S[np.ix_(idx, idx)] * (1 - c) / c
+            k += n
+        Om += np.eye(len(rows)) * 1e-10
     ts_inv = np.linalg.inv(tau * S)
     A = ts_inv + P.T @ np.linalg.inv(Om) @ P
     b = ts_inv @ pi + P.T @ np.linalg.inv(Om) @ Q
@@ -625,13 +637,13 @@ def optimise(
         - borrow @ short
         - tc @ cp.abs(w - w0)
     )
+    # the cash cap and the equity floor are the two limits a forced de-risking may lift (H44)
+    soft = [w <= hi, eqm @ w >= sl["equity_net"]["min"] * vol_scale]
     base = [
         cp.sum(w) == 1,
         w >= lo,
-        w <= hi,
         short >= -w,
         cp.norm1(w) <= sl.get("gross_max", 1.0),
-        eqm @ w >= sl["equity_net"]["min"] * vol_scale,
         eqm @ w <= sl["equity_net"]["max"],
     ]
     if semis.sum():
@@ -643,11 +655,14 @@ def optimise(
         base.append(cp.norm1(w[np.where(fx)[0]]) <= sl.get("fx_gross_max", 1.0))
     vol_c = cp.norm(L.T @ w) <= vol_cap
     te_c = cp.norm(L.T @ (w - we)) <= m["tracking_error_max"]
-    for status, extra in (
-        ("optimal", [vol_c, te_c]),
-        ("tracking error relaxed", [vol_c]),
-        ("vol cap relaxed", []),
-    ):
+    fallbacks = [("tracking error relaxed", [*soft, vol_c]), ("vol cap relaxed", soft)]
+    if m.get("on_infeasible") == "cash":  # research log H44: de-risk into cash rather than drop a limit
+        relaxed_soft = [w <= np.where(sleeve == "cash", 1.0, hi), eqm @ w >= 0]
+        fallbacks = [
+            ("forced cash", [*relaxed_soft, vol_c, te_c]),
+            ("forced cash, TE relaxed", [*relaxed_soft, vol_c]),
+        ]
+    for status, extra in (("optimal", [*soft, vol_c, te_c]), *fallbacks):
         prob = cp.Problem(obj, base + extra)
         try:
             prob.solve(solver=cp.CLARABEL)
@@ -729,7 +744,7 @@ def target_at(
     long_only: bool = False,
 ) -> dict:
     m = cfg["model"]
-    key = (t, m.get("cov_halflife_weeks"), tuple(m.get("trend_horizons") or ()))
+    key = (t, m.get("cov_halflife_weeks"), tuple(m.get("trend_horizons") or ()), tuple(cfg["universe"]))
     if key not in inp.cache:
         assets = [a for a in cfg["universe"] if a in inp.r.columns]
         c = covariance(
@@ -771,6 +786,7 @@ def backtest(
     uni = cfg["universe"]
     borrow = pd.Series({a: uni[a].get("borrow_bp", 0) / 1e4 / WEEKS for a in uni})
     eq_names = [a for a in uni if uni[a]["sleeve"] in EQUITY_SLEEVES]
+    semis_names = [a for a in uni if uni[a]["sleeve"] == "semis"]
     th = cfg["model"].get("tail_hedge")
     hedge_on = tail_hedge and th is not None and not inp.hedge.empty
     w = pd.Series(dtype=float)
@@ -802,16 +818,24 @@ def backtest(
             state = new_state
         if hedge_on and new_month and t in inp.hedge.index:
             hx = inp.hedge.loc[t]
+            sox = th.get("underlying") == "SOX" and "sox_spot" in hx and hx["sox_spot"] == hx["sox_spot"]
+            spot = float(hx["sox_spot"]) if sox else float(hx["spot"])
             if put is not None:  # the previous month's put expires: payoff
-                hedge_pnl += put[0] * max(put[1] - hx["spot"] / put[2], 0.0)
+                hedge_pnl += put[0] * max(put[1] - spot / put[2], 0.0)
             ratio = hedge_ratio(float(hx.get("stress", 0.0)), float(hx.get("trend", 0.0)), cfg)
-            eq_net = max(float(w.reindex(eq_names).fillna(0).sum()), 0.0)
-            vol = float(hx["vix"]) / 100 * (1 + th["skew_premium"])
+            names = semis_names if sox else eq_names
+            eq_net = max(float(w.reindex(names).fillna(0).sum()), 0.0)
+            vol = (
+                float(hx["vix"])
+                / 100
+                * (1 + th["skew_premium"])
+                * (float(hx["sox_vol_ratio"]) if sox else 1.0)
+            )
             k = th["moneyness"]
             prem = bs_put(1.0, k, 4 / WEEKS, float(hx["rate"]) / 100, vol)
             notional = ratio * eq_net
             hedge_pnl -= notional * prem
-            put = (notional, k, float(hx["spot"]), prem)
+            put = (notional, k, spot, prem)
             hedges.append({"date": t, "hedged share of NAV": notional, "premium (% of NAV)": notional * prem})
         if new_month:
             prev_month = t.month
