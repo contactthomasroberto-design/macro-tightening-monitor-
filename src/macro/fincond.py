@@ -120,7 +120,11 @@ def fci_lite(
             "unit": [VARIABLES[k][1] for k in cols],
         }
     )
-    full_dx = dx.dropna()
+    # a variable published later than the others leaves the latest rows incomplete: carry its last
+    # change forward for at most two quarters instead of dropping the whole recent history
+    full_dx = dx.ffill(limit=2).dropna()
+    if full_dx.empty:
+        raise ValueError("FCI-lite: no quarter with all variables, even after carrying lagging ones forward")
     contrib = -(full_dx * b)  # positive = headwind
     fci = contrib.sum(axis=1)
     fci_draws = -(full_dx.iloc[[-1]].to_numpy() @ draws.T).ravel()

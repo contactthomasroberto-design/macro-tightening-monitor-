@@ -68,3 +68,14 @@ def test_index_comparison_percentiles():
     t = fc.index_comparison({"a": s})
     assert t.loc["a", "percentile"] == pytest.approx(99)
     assert t.loc["a", "verdict"] == "tighter than usual"
+
+
+def test_fci_lite_survives_a_lagging_variable():
+    # regression (refresh of 2026-11-17): one variable without the latest quarters emptied full_dx
+    from macro import panels
+
+    pn = panels.fincond_panel()
+    lv = pn["levels_q"].copy()
+    lv.iloc[-2:, lv.columns.get_loc(lv.columns[-1])] = np.nan  # last variable two quarters late
+    r = fc.fci_lite(lv, pn["gdp_q"], lookback=4, n_boot=50, seed=0)
+    assert np.isfinite(r.value.iloc[-1]) and r.value.index[-1] == lv.index[-1]
