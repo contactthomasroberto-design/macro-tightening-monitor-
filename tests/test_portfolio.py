@@ -451,3 +451,13 @@ def test_resampled_weights_satisfy_the_constraints():
     assert w.abs().sum() <= w_mv.abs().sum() + 1e-6  # averaging shrinks extreme positions
     again, _ = pf.optimise(mu, cov, w_eq, cfg)
     assert np.allclose(again, w)  # seeded: reproducible
+
+
+def test_regime_series_is_not_empty_on_monthly_data():
+    # regression: the publication-lag shift used to misalign the validity mask, leaving the series empty
+    idx = pd.date_range("2000-01-01", periods=120, freq="MS")
+    ip = pd.Series(np.linspace(100, 130, 120), idx)
+    cpi = pd.Series(100 * 1.002 ** np.arange(120) * (1 + 0.01 * np.sin(np.arange(120) / 6)), idx)
+    reg = pf.regime_series(ip, cpi).dropna()
+    assert len(reg) > 100 and reg.str.startswith("growth").all()
+    assert reg.index[0] > idx[15]  # 12 months for y/y + 3 for the change + publication lag

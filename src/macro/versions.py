@@ -22,7 +22,7 @@ MODEL_VERSIONS: dict[str, str] = {
     "markets": "0.3.0",
     "leading": "0.1.0",
     "stress_test": "0.3.0",
-    "backtest": "0.2.0",
+    "backtest": "0.2.1",
     "forecast_book": "0.1.0",
-    "portfolio": "0.3.0",
+    "portfolio": "0.3.1",
 }

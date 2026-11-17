@@ -370,9 +370,9 @@ def regime_series(indpro: pd.Series | None, cpi: pd.Series | None) -> pd.Series:
     for k, x in (("growth", indpro), ("inflation", cpi)):
         mth = x.dropna().resample("MS").last()
         yoy = 100 * (mth / mth.shift(12) - 1)
-        up = (yoy - yoy.shift(3)) > 0
+        up = ((yoy - yoy.shift(3)) > 0).where(yoy.notna() & yoy.shift(3).notna())  # mask on the same dates
         up.index = up.index + pd.DateOffset(months=3) - pd.Timedelta(days=1)  # published ~6 weeks later
-        out[k] = up.where(yoy.notna() & yoy.shift(3).notna())
+        out[k] = up
     df = pd.DataFrame(out).dropna()
     lab = (
         df["growth"].map({True: "growth up", False: "growth down"})
