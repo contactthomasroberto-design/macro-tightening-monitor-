@@ -169,6 +169,100 @@ def main() -> int:
                 f"{q.iloc[-1] / 1e9:.1f} Md$ ({100 * (q.iloc[-1] / q.iloc[-5] - 1):+.0f} % sur un an, SEC)."
             )
 
+    # ---------------------------------------------------------------- macro analysis (computed)
+    L += ["", "## 2 ter. Analyse macro (modèles du monitor, calculée dans GitHub)", ""]
+    from macro import pipeline as pipe
+    from macro import portfolio as pf
+
+    def safe(fn):
+        try:
+            return fn()
+        except Exception as exc:  # noqa: BLE001 - one missing model must not stop the report
+            L.append(f"- (indisponible : {type(exc).__name__})")
+            return None
+
+    reg = pf.regime_series(try_series("INDPRO"), try_series("CPIAUCSL")).dropna()
+    if not reg.empty:
+        L.append(
+            f"- Régime (production industrielle et CPI, en tendance) : **{reg.iloc[-1]}**, depuis {reg[reg != reg.iloc[-1]].index[-1]:%d/%m/%Y}."
+            if (reg != reg.iloc[-1]).any()
+            else f"- Régime : **{reg.iloc[-1]}**."
+        )
+    mf = b.get("macro_now")
+    if mf is not None and len(mf):
+        L.append(
+            "- Facteurs macro du modèle (−1 à +1) : " + ", ".join(f"{k} {v:+.2f}" for k, v in mf.items())
+        )
+    g = safe(lambda: pipe.growth_bundle())
+    if g:
+        nc = g["nowcast"]
+        L.append(
+            f"- Nowcast du PIB US ({nc['target']}) : {nc['point']:.1f} % annualisé (68 % : {nc['lo68']:.1f} à {nc['hi68']:.1f}) ; probabilité de récession à 12 mois {100 * float(g['recession'].value):.0f} %."
+        )
+    inf = safe(lambda: pipe.inflation_bundle("US"))
+    if inf and inf.get("prob_exceed"):
+        pe_ = inf["prob_exceed"]
+        L.append(
+            f"- Inflation US prévue à 12 mois : {pe_['point']:.1f} % ; probabilité de dépasser {pe_['threshold'] + pe_['margin']:.1f} % : {100 * pe_['p']:.0f} %."
+        )
+    ld = safe(lambda: pipe.leading_bundle())
+    if ld is not None and not ld["table"].empty:
+        best = ld["table"]["AUC"].idxmax()
+        L.append(
+            f"- Meilleur modèle de récession hors échantillon ({best}) : {100 * ld['table'].loc[best, 'probability now']:.0f} %."
+        )
+    fp, dff = try_series("FED_PRICED_12M"), try_series("DFF")
+    if fp is not None and dff is not None:
+        L.append(
+            f"- Fed : taux effectif {dff.dropna().iloc[-1]:.2f} %, taux attendu par le marché à 12 mois {fp.dropna().iloc[-1]:.2f} %."
+        )
+    for sid, lab in (
+        ("DGS10", "10 ans US"),
+        ("DFII10", "10 ans réel"),
+        ("BAMLH0A0HYM2", "spread haut rendement"),
+        ("VIXCLS", "VIX"),
+    ):
+        x = try_series(sid)
+        if x is not None and len(x.dropna()) > 22:
+            x = x.dropna()
+            L.append(f"- {lab} : {x.iloc[-1]:.2f} ({x.iloc[-1] - x.iloc[-22]:+.2f} sur un mois).")
+
+    # ---------------------------------------------------------------- micro analysis (computed)
+    L += ["", "## 2 quater. Analyse micro : poche semi-conducteurs (calculée dans GitHub)", ""]
+    mt = b.get("micro_table")
+    if mt is not None and not mt.empty:
+        L.append("| Titre | " + " | ".join(mt.columns) + " | poids |")
+        L.append("|---|" + "---|" * (len(mt.columns) + 1))
+        for a, row in mt.iterrows():
+            L.append(
+                f"| {name(a)} | "
+                + " | ".join("" if v != v else f"{v:+.2f}" for v in row)
+                + f" | {100 * b['target'].get(a, 0):.1f} % |"
+            )
+    for a in [x for x in cfg["universe"] if cfg["universe"][x]["sleeve"] == "semis"]:
+        s_ = try_series(a)
+        if s_ is None or len(s_.dropna()) < 260:
+            continue
+        s_ = s_.dropna()
+        r_ = s_.pct_change().dropna()
+        L.append(
+            f"- {name(a)} : {100 * (s_.iloc[-1] / s_.iloc[-252:].max() - 1):+.0f} % depuis son plus haut sur un an, "
+            f"{100 * (s_.iloc[-1] / s_.iloc[-22] - 1):+.0f} % sur un mois, volatilité 3 mois {100 * r_.iloc[-63:].std() * 252**0.5:.0f} %."
+        )
+    for co in ("MU", "NVDA"):
+        rv, gp = try_series(f"{co}_REV"), try_series(f"{co}_GP")
+        if rv is not None and gp is not None and len(rv.dropna()) >= 5 and len(gp.dropna()) >= 2:
+            m_ = (gp.dropna() / rv.dropna()).dropna()
+            if len(m_) >= 2:
+                L.append(
+                    f"- {name(co)} : marge brute {100 * m_.iloc[-1]:.0f} % (trimestre précédent {100 * m_.iloc[-2]:.0f} %), données SEC."
+                )
+    mc = pf.memory_cycle(try_series("MU_REV"))
+    if not mc.empty:
+        L.append(
+            f"- Cycle mémoire (accélération de la croissance du CA de Micron) : {100 * mc.iloc[-1]:+.1f} points au {mc.index[-1]:%d/%m/%Y}."
+        )
+
     L += ["", "## 3. Ce que disent les news (24 dernières heures)", ""]
     arch = ns.read_archive()
     now = pd.Timestamp.now(tz="UTC")
