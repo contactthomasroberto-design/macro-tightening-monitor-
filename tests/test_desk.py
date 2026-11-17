@@ -90,3 +90,11 @@ def test_task_board(tmp_path):
 
     with pytest.raises(ValueError):
         team.set_status([{"agent": "x", "stage": "s", "status": "fini", "task": "t"}], st)
+
+
+def test_conflicts_use_the_stance():
+    ctx = _ctx()
+    n = desk._coverage_note(ctx, "japan-asia-analyst", "x")  # EWJ: positive stance, house +1: no conflict
+    assert not any("EWJ" in w for w in n.watch)
+    n = desk._coverage_note(ctx, "europe-analyst", "x")  # VGK: negative stance, house +1: conflict
+    assert any("VGK" in w and "contredisent" in w for w in n.watch)
