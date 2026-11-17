@@ -138,7 +138,34 @@ def main() -> int:
     multi = run_variant(inp, cfg, trend_horizons=[4, 13, 52])
     fams = tuple(f for f in pf.FAMILIES if f != "trend")
     no_trend = pf.backtest(inp, cfg, families=fams)
-    runs = {"v0.3": base, "EWMA vol (H36)": ewma, "multi-horizon trend (H37)": multi, "no trend": no_trend}
+    # step 3: correlated Ω; step 2: forced cash; step 4: semis floor and SOX hedge; step 1: survivorship
+    omega = run_variant(inp, cfg, omega="correlated")
+    cash_v = run_variant(inp, cfg, on_infeasible="cash")
+    floor0 = copy.deepcopy(cfg)
+    floor0["sleeves"]["semis"]["min"] = 0.0
+    for a in ("HYNIX", "SAMSUNG"):
+        floor0["universe"][a]["min"] = 0.0
+    no_floor = pf.backtest(inp, floor0)
+    soxh = copy.deepcopy(cfg)
+    soxh["model"]["tail_hedge"]["underlying"] = "SOX"
+    sox_hedge = pf.backtest(inp, soxh)
+    clean = copy.deepcopy(cfg)  # survivorship-free: no hand-picked names, semiconductors via SOXX only
+    for a in ("HYNIX", "SAMSUNG", "MU", "TSM", "NVDA", "ASML"):
+        clean["universe"].pop(a, None)
+    clean["sleeves"]["semis"]["min"] = 0.0
+    clean["universe"]["SOXX"]["min"] = 0.0
+    no_names = pf.backtest(inp, clean)
+    runs = {
+        "v0.3": base,
+        "EWMA vol (H36)": ewma,
+        "multi-horizon trend (H37)": multi,
+        "no trend": no_trend,
+        "correlated omega (H38)": omega,
+        "survivorship-free (H39)": no_names,
+        "semis floor 0 (H41)": no_floor,
+        "SOX put hedge (H42)": sox_hedge,
+        "forced cash (H44)": cash_v,
+    }
     start = base["returns"].index[0]
     b = bench.loc[start:]
     met = pd.DataFrame({k: pf.metrics(v["returns"], cash, b) for k, v in runs.items()})
@@ -175,6 +202,65 @@ def main() -> int:
     beta = np.cov(base["returns"], b.reindex(base["returns"].index).fillna(0))[0, 1] / b.var()
     resid = (base["returns"] - beta * b.reindex(base["returns"].index)).dropna()
     mintrl = min_track_record(resid)
+
+    # H38, H39, H41, H42, H44
+    def mm(k, f):
+        return met.loc[f, k]
+
+    to = {k: float(v["log"]["turnover"].mean()) for k, v in runs.items()}
+    h38 = (
+        to["correlated omega (H38)"] <= 0.8 * to["v0.3"]
+        and abs(mm("correlated omega (H38)", "Sharpe") - sh0) <= 0.05
+    )
+    L.append(
+        f"- **H38 {'confirmée' if h38 else 'rejetée'}** : rotation moyenne {to['correlated omega (H38)']:.1%} contre "
+        f"{to['v0.3']:.1%} par semaine, Sharpe {mm('correlated omega (H38)', 'Sharpe'):.2f} contre {sh0:.2f}."
+    )
+    bm = met["benchmark 60/40"]
+    h39 = (
+        mm("survivorship-free (H39)", "max drawdown") >= bm["max drawdown"]
+        and mm("survivorship-free (H39)", "Sharpe") >= bm["Sharpe"]
+    )
+    L.append(
+        f"- **H39 {'confirmée' if h39 else 'rejetée'}** (sans les 6 valeurs choisies en 2026, semis via SOXX seul) : drawdown "
+        f"{mm('survivorship-free (H39)', 'max drawdown'):.1%} contre {bm['max drawdown']:.1%} pour le 60/40, Sharpe "
+        f"{mm('survivorship-free (H39)', 'Sharpe'):.2f} contre {bm['Sharpe']:.2f}"
+        + ("." if h39 else " : l'avance du modèle dépend de la sélection de 2026.")
+    )
+
+    def cvar(x):
+        q = x.quantile(0.05)
+        return float(-x[x <= q].mean())
+
+    c0, c1 = cvar(base["returns"]), cvar(no_floor["returns"])
+    h41 = mm("semis floor 0 (H41)", "Sharpe") >= sh0 and c1 < c0
+    L.append(
+        f"- **H41 {'confirmée' if h41 else 'rejetée'}** (plancher semis à 0) : Sharpe {mm('semis floor 0 (H41)', 'Sharpe'):.2f} "
+        f"contre {sh0:.2f}, CVaR hebdo 5 % {c1:.2%} contre {c0:.2%}."
+    )
+    semis_ret = r[[a for a in ("HYNIX", "SAMSUNG", "MU", "TSM", "NVDA", "ASML") if a in r]].mean(axis=1)
+
+    def sleeve_dd(res_):
+        wts = res_["weights"].reindex(r.index, method="ffill").reindex(res_["returns"].index)
+        names = [a for a in wts.columns if cfg["universe"].get(a, {}).get("sleeve") == "semis"]
+        x = (wts[names].sum(axis=1) * semis_ret.reindex(wts.index)).fillna(0)
+        return float(((1 + x).cumprod() / (1 + x).cumprod().cummax() - 1).min())
+
+    cost = {
+        k: float(v["hedges"]["premium (% of NAV)"].sum()) if not v["hedges"].empty else 0.0
+        for k, v in (("SPX", base), ("SOX", sox_hedge))
+    }
+    L.append(
+        f"- **H42 (diagnostic)** : put SOX contre put S&P 500 — drawdown max du fonds {mm('SOX put hedge (H42)', 'max drawdown'):.1%} "
+        f"contre {dd0:.1%} ; primes cumulées {cost['SOX']:.1%} contre {cost['SPX']:.1%} de l'actif ; drawdown de la poche semis "
+        f"{sleeve_dd(sox_hedge):.1%} contre {sleeve_dd(base):.1%}."
+    )
+    h44 = mm("forced cash (H44)", "max drawdown") > dd0
+    L.append(
+        f"- **H44 {'confirmée' if h44 else 'rejetée'}** (cash forcé au lieu de lever une contrainte) : drawdown max "
+        f"{mm('forced cash (H44)', 'max drawdown'):.1%} contre {dd0:.1%}."
+    )
+    res["verdicts"] = {"H36": h36, "H37": h37, "H38": h38, "H39": h39, "H41": h41, "H44": h44}
     res["H40"] = {"DSR (model variants)": dsr, "PBO": pbo, "beta": float(beta), "MinTRL weeks": mintrl}
     L.append(
         f"- **H40** : deflated Sharpe sur les seules variantes du modèle {dsr:.2f} ; probabilité de surapprentissage "

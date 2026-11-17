@@ -1397,6 +1397,9 @@ def portfolio_inputs():
         hedge = pd.DataFrame({"spot": wk(px["SPY"]), "vix": wk(vix), "rate": wk(try_series("DGS3MO"))})
         hedge["stress"] = stress.resample("W-FRI").last() if stress is not None else 0.0
         hedge["trend"] = pf.trend_series(r["SPY"])
+        if "SOX" in px:  # SOX put proxy (H42): spot and its volatility relative to the S&P 500
+            hedge["sox_spot"] = wk(px["SOX"])
+            hedge["sox_vol_ratio"] = (r["SOX"].rolling(26).std() / r["SPY"].rolling(26).std()).clip(1.0, 4.0)
         hedge = hedge.reindex(r.index).ffill().dropna(subset=["spot", "vix", "rate"])
     return (
         cfg,
