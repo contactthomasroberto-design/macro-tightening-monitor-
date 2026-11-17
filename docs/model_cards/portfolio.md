@@ -3,47 +3,54 @@
 | Field | Value |
 |---|---|
 | Module | `src/macro/portfolio.py`, `src/macro/portfolio_live.py` (bundle: `pipeline.portfolio_bundle`) |
-| Version | 0.1.0 |
+| Version | 0.3.0 |
 | Owner | project author |
 | Last review | 2026-11-17 |
 | Status | experimental (paper only) |
 
 ## Purpose
-A rules-based balanced portfolio against a 60/40 ACWI/AGG benchmark, with a drawdown no larger than
-the benchmark's and a conviction sleeve in semiconductors (SK Hynix, Samsung Electronics, Micron,
-TSMC, NVIDIA, ASML). Tracked on paper; it places no orders and is not investment advice.
+A systematic multi-asset alternative fund on paper: long and short across about fifty global
+instruments, gross exposure up to 160%, with a drawdown no larger than the 60/40 ACWI/AGG benchmark's
+and a conviction sleeve in semiconductors (SK Hynix, Samsung Electronics, Micron, TSMC, NVIDIA, ASML).
+It places no orders and is not investment advice.
 
 ## Inputs
-Adjusted daily closes (Yahoo) of 19 ETFs and shares and the KRW rate; DGS3MO (cash before BIL);
-EBP (Fed Board), CPILFESL (BLS), the monitor's stress index; SEC EDGAR quarterly revenue and gross
-profit of Micron and NVIDIA dated at the filing date; GDELT daily news tone on three themes.
-Every parameter: `config/portfolio.yaml`.
+Adjusted daily closes (Yahoo) of 51 instruments plus the KRW rate. Macro data: EBP, core CPI, industrial
+production, CPI, and the monitor's stress index. Carry: Treasury yields, TIPS real yield, credit spreads,
+SOFR, €STR, the Japan call rate. SEC quarterly revenue of Micron and NVIDIA, dated at filing. GDELT
+company news tone. Dated house views (config/house_views.yaml). VIX for the tail hedge.
 
 ## Equations
-Weekly USD returns; covariance = Ledoit-Wolf-shrunk correlation (towards the identity) × volatilities,
-156 weeks. π = δ Σ w_eq (δ = 2.5). Views q_i = π_i + 0.25 σ_i s_i with s in [-1, 1] by family
-(trend, macro, micro, news), Ω_ii = τ σ_i² (1 − c)/c, τ = 0.05. Black-Litterman posterior μ, then
-max μ'w − δ/2 w'Σw subject to long-only bounds, sum 1, semiconductors 5-15% (5% per name; SK Hynix
-and Samsung ≥ 1.5%), total equity 60% ± 15 pp, cash ≤ 10% outside the overlay, σ(w) ≤ σ(w_eq) × scale,
-tracking error ≤ 5% (SLSQP; the tracking-error cap, then the volatility cap, are relaxed if infeasible).
-Drawdown overlay: scale 0.75 beyond an 8% drawdown, 0.50 beyond 15%, released below half the threshold.
+Weekly USD returns, Ledoit-Wolf covariance (156 weeks). Black-Litterman: π = δ Σ w_eq, with views
+q_i = π_i + 0.25 σ_i s_i from eight families, each with its own confidence: trend, macro, regime,
+value, carry, micro, house, news (gated by H32).
+The optimiser (cvxpy, Clarabel) maximises μ'w − δ/2 w'Σw − borrow'(−w)⁺ − 4·cost'|w − w_prev| subject to:
+- Σw = 1 and the line bounds;
+- Σ|w| ≤ 1.6;
+- semiconductors net between 5% and 15%; net equity between 20% and 90%;
+- alternatives ≤ 15%; currencies gross ≤ 20%; cash ≤ 10% outside the overlay;
+- σ ≤ σ_benchmark × overlay scale; tracking error ≤ 8%.
+
+Overlays:
+- a drawdown overlay (8% and 15%);
+- monthly one-month 5% OTM S&P 500 puts at the VIX × 1.15, hedge ratio 25-100% of net equity by trend
+  and stress.
 
 ## Estimation sample
-Walk-forward from January 2005, weekly data, monthly rebalance; every estimate uses data up to the
-rebalance date only (tested: changing the future does not change past weights).
+Walk-forward from January 2005, weekly rebalancing. Instruments enter once they have 52 weeks of history.
 
 ## Validation
-Pre-registered H27-H31: drawdown and Sharpe against the benchmark; ablations (overlay, trend, macro,
-micro); memory-cycle and news-tone information coefficients on non-overlapping samples; deflated
-Sharpe ratio over all configurations run. Paper book archived from 2026-11-20 and never edited.
+Pre-registered H27-H35. Ablations: long only, no hedge, no overlay, no views, v0.2 style.
+Comparisons with equal weight, minimum variance, ERC and HRP. Deflated Sharpe over every configuration
+run. The paper book starts 2026-11-20 and is never edited.
 
 ## Known failure modes
-- Mean-variance corner solutions: mitigated by Black-Litterman, the cash cap and bounds, not removed.
-- Fixed macro signs: an inflation shock where bonds and equities fall together hurts both sleeves.
-- The overlay acts after losses: it limits a long drawdown, not a crash inside one week.
-- Korean shares: closes 14 hours before New York; Yahoo outages freeze trading in them (stale gate).
-- Free fundamentals cover US filers only; Korean makers rely on prices and Micron's cycle.
-- Backtest survivorship: the semiconductor names were chosen in 2026, knowing they survived.
+- Shorts: borrow availability and recalls are not modelled beyond a cost; squeezes on crowded shorts.
+- Synthetic puts: Black-Scholes at the VIX plus a fixed skew premium; real put prices and bid-ask differ.
+- Mean-variance corner solutions are dampened by Black-Litterman, bounds and costs, not removed.
+- House views cannot be backtested; they enter with a 10% confidence only.
+- Survivorship: the semiconductor names were chosen in 2026, knowing they survived.
+- ETF proxies for futures-based exposures (oil, managed futures) carry roll costs that futures would not.
 
 ## Change history
 See `docs/MODEL_CHANGELOG.md`.

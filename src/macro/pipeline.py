@@ -1354,11 +1354,16 @@ def track_record() -> tuple[pd.DataFrame, pd.DataFrame]:
 # ------------------------------------------------------------------ systematic portfolio
 PORTFOLIO_VARIANTS: dict[str, dict[str, Any]] = {
     "full model": {},
+    "long only (H35)": {"long_only": True},
+    "no tail hedge (H34)": {"tail_hedge": False},
     "no drawdown overlay": {"overlay": False},
-    "no trend views": {"families": ("macro", "micro", "news")},
-    "no macro views": {"families": ("trend", "micro", "news")},
-    "no micro views": {"families": ("trend", "macro", "news")},
-    "no views, no overlay (core)": {"views": False, "overlay": False},
+    "no views, no overlay (core)": {"views": False, "overlay": False, "tail_hedge": False},
+    "v0.2 style: long only, monthly, trend/macro/micro": {
+        "long_only": True,
+        "rebalance": "monthly",
+        "tail_hedge": False,
+        "families": ("trend", "macro", "micro"),
+    },
 }
 
 
@@ -1383,7 +1388,30 @@ def portfolio_inputs():
         for k in ("NEWS_TONE_MEMORY", "NEWS_TONE_RECESSION", "NEWS_TONE_INFLATION", *pf.NEWS_TONE_OF.values())
         if (s := try_series(k)) is not None
     }
-    return cfg, px, pf.Inputs(r=r, macro=macro.reindex(r.index, method="ffill"), fundamentals=fund, tone=tone)
+    regime = pf.regime_series(try_series("INDPRO"), try_series("CPIAUCSL"))
+    carry = pf.carry_frame(try_series).reindex(r.index, method="ffill")
+    hedge = pd.DataFrame()
+    vix = try_series("VIXCLS")
+    if vix is not None and "SPY" in px:
+        wk = lambda s: s.dropna().resample("W-FRI").last()  # noqa: E731
+        hedge = pd.DataFrame({"spot": wk(px["SPY"]), "vix": wk(vix), "rate": wk(try_series("DGS3MO"))})
+        hedge["stress"] = stress.resample("W-FRI").last() if stress is not None else 0.0
+        hedge["trend"] = pf.trend_series(r["SPY"])
+        hedge = hedge.reindex(r.index).ffill().dropna(subset=["spot", "vix", "rate"])
+    return (
+        cfg,
+        px,
+        pf.Inputs(
+            r=r,
+            macro=macro.reindex(r.index, method="ffill"),
+            fundamentals=fund,
+            tone=tone,
+            regime=regime,
+            carry=carry,
+            house=pf.load_house_views(),
+            hedge=hedge,
+        ),
+    )
 
 
 def _portfolio_tests(inp, cfg) -> dict:
@@ -1421,6 +1449,33 @@ def _portfolio_tests(inp, cfg) -> dict:
     return out
 
 
+def _hedge_now(inp, target: pd.Series, cfg: dict) -> dict:
+    """The tail hedge the rules would buy at the next monthly roll, at today's VIX."""
+    from macro import portfolio as pf
+
+    if inp.hedge.empty or "tail_hedge" not in cfg["model"]:
+        return {}
+    hx = inp.hedge.iloc[-1]
+    th = cfg["model"]["tail_hedge"]
+    ratio = pf.hedge_ratio(float(hx["stress"]), float(hx["trend"]), cfg)
+    eq = max(
+        float(target[[a for a in target.index if cfg["universe"][a]["sleeve"] in pf.EQUITY_SLEEVES]].sum()), 0
+    )
+    prem = pf.bs_put(
+        1.0,
+        th["moneyness"],
+        4 / pf.WEEKS,
+        float(hx["rate"]) / 100,
+        float(hx["vix"]) / 100 * (1 + th["skew_premium"]),
+    )
+    return {
+        "hedge ratio": ratio,
+        "hedged share of NAV": ratio * eq,
+        "premium (% of NAV)": ratio * eq * prem,
+        "VIX": float(hx["vix"]),
+    }
+
+
 def portfolio_bundle(force: bool = False) -> dict:
     """Systematic balanced portfolio: walk-forward backtest with ablations, pre-registered tests,
     the current target and its risk, and the paper book (src/macro/portfolio.py, portfolio_live.py)."""
@@ -1436,12 +1491,25 @@ def portfolio_bundle(force: bool = False) -> dict:
         cfg["model"]["confidence"]["news"] = pf.news_confidence(news_h32)  # pre-registered gate (H32)
         bench = pf.benchmark_returns(r, cfg)
         cash = r["BIL"]
-        runs = {k: pf.backtest(inp, cfg, **v) for k, v in PORTFOLIO_VARIANTS.items()}
+        # The 20-year walk-forward (6 variants, weekly) takes minutes: it runs once a day; the other
+        # refreshes reuse it and only recompute today's target, risk and trades.
+        prev = results.previous("portfolio")
+        fresh = (
+            isinstance(prev, dict)
+            and prev.get("version") == MODEL_VERSIONS["portfolio"]
+            and pd.Timestamp.now(tz="UTC") - prev.get("backtest_computed", pd.Timestamp(0, tz="UTC"))
+            < pd.Timedelta(hours=20)
+        )
+        if fresh and isinstance(prev, dict):
+            runs, alt, bt_time = prev["backtests"], prev["alternative_returns"], prev["backtest_computed"]
+        else:
+            runs = {k: pf.backtest(inp, cfg, **v) for k, v in PORTFOLIO_VARIANTS.items()}
+            alt = {k: pf.backtest_rule(inp, cfg, fn) for k, fn in pf.ALTERNATIVES.items()}
+            bt_time = pd.Timestamp.now(tz="UTC")
         start = runs["full model"]["returns"].index[0]
         b = bench.loc[start:]
         table = pd.DataFrame({k: pf.metrics(v["returns"], cash, b) for k, v in runs.items()})
         table["benchmark 60/40"] = pd.Series(pf.metrics(b, cash))
-        alt = {k: pf.backtest_rule(inp, cfg, fn) for k, fn in pf.ALTERNATIVES.items()}
         alternatives = pd.DataFrame({k: pf.metrics(v.loc[start:], cash, b) for k, v in alt.items()})
         alternatives["our model"] = table["full model"]
         alternatives["benchmark 60/40"] = table["benchmark 60/40"]
@@ -1500,7 +1568,7 @@ def portfolio_bundle(force: bool = False) -> dict:
 
         today = px.index[-1] if is_demo() else pd.Timestamp.today().normalize()  # demo data end in the past
         due = pl.rebalance_due(book, today, state, cfg)
-        stale = pl.stale_assets(px, target.index[target > 1e-6], today, cfg["live"]["stale_days"])
+        stale = pl.stale_assets(px, target.index[target.abs() > 1e-6], today, cfg["live"]["stale_days"])
         return {
             "config": cfg,
             "backtests": runs,
@@ -1508,6 +1576,7 @@ def portfolio_bundle(force: bool = False) -> dict:
             "metrics": table,
             "alternatives": alternatives,
             "alternative_returns": alt,
+            "backtest_computed": bt_time,
             "deflated_sharpe": dsr,
             "trials": len(trial_sr),
             "tests": _portfolio_tests(inp, cfg) | {"H32 company news tone (gate)": news_h32},
@@ -1532,6 +1601,13 @@ def portfolio_bundle(force: bool = False) -> dict:
             "scenarios": pd.Series(scen),
             "episodes": pd.DataFrame(episodes).T,
             "overlay_state": state,
+            "exposures": pf.factor_exposures(target, r),
+            "gross": float(target.abs().sum()),
+            "net_equity": float(
+                target[[a for a in target.index if cfg["universe"][a]["sleeve"] in pf.EQUITY_SLEEVES]].sum()
+            ),
+            "hedge_now": _hedge_now(inp, target, cfg),
+            "house_views": inp.house,
             "paper_nav": nav,
             "paper_drawdown": dd,
             "current": cur,

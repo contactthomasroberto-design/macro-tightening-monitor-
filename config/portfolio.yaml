@@ -1,87 +1,145 @@
-# Systematic balanced portfolio (src/macro/portfolio.py). A model portfolio tracked on paper:
-# it describes what the rules would hold, it places no orders.
+# Systematic multi-asset alternative fund (src/macro/portfolio.py), version 0.3. A model fund tracked on
+# paper: it describes what the rules would hold, it places no orders.
 #
-# Every parameter below was set on 2026-11-17, before the first backtest (research log H27-H31),
-# and is not tuned on the result. Changing one is a new model version (docs/MODEL_CHANGELOG.md).
+# Mandate: absolute and relative returns with a drawdown no larger than the 60/40 benchmark's, long and
+# short across about fifty global instruments, gross exposure up to 160%, rebalanced weekly.
+# Every parameter was set on 2026-11-17 before the first run (research log H33-H35) and is not tuned on
+# the result. Changing one is a new model version (docs/MODEL_CHANGELOG.md).
 
 base_currency: USD
 
-benchmark:            # 60/40 global, rebalanced monthly
+benchmark:            # 60/40 global, rebalanced weekly
   ACWI: 0.60          # MSCI ACWI ETF (before April 2008: 0.66 SPY + 0.21 EFA + 0.13 EEM)
   AGG: 0.40           # US aggregate bonds
 
-# Benchmark weights mapped on the universe: the Black-Litterman equilibrium (approximate ACWI
-# regional shares; the remainder of ACWI is folded into the closest region).
+# Benchmark mapped on the universe (Black-Litterman equilibrium; approximate ACWI country shares).
 equilibrium:
-  SPY: 0.396
+  SPY: 0.384
   VGK: 0.090
-  EWJ: 0.036
-  EEM: 0.078
+  EWJ: 0.033
+  MCHI: 0.017
+  INDA: 0.012
+  EWT: 0.012
+  EWY: 0.008
+  EWZ: 0.004
+  EEM: 0.040
   AGG: 0.400
 
-# sleeve: equity | bond | cash | real | semis.  min/max: weight bounds.
-# cost_bp: one-way transaction cost (Korean sales also pay the securities transaction tax).
+# sleeve: equity | style | sector | semis | bond | credit | real | alt | fx | cash.
+# min/max: weight bounds (a negative min allows a short). cost_bp: one-way trading cost.
+# borrow_bp: annual cost of a short. group: peers compared by the value (reversal) signal.
 universe:
-  SPY:  {name: "US equities (S&P 500)", sleeve: equity, max: 0.55, cost_bp: 3}
-  VGK:  {name: "European equities", sleeve: equity, max: 0.20, cost_bp: 5}
-  EWJ:  {name: "Japanese equities", sleeve: equity, max: 0.12, cost_bp: 5}
-  EEM:  {name: "Emerging-market equities", sleeve: equity, max: 0.15, cost_bp: 8}
-  AGG:  {name: "US aggregate bonds", sleeve: bond, max: 0.50, cost_bp: 3}
-  SHY:  {name: "US Treasuries 1-3y", sleeve: bond, max: 0.30, cost_bp: 2}
-  IEF:  {name: "US Treasuries 7-10y", sleeve: bond, max: 0.30, cost_bp: 3}
-  TLT:  {name: "US Treasuries 20y+", sleeve: bond, max: 0.15, cost_bp: 4}
-  TIP:  {name: "US inflation-linked Treasuries", sleeve: bond, max: 0.20, cost_bp: 4}
-  LQD:  {name: "US investment-grade credit", sleeve: bond, max: 0.15, cost_bp: 5}
-  GLD:  {name: "Gold", sleeve: real, max: 0.10, cost_bp: 5}
-  DBC:  {name: "Commodities (diversified)", sleeve: real, max: 0.07, cost_bp: 8}
-  BIL:  {name: "Cash (US T-bills)", sleeve: cash, max: 1.00, cost_bp: 1}
-  HYNIX:   {name: "SK Hynix", sleeve: semis, min: 0.015, max: 0.05, cost_bp: 25, memory: true}
-  SAMSUNG: {name: "Samsung Electronics", sleeve: semis, min: 0.015, max: 0.05, cost_bp: 25, memory: true}
-  MU:   {name: "Micron Technology", sleeve: semis, max: 0.05, cost_bp: 4, memory: true}
-  TSM:  {name: "TSMC (ADR)", sleeve: semis, max: 0.05, cost_bp: 4}
-  NVDA: {name: "NVIDIA", sleeve: semis, max: 0.05, cost_bp: 3}
-  ASML: {name: "ASML", sleeve: semis, max: 0.05, cost_bp: 5}
+  # --- equity regions
+  SPY:  {name: "US equities (S&P 500)", sleeve: equity, min: -0.10, max: 0.55, cost_bp: 2, borrow_bp: 30, group: region}
+  VGK:  {name: "European equities", sleeve: equity, min: -0.10, max: 0.20, cost_bp: 5, borrow_bp: 50, group: region}
+  EWJ:  {name: "Japanese equities", sleeve: equity, min: -0.10, max: 0.15, cost_bp: 5, borrow_bp: 50, group: region}
+  MCHI: {name: "Chinese equities", sleeve: equity, min: -0.05, max: 0.08, cost_bp: 8, borrow_bp: 100, group: region}
+  INDA: {name: "Indian equities", sleeve: equity, min: -0.05, max: 0.08, cost_bp: 10, borrow_bp: 100, group: region}
+  EWT:  {name: "Taiwanese equities", sleeve: equity, min: -0.05, max: 0.08, cost_bp: 8, borrow_bp: 100, group: region}
+  EWY:  {name: "Korean equities", sleeve: equity, min: -0.05, max: 0.08, cost_bp: 8, borrow_bp: 100, group: region}
+  EWZ:  {name: "Brazilian equities", sleeve: equity, min: -0.05, max: 0.06, cost_bp: 10, borrow_bp: 100, group: region}
+  EEM:  {name: "Emerging-market equities (broad)", sleeve: equity, min: -0.10, max: 0.15, cost_bp: 5, borrow_bp: 50, group: region}
+  # --- styles and sectors (US)
+  QUAL: {name: "US quality factor", sleeve: style, min: -0.05, max: 0.10, cost_bp: 4, borrow_bp: 50, group: style}
+  USMV: {name: "US minimum volatility factor", sleeve: style, min: -0.05, max: 0.10, cost_bp: 4, borrow_bp: 50, group: style}
+  VLUE: {name: "US value factor", sleeve: style, min: -0.05, max: 0.10, cost_bp: 5, borrow_bp: 50, group: style}
+  MTUM: {name: "US momentum factor", sleeve: style, min: -0.05, max: 0.10, cost_bp: 5, borrow_bp: 50, group: style}
+  RSP:  {name: "US equal-weight S&P 500", sleeve: style, min: -0.05, max: 0.10, cost_bp: 4, borrow_bp: 50, group: style}
+  XLE:  {name: "US energy sector", sleeve: sector, min: -0.05, max: 0.06, cost_bp: 3, borrow_bp: 40, group: sector}
+  XLU:  {name: "US utilities sector", sleeve: sector, min: -0.05, max: 0.06, cost_bp: 3, borrow_bp: 40, group: sector}
+  XLV:  {name: "US health-care sector", sleeve: sector, min: -0.05, max: 0.06, cost_bp: 3, borrow_bp: 40, group: sector}
+  XLF:  {name: "US financials sector", sleeve: sector, min: -0.05, max: 0.06, cost_bp: 3, borrow_bp: 40, group: sector}
+  ITA:  {name: "US aerospace and defence", sleeve: sector, min: -0.05, max: 0.06, cost_bp: 5, borrow_bp: 60, group: sector}
+  SOXX: {name: "Semiconductor index (hedge for the names)", sleeve: sector, min: -0.08, max: 0.05, cost_bp: 4, borrow_bp: 50, group: sector}
+  # --- semiconductor conviction names (Korean short selling is restricted: long only)
+  HYNIX:   {name: "SK Hynix", sleeve: semis, min: 0.015, max: 0.05, cost_bp: 25, borrow_bp: 0, memory: true}
+  SAMSUNG: {name: "Samsung Electronics", sleeve: semis, min: 0.015, max: 0.05, cost_bp: 25, borrow_bp: 0, memory: true}
+  MU:   {name: "Micron Technology", sleeve: semis, min: -0.03, max: 0.05, cost_bp: 4, borrow_bp: 50, memory: true}
+  TSM:  {name: "TSMC (ADR)", sleeve: semis, min: -0.03, max: 0.05, cost_bp: 4, borrow_bp: 50}
+  NVDA: {name: "NVIDIA", sleeve: semis, min: -0.03, max: 0.05, cost_bp: 3, borrow_bp: 30}
+  ASML: {name: "ASML", sleeve: semis, min: -0.03, max: 0.05, cost_bp: 5, borrow_bp: 50}
+  # --- government bonds
+  BIL:  {name: "Cash (US T-bills)", sleeve: cash, min: 0.0, max: 1.00, cost_bp: 1, borrow_bp: 0}
+  SHY:  {name: "US Treasuries 1-3y", sleeve: bond, min: -0.20, max: 0.40, cost_bp: 2, borrow_bp: 20}
+  IEF:  {name: "US Treasuries 7-10y", sleeve: bond, min: -0.20, max: 0.40, cost_bp: 3, borrow_bp: 20}
+  TLT:  {name: "US Treasuries 20y+", sleeve: bond, min: -0.15, max: 0.20, cost_bp: 4, borrow_bp: 30}
+  TIP:  {name: "US inflation-linked Treasuries", sleeve: bond, min: -0.10, max: 0.25, cost_bp: 4, borrow_bp: 30}
+  AGG:  {name: "US aggregate bonds", sleeve: bond, min: -0.20, max: 0.50, cost_bp: 3, borrow_bp: 20}
+  BWX:  {name: "International government bonds (unhedged)", sleeve: bond, min: -0.10, max: 0.15, cost_bp: 6, borrow_bp: 60}
+  # --- credit and emerging-market debt
+  LQD:  {name: "US investment-grade credit", sleeve: credit, min: -0.10, max: 0.15, cost_bp: 4, borrow_bp: 40}
+  HYG:  {name: "US high yield", sleeve: credit, min: -0.10, max: 0.10, cost_bp: 5, borrow_bp: 60}
+  EMB:  {name: "EM sovereign debt (USD)", sleeve: credit, min: -0.05, max: 0.10, cost_bp: 6, borrow_bp: 80}
+  EMLC: {name: "EM local-currency debt", sleeve: credit, min: -0.05, max: 0.10, cost_bp: 10, borrow_bp: 100}
+  # --- real assets
+  GLD:  {name: "Gold", sleeve: real, min: -0.05, max: 0.12, cost_bp: 4, borrow_bp: 40, group: commodity}
+  SLV:  {name: "Silver", sleeve: real, min: -0.03, max: 0.04, cost_bp: 6, borrow_bp: 60, group: commodity}
+  DBC:  {name: "Commodities (diversified)", sleeve: real, min: -0.05, max: 0.08, cost_bp: 8, borrow_bp: 80, group: commodity}
+  CPER: {name: "Copper", sleeve: real, min: -0.03, max: 0.04, cost_bp: 10, borrow_bp: 100, group: commodity}
+  BNO:  {name: "Brent crude oil", sleeve: real, min: -0.04, max: 0.04, cost_bp: 10, borrow_bp: 100, group: commodity}
+  VNQ:  {name: "US real estate (REITs)", sleeve: real, min: -0.05, max: 0.06, cost_bp: 4, borrow_bp: 50}
+  IGF:  {name: "Global infrastructure", sleeve: real, min: -0.03, max: 0.06, cost_bp: 6, borrow_bp: 60}
+  # --- alternatives
+  DBMF: {name: "Managed futures (trend replication)", sleeve: alt, min: 0.0, max: 0.10, cost_bp: 6, borrow_bp: 0}
+  KMLM: {name: "Managed futures (KFA Mount Lucas)", sleeve: alt, min: 0.0, max: 0.08, cost_bp: 8, borrow_bp: 0}
+  TAIL: {name: "Tail-risk ETF (Treasuries + puts)", sleeve: alt, min: 0.0, max: 0.06, cost_bp: 8, borrow_bp: 0}
+  # --- currencies
+  UUP:  {name: "US dollar index (long)", sleeve: fx, min: -0.08, max: 0.08, cost_bp: 5, borrow_bp: 60, group: fx}
+  FXY:  {name: "Japanese yen", sleeve: fx, min: -0.08, max: 0.08, cost_bp: 6, borrow_bp: 60, group: fx}
+  FXE:  {name: "Euro", sleeve: fx, min: -0.08, max: 0.08, cost_bp: 6, borrow_bp: 60, group: fx}
+  FXF:  {name: "Swiss franc", sleeve: fx, min: -0.05, max: 0.06, cost_bp: 8, borrow_bp: 60, group: fx}
 
 sleeves:
-  semis: {min: 0.05, max: 0.15}   # conviction sleeve chosen by the owner; the model sizes inside it
-  cash_max: 0.10                  # cash above 10% only when the drawdown overlay is engaged
-                                  # (added 2026-11-17 after a demo-data dry run put 38% in cash
-                                  # instead of bonds; set before any run on real data)
-  equity_total_band: 0.15         # total equity (incl. semis) within ±15 pp of the benchmark's 60%
+  semis: {min: 0.05, max: 0.15}     # net long, conviction sleeve chosen by the owner; the model sizes inside it
+  equity_net: {min: 0.20, max: 0.90} # net equity exposure (regions, styles, sectors, semis)
+  gross_max: 1.60                   # sum of absolute weights
+  cash_max: 0.10                    # cash above 10% only when the drawdown overlay is engaged
+  alt_max: 0.15
+  fx_gross_max: 0.20
 
-# Prices in local currency converted to USD (closes in Seoul and New York are not synchronous:
-# the model works on weekly returns).
+# Prices in local currency converted to USD. Weekly returns (Seoul and New York closes are not synchronous).
 fx: {HYNIX: USDKRW, SAMSUNG: USDKRW}
 
 model:
   frequency: W-FRI
+  rebalance: weekly                 # every week, with costs and borrow in the objective
   cov_window_weeks: 156
   cov_min_weeks: 52
-  risk_aversion: 2.5          # δ, He and Litterman (1999)
+  risk_aversion: 2.5                # δ, He and Litterman (1999)
   tau: 0.05
-  view_scale: 0.25            # a full-strength view = 0.25 Sharpe units of extra annual return
-  confidence:                 # weight of each view family in Black-Litterman (0-1)
+  view_scale: 0.25                  # a full-strength view = 0.25 Sharpe units of extra annual return
+  turnover_aversion: 4.0            # one-off trading costs annualised over an expected 3-month holding
+  confidence:                       # weight of each view family in Black-Litterman (0-1)
     trend: 0.30
-    macro: 0.25
+    macro: 0.20
+    regime: 0.15
+    value: 0.10
+    carry: 0.15
     micro: 0.20
-    news: 0.0                 # 0 until H30 is rejected out of sample
-  vol_cap_vs_benchmark: 1.0   # ex-ante volatility ≤ benchmark's ex-ante volatility
-  tracking_error_max: 0.05    # annual ex-ante tracking error
-  no_trade_band: 0.005        # trades below 0.5 pp of NAV are skipped
-  drawdown_overlay:           # risk scale applied to the volatility cap, by paper drawdown
+    house: 0.10                     # dated views published by banks and asset managers (not backtestable)
+    news: 0.0                       # set each run by the pre-registered gate (H32)
+  vol_cap_vs_benchmark: 1.0         # ex-ante volatility ≤ benchmark's ex-ante volatility
+  tracking_error_max: 0.08          # annual ex-ante tracking error
+  no_trade_band: 0.0025             # trades below 0.25 pp of NAV are skipped
+  drawdown_overlay:                 # risk scale applied to the volatility cap, by paper drawdown
     levels:
       - {drawdown: 0.08, scale: 0.75}
       - {drawdown: 0.15, scale: 0.50}
-    recover_at: 0.5           # a level is released when the drawdown is below half its threshold
-  rebalance: monthly          # first week of each month, or earlier when the overlay state changes
+    recover_at: 0.5                 # a level is released when the drawdown is below half its threshold
+  tail_hedge:                       # one-month 5% out-of-the-money S&P 500 puts, rolled monthly (H34)
+    moneyness: 0.95
+    skew_premium: 0.15              # put implied vol = VIX × (1 + 0.15)
+    base_ratio: 0.25                # share of net equity exposure hedged
+    added_ratio: 0.50               # added when the stress index is below 0 (cheap vol) and US trend is negative
+    trend_ratio: 0.25               # added when US trend is negative
 
 backtest:
   start: "2005-01-07"
 
 live:
-  start: "2026-11-20"         # first paper rebalance; every target is archived (archive/portfolio_book.csv)
-  trading_enabled: true       # kill switch: false freezes the paper book at its last weights
-  stale_days: 5               # a price older than this freezes trading in that asset
-  alerts:                     # GitHub issue when crossed (scripts/portfolio_monitor.py, hourly)
+  start: "2026-11-20"               # first paper rebalance; every target is archived (archive/portfolio_book.csv)
+  trading_enabled: true             # kill switch: false freezes the paper book at its last weights
+  stale_days: 5                     # a price older than this freezes the rebalance
+  alerts:                           # GitHub issue when crossed (scripts/portfolio_monitor.py)
     drawdown: 0.08
     daily_loss: 0.03

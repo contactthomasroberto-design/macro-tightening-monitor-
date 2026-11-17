@@ -1,0 +1,69 @@
+# Published views of banks and asset managers, dated and sourced. Stance per instrument of the
+# portfolio universe: +1 overweight / favoured, +0.5 mildly positive, 0 neutral, -0.5, -1 underweight.
+# A view counts from its publication date for six months (portfolio.house_scores), with confidence
+# `house` in config/portfolio.yaml. Collected 2026-11-17 from the sources linked (secondary coverage
+# where the original report is not public); the nightly research run adds new ones.
+# Only what the source states is encoded; nothing is inferred from tone.
+views:
+  - institution: Goldman Sachs Research
+    title: "2027 Global Markets Outlook"
+    date: 2026-11-16
+    url: https://www.goldmansachs.com/insights/articles/global-stocks-expected-to-rally-in-2027-as-earnings-growth-slows
+    summary: >-
+      Positive equity and bond returns with more volatility; overweight US and Japanese equities,
+      neutral Asia ex-Japan and EM, underweight Europe; credit spreads to widen, US high yield to
+      underperform; commodities flat; gold as a hedge; S&P 500 8,700; Brent $78 end-2027.
+    stances: {SPY: 1, EWJ: 1, VGK: -1, EEM: 0, MCHI: 0, EWT: 0, EWY: 0, HYG: -1, LQD: -0.5, GLD: 0.5, DBC: 0, BNO: -0.5, IEF: 0.5}
+  - institution: Morgan Stanley Research
+    title: "2027 Global Strategy Outlook"
+    date: 2026-11-16
+    url: https://www.cnbc.com/2026/11/16/goldman-sachs-morgan-stanley-2027-outlook-markets.html
+    summary: >-
+      Maximum overweight global equities, adding in every region (S&P 500 8,700, MSCI Europe 3,030,
+      TOPIX 4,800); core bonds neutral, corporate credit equal weight; prefers Bunds and gilts; modest
+      dollar rally (DXY 105), yen weaker (162); gold top commodity pick ($5,250).
+    stances: {SPY: 1, VGK: 1, EWJ: 1, EEM: 0.5, AGG: 0, IEF: 0, LQD: 0, BWX: 0.5, UUP: 0.5, FXY: -1, GLD: 1}
+  - institution: BlackRock Investment Institute
+    title: "Weekly commentary: Midterms and AI in focus at 2027 Forum"
+    date: 2026-11-09
+    url: https://www.blackrock.com/corporate/insights/blackrock-investment-institute/global-weekly-commentary
+    summary: >-
+      Tactical horizon back to 6-12 months; neutral US equities; overweight EM equities; prefers
+      short-term Treasuries; yields structurally higher; an AI capex slowdown in 2027 is a risk that
+      would hurt equities but lower yields.
+    stances: {SPY: 0, EEM: 1, SHY: 1, TLT: -0.5}
+  - institution: J.P. Morgan Asset Management
+    title: "2027 Long-Term Capital Market Assumptions"
+    date: 2026-10-19
+    url: https://am.jpmorgan.com/us/en/asset-management/institutional/about-us/media/press-releases/jp-morgan-releases-2027-long-term-capital-market-assumptions/
+    summary: >-
+      10-15 year view: 60/40 at 7.0%; global aggregate bonds 5.3% (highest in two decades); developed
+      markets ahead of EM (EM 7.1%); commodities 4.8%, gold 5.5%; alternatives raise the Sharpe ratio.
+      Strategic, not tactical: encoded at half strength.
+    stances: {AGG: 0.5, IEF: 0.5, EEM: -0.5, DBMF: 0.5, GLD: 0}
+  - institution: Amundi Investment Institute
+    title: "Global Investment Views, November 2026"
+    date: 2026-11-05
+    url: https://research-center.amundi.com/article/global-investment-views-november-2026
+    summary: Rotates away from Europe (downgraded to neutral) towards the US and Japan (both upgraded); constructive on EM.
+    stances: {SPY: 1, EWJ: 1, VGK: 0, EEM: 0.5}
+  - institution: HSBC Global Research
+    title: "Emerging-market equity strategy: 8 markets to consider in 2027"
+    date: 2026-10-20
+    url: https://uk.investing.com/news/stock-market-news/8-emerging-markets-to-consider-in-2027-hsbc-4904131
+    summary: Overweight Taiwan, mainland China, Brazil, South Africa, Türkiye, Hungary; underweight India.
+    stances: {EWT: 1, MCHI: 1, EWZ: 1, INDA: -1}
+  - institution: Merrill (Bank of America) CIO
+    title: "Capital Market Outlook, November 9, 2026"
+    date: 2026-11-09
+    url: https://olui2.fs.ml.com/publish/content/application/pdf/gwmol/me-cio-weekly-letter.pdf
+    summary: Equities to keep outperforming bonds in 2027; leadership towards higher-quality, less leveraged companies.
+    stances: {SPY: 0.5, QUAL: 1, AGG: -0.5}
+  - institution: Sell-side memory analysts (KB Securities, RBC, Hana, UBS)
+    title: "Memory cycle 2027: DRAM and HBM pricing"
+    date: 2026-11-13
+    url: https://www.vlsi.kr/en/daily-silicon-2026-11-14-en/
+    summary: >-
+      2027 DRAM contract prices +40% (KB), HBM prices +80-121% (RBC, KB); SK hynix DRAM and HBM output
+      sold out through 2029, Samsung's 2027 HBM sold out; HBM share split between SK hynix and Samsung.
+    stances: {HYNIX: 1, SAMSUNG: 1, MU: 1}

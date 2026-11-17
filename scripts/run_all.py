@@ -142,7 +142,7 @@ def main() -> int:
             n = pl.append_book(
                 pl.BOOK,
                 pd.Timestamp.today().normalize(),
-                port["target"][port["target"] > 1e-6],
+                port["target"][port["target"].abs() > 1e-6],
                 port["target_status"],
                 port["overlay_state"],
                 port["rebalance_due"],

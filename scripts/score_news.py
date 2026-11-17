@@ -34,6 +34,12 @@ def main() -> int:
     scored = ns.score(df, ns.finbert(), cfg)
     n = ns.append_archive(scored)
     print(f"{len(df)} headlines, {len(scored)} tagged, {n} new -> {ns.ARCHIVE.relative_to(ROOT)}")
+    from macro import research_tracker as rt
+
+    pubs, rfail = rt.collect()
+    print(
+        f"research tracker: {len(pubs)} publications, {rt.append_archive(pubs)} new; feeds failed: {list(rfail)}"
+    )
     arch = ns.read_archive()
     recent = arch[arch["first_seen"] >= arch["first_seen"].max() - pd.Timedelta(days=3)]
     a = ns.asset_scores(recent, cfg)

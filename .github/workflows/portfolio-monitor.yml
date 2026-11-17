@@ -37,7 +37,7 @@ jobs:
           pip install --index-url https://download.pytorch.org/whl/cpu torch==2.15.0
           pip install -r requirements-news.txt
           pip install -e . --no-deps
-      - name: Score the news (opens an issue on an extreme score for a holding)
+      - name: Score the news and collect bank and fund publications (issue on an extreme holding score)
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +51,7 @@ jobs:
         run: |
           git config user.name "macro-monitor-bot"
           git config user.email "actions@users.noreply.github.com"
-          for f in archive/news_scored.csv archive/news_alerts.json archive/portfolio_alerts.json; do
+          for f in archive/news_scored.csv archive/news_alerts.json archive/portfolio_alerts.json archive/research_tracker.csv; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           if ! git diff --cached --quiet; then
