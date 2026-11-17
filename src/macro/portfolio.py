@@ -596,6 +596,45 @@ def optimise(
     w_prev: pd.Series | None = None,
     long_only: bool = False,
 ) -> tuple[pd.Series, str]:
+    """Mean-variance weights (`_optimise`), or their resampled average when `model.resample` is set
+    (Michaud, 1998; research log H47): draws of μ ~ N(μ_BL, τΣ) and Σ ~ Wishart(T, Σ/T), T the
+    covariance window in weeks; the weights of each draw are averaged and the average is projected
+    back onto the constraints (closest feasible point in the least-squares sense)."""
+    rs = cfg["model"].get("resample") or {}
+    draws = int(rs.get("draws", 0))
+    if draws <= 0:
+        return _optimise(mu, cov, w_eq, cfg, vol_scale, w_prev, long_only)
+    rng = np.random.default_rng(int(rs.get("seed", 0)))
+    S = cov.to_numpy()
+    n = len(S)
+    T = int(cfg["model"]["cov_window_weeks"])
+    tau = float(cfg["model"]["tau"])
+    Lm = _psd_root(tau * S)
+    Ls = _psd_root(S / T)
+    ws = []
+    for _ in range(draws):
+        m_d = mu.to_numpy() + Lm @ rng.standard_normal(n)
+        z = Ls @ rng.standard_normal((n, T))  # Wishart(T, Σ/T) as a sum of T outer products
+        S_d = pd.DataFrame(z @ z.T, index=cov.index, columns=cov.index)
+        w_d, st_d = _optimise(pd.Series(m_d, index=cov.index), S_d, w_eq, cfg, vol_scale, w_prev, long_only)
+        if not st_d.startswith("fallback"):
+            ws.append(w_d.to_numpy())
+    if not ws:
+        return _optimise(mu, cov, w_eq, cfg, vol_scale, w_prev, long_only)
+    w, status = _optimise(mu, cov, w_eq, cfg, vol_scale, w_prev, long_only, project=np.mean(ws, axis=0))
+    return w, f"resampled ({len(ws)} draws), {status}"
+
+
+def _optimise(
+    mu: pd.Series,
+    cov: pd.DataFrame,
+    w_eq: pd.Series,
+    cfg: dict,
+    vol_scale: float = 1.0,
+    w_prev: pd.Series | None = None,
+    long_only: bool = False,
+    project: np.ndarray | None = None,
+) -> tuple[pd.Series, str]:
     """Long/short mean-variance with costs, as a convex program (cvxpy, Clarabel solver):
 
         max  μ'w − δ/2 w'Σw − borrow'·max(−w, 0) − k·cost'·|w − w_prev|
@@ -603,7 +642,8 @@ def optimise(
              [20% × scale, 90%]; alternatives ≤ 15%; currency gross ≤ 20%; cash ≤ 10% outside the
              overlay; σ(w) ≤ σ(benchmark) × scale; tracking error ≤ 8%.
 
-    If infeasible, the tracking-error cap, then the volatility cap are dropped (status says which)."""
+    If infeasible, the tracking-error cap, then the volatility cap are dropped (status says which).
+    With `project`, the objective is instead the squared distance to those weights (same constraints)."""
     import cvxpy as cp
 
     m, uni, sl = cfg["model"], cfg["universe"], cfg["sleeves"]
@@ -631,12 +671,16 @@ def optimise(
 
     w = cp.Variable(n)
     short = cp.Variable(n, nonneg=True)
-    obj = cp.Maximize(
-        mu.to_numpy() @ w
-        - m["risk_aversion"] / 2 * cp.sum_squares(L.T @ w)
-        - borrow @ short
-        - tc @ cp.abs(w - w0)
-    )
+    obj: cp.Minimize | cp.Maximize
+    if project is not None:  # closest feasible point to resampled weights
+        obj = cp.Minimize(cp.sum_squares(w - project))
+    else:
+        obj = cp.Maximize(
+            mu.to_numpy() @ w
+            - m["risk_aversion"] / 2 * cp.sum_squares(L.T @ w)
+            - borrow @ short
+            - tc @ cp.abs(w - w0)
+        )
     # the cash cap and the equity floor are the two limits a forced de-risking may lift (H44)
     soft = [w <= hi, eqm @ w >= sl["equity_net"]["min"] * vol_scale]
     base = [
@@ -938,6 +982,113 @@ def risk_report(w: pd.Series, cov: pd.DataFrame, w_eq: pd.Series, r: pd.DataFram
         "VaR 95% (1 week)": -q,
         "expected shortfall 95% (1 week)": float(-h[h <= q].mean()),
     }
+
+
+# Return sources for the risk budget, by sleeve; `risk_sources` in config/portfolio.yaml overrides
+# single instruments whose sleeve is ambiguous (inflation-linked bonds, the semiconductor index...).
+SOURCE_OF_SLEEVE = {
+    "equity": "equity",
+    "style": "equity",
+    "sector": "equity",
+    "semis": "semis",
+    "bond": "rates (duration)",
+    "cash": "rates (duration)",
+    "credit": "credit",
+    "real": "commodities",
+    "alt": "alternatives",
+    "fx": "FX",
+}
+
+
+def risk_source(asset: str, cfg: dict) -> str:
+    over = cfg.get("risk_sources") or {}
+    if asset in over:
+        return over[asset]
+    return SOURCE_OF_SLEEVE.get(cfg["universe"].get(asset, {}).get("sleeve", ""), "other")
+
+
+def risk_budget(
+    w: pd.Series, cov: pd.DataFrame, r: pd.DataFrame, cfg: dict, weeks: int = 156
+) -> pd.DataFrame:
+    """Share of variance by return source (equity, rates, inflation, credit, FX, semis, commodities,
+    alternatives): Euler contributions w_i (Σw)_i / w'Σw summed by source, so the shares sum to 1
+    (negative when a source hedges the rest). Ex ante with the model covariance, and realised with
+    the sample covariance of the last `weeks` weekly returns; with net and gross weight per source."""
+    a = [x for x in w.index if x in cov.index and abs(w[x]) > 1e-9]
+    wv = w.reindex(a).to_numpy()
+    src = pd.Series({x: risk_source(x, cfg) for x in a})
+
+    def shares(S: np.ndarray) -> pd.Series:
+        v = wv @ S @ wv
+        return pd.Series(wv * (S @ wv) / v, index=a).groupby(src).sum() if v > 0 else pd.Series(dtype=float)
+
+    ex = shares(cov.loc[a, a].to_numpy())
+    h = r.reindex(columns=a).iloc[-weeks:].fillna(0.0)
+    real = shares(h.cov().to_numpy() * WEEKS) if len(h) > 10 else pd.Series(dtype=float)
+    out = pd.DataFrame(
+        {
+            "ex-ante share": ex,
+            "realised share (3y)": real,
+            "net weight": pd.Series(wv, index=a).groupby(src).sum(),
+            "gross weight": pd.Series(np.abs(wv), index=a).groupby(src).sum(),
+        }
+    )
+    return out.sort_values("ex-ante share", ascending=False)
+
+
+STYLE_FACTORS = {
+    "market": ("SPY", "BIL"),
+    "value": ("VLUE", "SPY"),
+    "momentum": ("MTUM", "SPY"),
+    "quality": ("QUAL", "SPY"),
+    "size (equal weight)": ("RSP", "SPY"),
+    "min vol": ("USMV", "SPY"),
+}
+
+
+def _style_regression(y: pd.Series, r: pd.DataFrame, lags: int = 4) -> dict:
+    """OLS of weekly returns y on long-short style factors, Newey-West (HAC) t-statistics.
+    Alpha is annualised (52 weeks); factors whose ETFs are missing are left out."""
+    import statsmodels.api as sm
+
+    f = pd.DataFrame({k: r[a] - r[b] for k, (a, b) in STYLE_FACTORS.items() if a in r and b in r})
+    d = pd.concat([y.rename("y"), f], axis=1).dropna()
+    if len(d) < 30 or f.empty:
+        return {
+            "loadings": pd.DataFrame(),
+            "alpha (annual)": np.nan,
+            "alpha t": np.nan,
+            "R²": np.nan,
+            "weeks": len(d),
+        }
+    fit = sm.OLS(d["y"], sm.add_constant(d.drop(columns="y"))).fit(cov_type="HAC", cov_kwds={"maxlags": lags})
+    lo = pd.DataFrame({"loading": fit.params, "t-stat": fit.tvalues}).drop(index="const")
+    return {
+        "loadings": lo,
+        "alpha (annual)": float(fit.params["const"] * WEEKS),
+        "alpha t": float(fit.tvalues["const"]),
+        "R²": float(fit.rsquared),
+        "weeks": len(d),
+    }
+
+
+def style_exposures(w: pd.Series, r: pd.DataFrame, weeks: int = 156) -> dict:
+    """Style exposures of today's weights: their simulated weekly excess return over the last
+    `weeks` (excess of T-bills) regressed on market, value, momentum, quality, size and min-vol."""
+    a = [x for x in w.index if x in r.columns]
+    h = r[a].iloc[-weeks:]
+    y = h.fillna(0.0) @ w.reindex(a).fillna(0.0)
+    if "BIL" in r:
+        y = y - r["BIL"].reindex(y.index).fillna(0.0)
+    return _style_regression(y, r.loc[h.index])
+
+
+def alpha_decomposition(ret: pd.Series, r: pd.DataFrame, bench: pd.Series | None = None) -> dict:
+    """The backtest's active return (over `bench`, else over T-bills) regressed on the style
+    factors: what is left (alpha) is not explained by exposures one could buy as ETFs (H46)."""
+    base = bench if bench is not None else r.get("BIL", pd.Series(0.0, index=ret.index))
+    y = (ret - base.reindex(ret.index)).dropna()
+    return _style_regression(y, r.reindex(y.index))
 
 
 def information_coefficient(signal: pd.Series, fwd: pd.Series) -> dict:

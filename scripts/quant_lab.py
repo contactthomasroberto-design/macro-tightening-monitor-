@@ -155,6 +155,8 @@ def main() -> int:
     clean["sleeves"]["semis"]["min"] = 0.0
     clean["universe"]["SOXX"]["min"] = 0.0
     no_names = pf.backtest(inp, clean)
+    # H47: Michaud resampling; 25 draws a week keeps the lab within its time budget
+    resampled = run_variant(inp, cfg, resample={"draws": 25, "seed": 0})
     runs = {
         "v0.3": base,
         "EWMA vol (H36)": ewma,
@@ -165,6 +167,7 @@ def main() -> int:
         "semis floor 0 (H41)": no_floor,
         "SOX put hedge (H42)": sox_hedge,
         "forced cash (H44)": cash_v,
+        "resampled weights (H47)": resampled,
     }
     start = base["returns"].index[0]
     b = bench.loc[start:]
@@ -260,7 +263,46 @@ def main() -> int:
         f"- **H44 {'confirmée' if h44 else 'rejetée'}** (cash forcé au lieu de lever une contrainte) : drawdown max "
         f"{mm('forced cash (H44)', 'max drawdown'):.1%} contre {dd0:.1%}."
     )
-    res["verdicts"] = {"H36": h36, "H37": h37, "H38": h38, "H39": h39, "H41": h41, "H44": h44}
+    # H46: is the active return more than style exposure one could buy with ETFs?
+    ad = pf.alpha_decomposition(base["returns"], r, b)
+    h46 = bool(ad["alpha t"] >= 2)
+    lo46 = ad["loadings"]
+    top = (
+        ", ".join(
+            f"{k} {v:+.2f}" for k, v in lo46["loading"].abs().sort_values(ascending=False).head(3).items()
+        )
+        if not lo46.empty
+        else "n/a"
+    )
+    L.append(
+        f"- **H46 {'confirmée' if h46 else 'rejetée'}** (alpha après styles) : rendement actif net des facteurs "
+        f"{ad['alpha (annual)']:+.2%} par an (t {ad['alpha t']:+.1f}, HAC), R² {ad['R²']:.0%} ; plus fortes "
+        f"expositions (en valeur absolue) : {top}."
+    )
+    res["H46"] = {
+        "alpha (annual)": ad["alpha (annual)"],
+        "alpha t": ad["alpha t"],
+        "R2": ad["R²"],
+        "loadings": lo46["loading"].round(3).to_dict() if not lo46.empty else {},
+    }
+    # H47: resampled weights trade less without costing Sharpe
+    k47 = "resampled weights (H47)"
+    h47 = to[k47] <= 0.8 * to["v0.3"] and mm(k47, "Sharpe") >= sh0 - 0.05
+    L.append(
+        f"- **H47 {'confirmée' if h47 else 'rejetée'}** (rééchantillonnage de Michaud, 25 tirages) : rotation "
+        f"{to[k47]:.1%} contre {to['v0.3']:.1%} par semaine, Sharpe {mm(k47, 'Sharpe'):.2f} contre {sh0:.2f}, "
+        f"drawdown max {mm(k47, 'max drawdown'):.1%} contre {dd0:.1%}."
+    )
+    res["verdicts"] = {
+        "H36": h36,
+        "H37": h37,
+        "H38": h38,
+        "H39": h39,
+        "H41": h41,
+        "H44": h44,
+        "H46": h46,
+        "H47": bool(h47),
+    }
     res["H40"] = {"DSR (model variants)": dsr, "PBO": pbo, "beta": float(beta), "MinTRL weeks": mintrl}
     L.append(
         f"- **H40** : deflated Sharpe sur les seules variantes du modèle {dsr:.2f} ; probabilité de surapprentissage "

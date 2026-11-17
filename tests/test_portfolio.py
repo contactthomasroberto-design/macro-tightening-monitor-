@@ -388,3 +388,66 @@ def test_team_roster_matches_agent_files(tmp_path):
     )
     cur, past = team.current_and_past(team.read_log(path), "macro-strategist")
     assert cur["task"] == "t2" and past["task"].tolist() == ["t1"]
+
+
+def test_risk_budget_shares_sum_to_one_by_source():
+    r = _returns(11)
+    cov = pf.covariance(r[list(CFG["universe"])], 156, 52)
+    w_eq = pf.equilibrium_weights(list(cov.index), CFG)
+    mu, _ = pf.black_litterman(cov, w_eq, {}, CFG)
+    w, _ = pf.optimise(mu, cov, w_eq, CFG)
+    rb = pf.risk_budget(w, cov, r, CFG)
+    assert rb["ex-ante share"].sum() == pytest.approx(1, abs=1e-8)
+    assert rb["realised share (3y)"].sum() == pytest.approx(1, abs=1e-8)
+    assert rb["net weight"].sum() == pytest.approx(1, abs=1e-6)
+    assert pf.risk_source("TIP", CFG) == "inflation" and pf.risk_source("SOXX", CFG) == "semis"
+    assert pf.risk_source("HYG", CFG) == "credit" and pf.risk_source("IEF", CFG) == "rates (duration)"
+
+
+def test_style_regression_recovers_planted_loadings():
+    r = _returns(12)
+    g = np.random.default_rng(5)
+    f = {k: r[a] - r[b] for k, (a, b) in pf.STYLE_FACTORS.items()}
+    planted = {
+        "market": 0.6,
+        "value": 0.3,
+        "momentum": -0.4,
+        "quality": 0.0,
+        "size (equal weight)": 0.2,
+        "min vol": 0.5,
+    }
+    y = 0.0004 + sum(v * f[k] for k, v in planted.items()) + g.normal(0, 0.002, len(r))
+    res = pf.alpha_decomposition(y + r["BIL"], r)  # excess of T-bills when no benchmark is given
+    lo = res["loadings"]["loading"]
+    for k, v in planted.items():
+        assert lo[k] == pytest.approx(v, abs=0.08)
+    assert res["alpha (annual)"] == pytest.approx(0.0004 * 52, abs=0.01) and res["R²"] > 0.8
+    # a 100% S&P 500 book: market loading 1, nothing else
+    se = pf.style_exposures(pd.Series({"SPY": 1.0}), r)
+    assert se["loadings"].loc["market", "loading"] == pytest.approx(1, abs=1e-6)
+    assert se["loadings"].drop(index="market")["loading"].abs().max() < 1e-6
+
+
+def test_resampled_weights_satisfy_the_constraints():
+    r = _returns(13)
+    cov = pf.covariance(r[list(CFG["universe"])], 156, 52)
+    w_eq = pf.equilibrium_weights(list(cov.index), CFG)
+    g = np.random.default_rng(3)
+    mu = pd.Series(g.normal(0, 0.1, len(cov)), index=cov.index)
+    cfg = copy.deepcopy(CFG)
+    cfg["model"]["resample"] = {"draws": 8, "seed": 1}
+    w, status = pf.optimise(mu, cov, w_eq, cfg)
+    w_mv, _ = pf.optimise(mu, cov, w_eq, CFG)
+    uni, sl = cfg["universe"], cfg["sleeves"]
+    pick = lambda *s_: sum(w[a] for a in w.index if uni[a]["sleeve"] in s_)  # noqa: E731
+    assert status.startswith("resampled") and w.sum() == pytest.approx(1)
+    assert all(uni[a].get("min", 0) - 1e-5 <= w[a] <= uni[a]["max"] + 1e-5 for a in w.index)
+    assert w.abs().sum() <= sl["gross_max"] + 1e-4
+    assert sl["semis"]["min"] - 1e-5 <= pick("semis") <= sl["semis"]["max"] + 1e-5
+    assert sl["equity_net"]["min"] - 1e-5 <= pick(*pf.EQUITY_SLEEVES) <= sl["equity_net"]["max"] + 1e-5
+    vol_b = float(np.sqrt(w_eq @ cov @ w_eq))
+    assert float(np.sqrt(w @ cov @ w)) <= vol_b * (1 + 1e-3)
+    assert float(np.sqrt((w - w_eq) @ cov @ (w - w_eq))) <= cfg["model"]["tracking_error_max"] + 1e-4
+    assert w.abs().sum() <= w_mv.abs().sum() + 1e-6  # averaging shrinks extreme positions
+    again, _ = pf.optimise(mu, cov, w_eq, cfg)
+    assert np.allclose(again, w)  # seeded: reproducible

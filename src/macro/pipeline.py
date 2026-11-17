@@ -1635,6 +1635,9 @@ def portfolio_bundle(force: bool = False) -> dict:
             "episodes": pd.DataFrame(episodes).T,
             "overlay_state": state,
             "exposures": pf.factor_exposures(target, r),
+            "risk_budget": pf.risk_budget(target, tg["cov"], r, cfg),
+            "style_exposures": pf.style_exposures(target, r),
+            "alpha_decomposition": pf.alpha_decomposition(runs["full model"]["returns"], r, b),
             "gross": float(target.abs().sum()),
             "net_equity": float(
                 target[[a for a in target.index if cfg["universe"][a]["sleeve"] in pf.EQUITY_SLEEVES]].sum()

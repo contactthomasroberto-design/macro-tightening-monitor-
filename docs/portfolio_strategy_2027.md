@@ -57,6 +57,17 @@ et à comprendre pourquoi (page Research).
 - Un retournement du cycle mémoire (croissance du chiffre d'affaires de Micron qui décélère) : la poche
   semis va vers son plancher, avec couverture par SOXX.
 
+## 4 bis. Savoir ce que l'on porte vraiment
+- **Budget de risque par source** (page Risk) : part de la variance venant des actions, de la duration,
+  de l'inflation, du crédit, des devises, des semis, des matières premières et des alternatifs
+  (contributions d'Euler, ex ante et réalisées sur 3 ans). On voit ainsi qu'un book « diversifié » peut
+  rester dominé par une seule source.
+- **Expositions de style** : régression sur marché, value, momentum, qualité, équipondéré et faible
+  volatilité. La part du rendement actif qu'expliquent ces facteurs pourrait s'acheter en ETF ; seul
+  l'alpha résiduel revient au modèle (hypothèse H46, testée chaque semaine par le laboratoire quant).
+- **Optimisation rééchantillonnée** (Michaud) : en test seulement (H47). Elle serait adoptée si elle réduit
+  la rotation d'au moins 20 % sans coûter plus de 0,05 de Sharpe.
+
 ## 5. Limites, sans fard
 - Biais du survivant : les six valeurs semis ont été choisies en 2026.
 - Les puts sont synthétiques (Black-Scholes au VIX majoré). Les ETF sur pétrole et managed futures

@@ -97,6 +97,14 @@ sleeves:
   alt_max: 0.15
   fx_gross_max: 0.20
 
+# Return source of each instrument for the risk budget (portfolio.risk_budget): by sleeve, except these.
+risk_sources:
+  TIP: inflation                    # inflation-linked Treasuries: breakeven exposure
+  SOXX: semis                       # the semiconductor index hedges the conviction names
+  VNQ: equity                       # REITs trade with equities
+  IGF: equity
+  EMLC: FX                          # EM local-currency debt: mostly currency risk
+
 # Prices in local currency converted to USD. Weekly returns (Seoul and New York closes are not synchronous).
 fx: {HYNIX: USDKRW, SAMSUNG: USDKRW}
 
@@ -126,6 +134,7 @@ model:
       - {drawdown: 0.08, scale: 0.75}
       - {drawdown: 0.15, scale: 0.50}
     recover_at: 0.5                 # a level is released when the drawdown is below half its threshold
+  # resample: {draws: 100, seed: 0}  # Michaud resampled weights (H47): off until the lab confirms it
   tail_hedge:                       # one-month 5% out-of-the-money S&P 500 puts, rolled monthly (H34)
     moneyness: 0.95
     skew_premium: 0.15              # put implied vol = VIX × (1 + 0.15)
