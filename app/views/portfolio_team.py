@@ -31,6 +31,51 @@ st.caption(
     "analysts research their area across the whole market, and the work is recorded here and in docs/research/."
 )
 
+
+@st.fragment(run_every="60s")
+def live_board() -> None:
+    """Task board: refreshed every minute from the committee's status file and the desk's last run."""
+    titles = dict(zip(roster["agent"], roster["title"], strict=False))
+    bd = team.board()
+    st.subheader("Live task board")
+    if bd.empty:
+        st.caption("No task in the last 30 hours.")
+        return
+    now = pd.Timestamp.now(tz="UTC")
+    running = bd[bd["status"] == "en cours"]
+    if not running.empty:
+        st.info(
+            f"Committee in session: {running['agent'].nunique()} member(s) working now "
+            f"({', '.join(sorted(running['stage'].astype(str).unique()))})."
+        )
+    cols = st.columns(3)
+    for col, (stage, label) in zip(
+        cols,
+        (("à faire", "To do"), ("en cours", "In progress"), ("terminé", "Done (last 30 h)")),
+        strict=True,
+    ):
+        part = bd[bd["status"] == stage]
+        col.markdown(f"**{label}** · {len(part)}")
+        with col.container(height=420, border=True):
+            for _, r in part.head(60).iterrows():
+                t = r["time"]
+                ago = ""
+                if pd.notna(t):
+                    mins = int((now - t).total_seconds() // 60)
+                    ago = f"{mins} min ago" if mins < 120 else f"{t:%d/%m %H:%M} UTC"
+                st.markdown(
+                    f"**{titles.get(r['agent'], r['agent'])}**  \n{r['task']}  \n"
+                    f"<small>{r['stage']} · {r['source']} · {ago}</small>",
+                    unsafe_allow_html=True,
+                )
+    st.caption(
+        "Desk notes are computed by GitHub five times a weekday; the nightly committee (23:41 Zurich) posts each "
+        "member's status as it moves through the rounds. The board refreshes every minute."
+    )
+
+
+live_board()
+
 st.subheader("Forecast track record (decision registry)")
 if decisions.empty:
     st.caption(

@@ -65,3 +65,28 @@ def test_markdown_renders_table():
     desk.enrich(ctx, n)
     md = desk.markdown(n, "now")
     assert md.startswith("# Japon") and "| EWJ |" in md
+
+
+def test_task_board(tmp_path):
+    from macro import team
+
+    st = tmp_path / "status.csv"
+    team.set_status(
+        [{"agent": "macro-strategist", "stage": "tour 1", "status": "en cours", "task": "note"}], st
+    )
+    team.set_status(
+        [{"agent": "macro-strategist", "stage": "tour 1", "status": "terminé", "task": "note"}], st
+    )
+    idx = tmp_path / "README.md"
+    idx.write_text(
+        "# Desk GitHub — 17/11/2026 16:47 UTC\n\n| `fx-strategist` | [Changes (calcul GitHub)](fx.md) | x |\n"
+    )
+    b = team.board(st, idx, hours=10_000)
+    m = b[b["agent"] == "macro-strategist"]
+    assert len(m) == 1 and m.iloc[0]["status"] == "terminé"
+    d = b[b["agent"] == "fx-strategist"].iloc[0]
+    assert d["source"] == "desk" and d["time"].hour == 16
+    import pytest
+
+    with pytest.raises(ValueError):
+        team.set_status([{"agent": "x", "stage": "s", "status": "fini", "task": "t"}], st)
