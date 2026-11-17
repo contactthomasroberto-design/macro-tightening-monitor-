@@ -50,12 +50,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/check_alerts.py --issue
-      - name: Evening report (evening run or manual runs; opens an issue e-mailed to the owner)
+      - name: Daily report (every run; the evening run also opens an issue e-mailed to the owner)
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$(date -u +%H)" -ge 20 ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then python scripts/evening_report.py --issue; fi
+          if [ "$(date -u +%H)" -ge 20 ]; then python scripts/evening_report.py --issue; else python scripts/evening_report.py; fi
       - name: Warm-start snapshot for the hosted dashboard (data + computed results)
         run: python scripts/export_snapshot.py
       - name: Evaluate the archive (track record)

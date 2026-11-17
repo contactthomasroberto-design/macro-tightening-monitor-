@@ -88,7 +88,7 @@ else:
 st.subheader("Research notes and evening reports")
 for label, folder in (
     ("Research team notes", "docs/research/daily"),
-    ("Evening reports", "docs/reports/daily"),
+    ("Daily reports (updated three times a day)", "docs/reports/daily"),
 ):
     files = sorted(Path(ROOT / folder).glob("*.md"), reverse=True)
     with st.expander(f"{label} ({len(files)})", expanded=False):

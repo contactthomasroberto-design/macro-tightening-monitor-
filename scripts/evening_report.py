@@ -58,7 +58,12 @@ def main() -> int:
     snap = snapshot(b, day)
     prev = previous(day)
     m, r = b["metrics"], b["risk"]
-    L: list[str] = [f"# Rapport du soir — {day}", ""]
+    now_utc = pd.Timestamp.now(tz="UTC")
+    L: list[str] = [
+        f"# Rapport du jour — {day}",
+        f"*Mis à jour à {now_utc:%H:%M} UTC ; régénéré à chaque rafraîchissement, envoyé par e-mail le soir.*",
+        "",
+    ]
 
     # ---------------------------------------------------------------- the book
     L += ["## 1. Le portefeuille", ""]
