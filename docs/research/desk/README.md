@@ -1,4 +1,4 @@
-# Desk GitHub — 18/11/2026 03:25 UTC
+# Desk GitHub — 18/11/2026 06:40 UTC
 
 Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des familles de signaux sur tout l'univers, scans de tous les marchés suivis. Le comité du soir les débat.
 
@@ -8,14 +8,14 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 | `us-economist` | [Activité, emploi et inflation US (calcul GitHub)](us-economist.md) | Nowcast du PIB (2026Q4) : 2.5 % annualisé (68 % : 0.2 à 4.8). |
 | `central-bank-watcher` | [Banques centrales : prix de marché vs taux (calcul GitHub)](central-bank-watcher.md) | Fed funds effectif : 3.88 %. |
 | `quant-researcher` | [Robustesse du modèle et tests pré-enregistrés (calcul GitHub)](quant-researcher.md) | Deflated Sharpe 0.01 sur 10 configurations (< 0,95 : pas de preuve d'alpha au-delà de la chance). |
-| `signals-researcher` | [Contribution et cohérence des familles de signaux (calcul GitHub)](signals-researcher.md) | Poids de chaque famille dans les rendements attendus (somme des /contributions/, pt/an) : trend 46.4, regime 12.9, value 7.6, macro 5.5, micro 3.5, house 3.4, carry 2.2, news 0.0. |
+| `signals-researcher` | [Contribution et cohérence des familles de signaux (calcul GitHub)](signals-researcher.md) | Poids de chaque famille dans les rendements attendus (somme des /contributions/, pt/an) : trend 46.4, regime 12.9, value 7.6, macro 5.5, micro 3.5, house 3.4, carry 2.2, committee 0.0, news 0.0. |
 | `portfolio-construction-quant` | [Construction : contraintes, brut, rotation (calcul GitHub)](portfolio-construction-quant.md) | Statut de l'optimiseur : optimal. Brut +100 % (plafond +160 %), actions nettes +60 %, 19 lignes, 0 shorts. |
 | `risk-manager` | [Risque du livre (calcul GitHub)](risk-manager.md) | Volatilité ex ante +8,4 % (60/40 +8,4 %), tracking error +3,3 %. |
 | `stress-testing-analyst` | [Stress tests prospectifs et crises rejouées (calcul GitHub)](stress-testing-analyst.md) | Pire scénario : Crise de crédit (2008 atténuée ; HY −20 %) (-15,7 %) ; 1 hors limite. |
 | `execution-trading-analyst` | [Ordres et coûts (calcul GitHub)](execution-trading-analyst.md) | 51 ordres papier, rotation +50,0 % ; coût estimé 0.05 % de la VL (5 pb). |
 | `data-quality-engineer` | [Fraîcheur et anomalies des données (calcul GitHub)](data-quality-engineer.md) | Dernière date de prix : 18/11/2026 ; instruments en retard de plus de 3 jours : aucun. |
-| `news-desk-analyst` | [News notées : pression par actif (calcul GitHub)](news-desk-analyst.md) | 284 titres notés (FinBERT) sur 3 jours. |
-| `research-librarian` | [Veille des publications (calcul GitHub)](research-librarian.md) | 862 publications relevées sur 3 jours, 46 institutions. |
+| `news-desk-analyst` | [News notées : pression par actif (calcul GitHub)](news-desk-analyst.md) | 352 titres notés (FinBERT) sur 3 jours. |
+| `research-librarian` | [Veille des publications (calcul GitHub)](research-librarian.md) | 966 publications relevées sur 3 jours, 46 institutions. |
 | `us-equity-analyst` | [Actions US : indices, styles, secteurs (calcul GitHub)](us-equity-analyst.md) | Préféré : US momentum factor (+2.9 pt/an) ; le moins attractif : US utilities sector (+0.2 pt/an). |
 | `europe-analyst` | [Europe : actions, euro, franc, obligations (calcul GitHub)](europe-analyst.md) | Préféré : European equities (+1.2 pt/an) ; le moins attractif : Swiss franc (-0.4 pt/an). 2 désaccord(s) avec les vues publiées. |
 | `japan-asia-analyst` | [Japon et Asie développée (calcul GitHub)](japan-asia-analyst.md) | Préféré : Korean equities (+4.0 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an). |
@@ -30,10 +30,10 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 | `high-yield-credit-analyst` | [Haut rendement (calcul GitHub)](high-yield-credit-analyst.md) | Préféré : US high yield (+0.3 pt/an) ; le moins attractif : US investment-grade credit (-0.1 pt/an). 1 désaccord(s) avec les vues publiées. |
 | `em-debt-analyst` | [Dette émergente (calcul GitHub)](em-debt-analyst.md) | Préféré : EM sovereign debt (USD) (+0.3 pt/an) ; le moins attractif : EM local-currency debt (+0.2 pt/an). |
 | `fx-strategist` | [Changes (calcul GitHub)](fx-strategist.md) | Préféré : US dollar index (long) (+0.2 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an). 1 désaccord(s) avec les vues publiées. |
-| `macro-strategist` | [Tour d'horizon cross-asset : tous les marchés suivis (calcul GitHub)](macro-strategist-2.md) | 23 marchés ; 3 mouvement(s) d'un mois au-delà de 2 écarts-types. |
-| `chief-investment-officer` | [Synthèse du desk GitHub (calcul GitHub)](chief-investment-officer.md) | 43 point(s) à arbitrer au comité de ce soir. |
+| `macro-strategist` | [Tour d'horizon cross-asset : tous les marchés suivis (calcul GitHub)](macro-strategist-2.md) | 23 marchés ; 2 mouvement(s) d'un mois au-delà de 2 écarts-types. |
+| `chief-investment-officer` | [Synthèse du desk GitHub (calcul GitHub)](chief-investment-officer.md) | 41 point(s) à arbitrer au comité de ce soir. |
 
-## Points à débattre (43)
+## Points à débattre (41)
 
 - `us-economist` : CPI réaccélère (3 mois +5,7 % > 12 mois +4,1 %).
 - `us-economist` : CPI core réaccélère (3 mois +3,7 % > 12 mois +2,9 %).
@@ -50,7 +50,6 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `europe-analyst` : Mouvement anormal : BTP-Bund spread : 1.26 (+0.37 sur un mois, z +3.6 ; percentile 5 ans 40 %) ⚠.
 - `europe-analyst` : Mouvement anormal : OAT-Bund spread : 1.47 (+0.51 sur un mois, z +4.9 ; percentile 5 ans 100 %) ⚠.
 - `europe-analyst` : Mouvement anormal : Bono-Bund spread : 0.65 (+0.20 sur un mois, z +3.9 ; percentile 5 ans 32 %) ⚠.
-- `japan-asia-analyst` : Mouvement anormal : Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - `japan-asia-analyst` : Mouvement anormal : BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
 - `japan-asia-analyst` : Taiwanese equities : mouvement d'un mois à z -2.7.
 - `emerging-markets-analyst` : Indian equities : mouvement d'un mois à z +2.3.
@@ -76,5 +75,4 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `high-yield-credit-analyst` : US high yield : nos signaux (positive) contredisent les vues publiées (-0.8) — à débattre.
 - `fx-strategist` : Swiss franc : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
 - `macro-strategist` : [Equities] Semiconductors (SOX) : 9,643 (-1,673 sur un mois, z -2.1 ; percentile 5 ans 89 %) ⚠.
-- `macro-strategist` : [Equities] Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - `macro-strategist` : [Equities] S&P 500 : 7,341 (-350 sur un mois, z -2.0 ; percentile 5 ans 89 %) ⚠.

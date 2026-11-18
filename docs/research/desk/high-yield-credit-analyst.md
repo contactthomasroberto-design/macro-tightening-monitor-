@@ -1,6 +1,6 @@
 # Haut rendement (calcul GitHub)
 
-*`high-yield-credit-analyst` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`high-yield-credit-analyst` — 18/11/2026 06:40 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US high yield (+0.3 pt/an) ; le moins attractif : US investment-grade credit (-0.1 pt/an). 1 désaccord(s) avec les vues publiées.
 

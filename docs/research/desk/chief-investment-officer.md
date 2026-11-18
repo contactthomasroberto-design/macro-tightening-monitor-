@@ -1,11 +1,11 @@
 # Synthèse du desk GitHub (calcul GitHub)
 
-*`chief-investment-officer` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`chief-investment-officer` — 18/11/2026 06:40 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
-**En bref** : 43 point(s) à arbitrer au comité de ce soir.
+**En bref** : 41 point(s) à arbitrer au comité de ce soir.
 
 - Livre : US equities (S&P 500) +28,3 %, US aggregate bonds +27,8 %, European equities +9,0 %, US dollar index (long) +6,2 %, US energy sector +4,3 %, Emerging-market equities (broad) +4,0 %, Brent crude oil +4,0 %, Japanese equities +3,3 %.
-- 43 point(s) à arbitrer au comité de ce soir.
+- 41 point(s) à arbitrer au comité de ce soir.
 
 **À surveiller / à débattre**
 
@@ -24,7 +24,6 @@
 - europe-analyst : Mouvement anormal : BTP-Bund spread : 1.26 (+0.37 sur un mois, z +3.6 ; percentile 5 ans 40 %) ⚠.
 - europe-analyst : Mouvement anormal : OAT-Bund spread : 1.47 (+0.51 sur un mois, z +4.9 ; percentile 5 ans 100 %) ⚠.
 - europe-analyst : Mouvement anormal : Bono-Bund spread : 0.65 (+0.20 sur un mois, z +3.9 ; percentile 5 ans 32 %) ⚠.
-- japan-asia-analyst : Mouvement anormal : Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - japan-asia-analyst : Mouvement anormal : BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
 - japan-asia-analyst : Taiwanese equities : mouvement d'un mois à z -2.7.
 - emerging-markets-analyst : Indian equities : mouvement d'un mois à z +2.3.
@@ -50,5 +49,4 @@
 - high-yield-credit-analyst : US high yield : nos signaux (positive) contredisent les vues publiées (-0.8) — à débattre.
 - fx-strategist : Swiss franc : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
 - macro-strategist : [Equities] Semiconductors (SOX) : 9,643 (-1,673 sur un mois, z -2.1 ; percentile 5 ans 89 %) ⚠.
-- macro-strategist : [Equities] Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - macro-strategist : [Equities] S&P 500 : 7,341 (-350 sur un mois, z -2.0 ; percentile 5 ans 89 %) ⚠.

@@ -1,14 +1,14 @@
 # Tour d'horizon cross-asset : tous les marchés suivis (calcul GitHub)
 
-*`macro-strategist` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`macro-strategist` — 18/11/2026 06:40 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
-**En bref** : 23 marchés ; 3 mouvement(s) d'un mois au-delà de 2 écarts-types.
+**En bref** : 23 marchés ; 2 mouvement(s) d'un mois au-delà de 2 écarts-types.
 
 - [Equities] Semiconductors (SOX) : 9,643 (-1,673 sur un mois, z -2.1 ; percentile 5 ans 89 %) ⚠.
-- [Equities] Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - [Equities] S&P 500 : 7,341 (-350 sur un mois, z -2.0 ; percentile 5 ans 89 %) ⚠.
-- [Commodities] Brent (front month) : 93 (-16 sur un mois, z -1.9 ; percentile 5 ans 76 %).
-- [Commodities] Gold (front month) : 3,802 (-341 sur un mois, z -1.8 ; percentile 5 ans 77 %).
+- [Equities] Nikkei 225 : 59,091 (-4,985 sur un mois, z -1.9 ; percentile 5 ans 89 %).
+- [Commodities] Gold (front month) : 3,780 (-362 sur un mois, z -1.9 ; percentile 5 ans 77 %).
+- [Commodities] Brent (front month) : 92 (-16 sur un mois, z -1.9 ; percentile 5 ans 76 %).
 - [Rates] US 10Y breakeven : 2.21 (-0.14 sur un mois, z -1.5 ; percentile 5 ans 10 %).
 - [Volatility] VIX (equity vol) : 25.46 (+7.02 sur un mois, z +1.4 ; percentile 5 ans 86 %).
 - [FX] EUR/USD : 1.10 (-0.02 sur un mois, z -1.2 ; percentile 5 ans 55 %).
@@ -23,7 +23,7 @@
 - [Credit] US HY OAS : 3.34 (+0.11 sur un mois, z +0.4 ; percentile 5 ans 84 %).
 - [Rates] US 2Y : 4.83 (+0.06 sur un mois, z +0.3 ; percentile 5 ans 90 %).
 - [Rates] Euro area 10Y (AAA) : 3.42 (-0.02 sur un mois, z -0.2 ; percentile 5 ans 98 %).
-- [FX] USD/JPY : 159 (+1 sur un mois, z +0.2 ; percentile 5 ans 94 %).
+- [FX] USD/JPY : 159 (+1 sur un mois, z +0.1 ; percentile 5 ans 93 %).
 - [Volatility] MOVE (rates vol) : 102 (+1 sur un mois, z +0.1 ; percentile 5 ans 50 %).
 - [Rates] US 10Y : 5.12 (+0.02 sur un mois, z +0.1 ; percentile 5 ans 99 %).
 - [Equities] Euro Stoxx 50 : 6,212 (+67 sur un mois, z +0.0 ; percentile 5 ans 93 %).
@@ -31,5 +31,4 @@
 **À surveiller / à débattre**
 
 - [Equities] Semiconductors (SOX) : 9,643 (-1,673 sur un mois, z -2.1 ; percentile 5 ans 89 %) ⚠.
-- [Equities] Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - [Equities] S&P 500 : 7,341 (-350 sur un mois, z -2.0 ; percentile 5 ans 89 %) ⚠.

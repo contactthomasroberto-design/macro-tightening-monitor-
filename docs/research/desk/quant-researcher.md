@@ -1,10 +1,10 @@
 # Robustesse du modèle et tests pré-enregistrés (calcul GitHub)
 
-*`quant-researcher` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`quant-researcher` — 18/11/2026 06:40 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Deflated Sharpe 0.01 sur 10 configurations (< 0,95 : pas de preuve d'alpha au-delà de la chance).
 
-- Backtest : +8,4 %/an, drawdown max -18,6 % (60/40 -38,2 %), Sharpe 0.72 vs 0.47.
+- Backtest : +8,4 %/an, drawdown max -18,6 % (60/40 -38,2 %), Sharpe 0.73 vs 0.47.
 - Deflated Sharpe 0.01 sur 10 configurations (< 0,95 : pas de preuve d'alpha au-delà de la chance).
 - H29 memory cycle : IC +0.24, t = +0.9, n = 17.
 - Variante long only (H35) : Sharpe 0.73, drawdown -17,7 %.

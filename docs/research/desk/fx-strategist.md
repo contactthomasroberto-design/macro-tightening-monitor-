@@ -1,6 +1,6 @@
 # Changes (calcul GitHub)
 
-*`fx-strategist` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`fx-strategist` — 18/11/2026 06:40 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US dollar index (long) (+0.2 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an). 1 désaccord(s) avec les vues publiées.
 
@@ -12,8 +12,8 @@
 - DXY : 104 (+2 sur un mois, z +1.1 ; percentile 5 ans 63 %).
 - broad dollar : 123 (+1 sur un mois, z +0.4 ; percentile 5 ans 75 %).
 - EUR/USD : 1.10 (-0.02 sur un mois, z -1.2 ; percentile 5 ans 55 %).
-- USD/JPY : 159 (+1 sur un mois, z +0.2 ; percentile 5 ans 94 %).
-- USD/KRW : 1,329 (-1 sur un mois, z -0.0 ; percentile 5 ans 36 %).
+- USD/JPY : 159 (+1 sur un mois, z +0.1 ; percentile 5 ans 93 %).
+- USD/KRW : 1,333 (+3 sur un mois, z +0.1 ; percentile 5 ans 38 %).
 - US-euro 2Y differential : 1.72 (-0.06 sur un mois, z -0.3 ; percentile 5 ans 41 %).
 - US-Japan 2Y differential : 2.95 (+0.10 sur un mois, z +0.7 ; percentile 5 ans 37 %).
 - EUR futures: leveraged net : -71,676 (-3,675 sur un mois, z -0.1 ; percentile 5 ans 1 %).

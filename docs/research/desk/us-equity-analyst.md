@@ -1,6 +1,6 @@
 # Actions US : indices, styles, secteurs (calcul GitHub)
 
-*`us-equity-analyst` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`us-equity-analyst` — 18/11/2026 06:40 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US momentum factor (+2.9 pt/an) ; le moins attractif : US utilities sector (+0.2 pt/an).
 
@@ -12,8 +12,8 @@
 - US equal-weight S&P 500 : 1 mois +1,1 %, 12 mois +18,6 %, -3 % du plus haut, vol 13 % ; familles trend +0.9, macro +0.4, regime +0.1, value +1.0 → **positive** (accord 100 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - US financials sector : 1 mois +3,7 %, 12 mois +12,7 %, -4 % du plus haut, vol 17 % ; familles trend +0.6, macro +0.5, regime +0.2, value +0.6 → **positive** (accord 100 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - US aerospace and defence : 1 mois +0,5 %, 12 mois +2,7 %, -17 % du plus haut, vol 23 % ; familles trend +0.1, macro -0.0, regime -0.1, value -1.0 → **negative** (accord 75 %) ; poids +0,0 % (+0,0 % vs 60/40).
-- US minimum volatility factor : 1 mois +0,5 %, 12 mois +10,3 %, -3 % du plus haut, vol 11 % ; familles trend +0.8, macro -0.2, regime -0.1, value +0.5 → **positive** (accord 50 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - US health-care sector : 1 mois +5,5 %, 12 mois +24,1 %, -2 % du plus haut, vol 18 % ; familles trend +0.8, macro -0.2, regime -0.0, value +1.0 → **positive** (accord 50 %) ; poids +1,7 % (+1,7 % vs 60/40).
+- US minimum volatility factor : 1 mois +0,5 %, 12 mois +10,3 %, -3 % du plus haut, vol 11 % ; familles trend +0.8, macro -0.2, regime -0.1, value +0.5 → **positive** (accord 50 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - US utilities sector : 1 mois +5,0 %, 12 mois -0,3 %, -7 % du plus haut, vol 16 % ; familles trend -0.0, macro -0.3, regime -0.3, value +0.2 → **negative** (accord 75 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
 - S&P 500 : 7,341 (-350 sur un mois, z -2.0 ; percentile 5 ans 89 %) ⚠.
@@ -47,6 +47,6 @@
 | RSP | US equal-weight S&P 500 | +1.1% | -1.7% | +18.6% | -3.4% | +13.0% | +1.4 | positive | +100.0% |  | 0 | +0.0% | +0.0% | +16% | -0.11 | +96% | +0.77 | +0.85 | -0.09 |
 | XLF | US financials sector | +3.7% | +0.6% | +12.7% | -3.6% | +16.7% | +1.2 | positive | +100.0% |  | 0 | +0.0% | +0.0% | +7% | +0.45 | +97% | +0.75 | +0.71 | -0.14 |
 | ITA | US aerospace and defence | +0.5% | -12.0% | +2.7% | -17.4% | +22.6% | +0.9 | negative | +75.0% |  | 0 | +0.0% | +0.0% | +1% | -0.28 | +82% | +0.84 | +0.63 | -0.09 |
-| USMV | US minimum volatility factor | +0.5% | +1.5% | +10.3% | -2.6% | +11.1% | +0.9 | positive | +50.0% |  | 0 | +0.0% | +0.0% | +9% | -0.25 | +99% | +0.47 | +0.70 | +0.04 |
 | XLV | US health-care sector | +5.5% | +7.9% | +24.1% | -2.3% | +17.9% | +0.9 | positive | +50.0% |  | 0 | +1.7% | +1.7% | +18% | +1.09 | +99% | +0.43 | +0.44 | -0.05 |
+| USMV | US minimum volatility factor | +0.5% | +1.5% | +10.3% | -2.6% | +11.1% | +0.8 | positive | +50.0% |  | 0 | +0.0% | +0.0% | +9% | -0.25 | +99% | +0.47 | +0.70 | +0.04 |
 | XLU | US utilities sector | +5.0% | -0.1% | -0.3% | -7.1% | +15.9% | +0.2 | negative | +75.0% |  | 0 | +0.0% | +0.0% | -4% | +0.86 | +88% | +0.32 | +0.31 | -0.14 |
