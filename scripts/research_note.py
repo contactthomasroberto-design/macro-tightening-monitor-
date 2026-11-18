@@ -35,7 +35,10 @@ def last(sid):
 
 def yoy(sid):
     s = get_series(sid).dropna()
-    return float(100 * (s.iloc[-1] / s.iloc[-13] - 1)), s.index[-1]
+    from macro.desk import monthly_change
+
+    y, d = monthly_change(s, 12)
+    return float(100 * y), d
 
 
 def ann3m(sid):

@@ -187,6 +187,9 @@ def main() -> int:
             return None
 
     reg = pf.regime_series(try_series("INDPRO"), try_series("CPIAUCSL")).dropna()
+    reg = reg.loc[
+        : pd.Timestamp(b["as_of"])
+    ]  # shifted by the publication lag: show what the model uses today
     if not reg.empty:
         L.append(
             f"- Régime (production industrielle et CPI, en tendance) : **{reg.iloc[-1]}**, depuis {reg[reg != reg.iloc[-1]].index[-1]:%d/%m/%Y}."

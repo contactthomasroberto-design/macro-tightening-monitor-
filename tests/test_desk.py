@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from macro import desk
 
@@ -98,3 +99,14 @@ def test_conflicts_use_the_stance():
     assert not any("EWJ" in w for w in n.watch)
     n = desk._coverage_note(ctx, "europe-analyst", "x")  # VGK: negative stance, house +1: conflict
     assert any("VGK" in w and "contredisent" in w for w in n.watch)
+
+
+def test_monthly_change_does_not_bridge_a_missing_month():
+    # regression (committee of 17/11): October 2025 missing made the "12-month" CPI a 13-month change
+    idx = pd.date_range("2024-01-01", "2026-10-01", freq="MS")
+    s = pd.Series(100 * 1.003 ** np.arange(len(idx)), idx).drop(pd.Timestamp("2025-10-01"))
+    y, d = desk.monthly_change(s, 12)
+    assert d == pd.Timestamp("2026-09-01")  # October 2026 has no October 2025 to compare with
+    assert y == pytest.approx(1.003**12 - 1)
+    m3, d3 = desk.monthly_change(s, 3, annualise=True)
+    assert d3 == pd.Timestamp("2026-10-01") and m3 == pytest.approx(1.003**12 - 1)

@@ -63,6 +63,11 @@ jobs:
       - name: GitHub desk (computed analyst notes across all markets, no AI tokens)
         continue-on-error: true
         run: python scripts/desk_run.py
+      - name: Health check (automatic bug detection; opens an issue per new failure)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/health_check.py --issue
       - name: Daily report (every run; the evening run also opens an issue e-mailed to the owner)
         continue-on-error: true
         env:
@@ -96,7 +101,7 @@ jobs:
           git config user.name "macro-monitor-bot"
           git config user.email "actions@users.noreply.github.com"
           git add archive/forecasts.csv README.md docs/figures snapshot/live
-          for f in archive/forecast_book.csv archive/signposts_state.json archive/portfolio_book.csv archive/portfolio_daily docs/reports/daily archive/decisions.csv archive/process_alerts.json docs/research/postmortems docs/research/desk archive/desk_log.csv archive/strategy_metrics.csv docs/factsheets; do
+          for f in archive/forecast_book.csv archive/signposts_state.json archive/portfolio_book.csv archive/portfolio_daily docs/reports/daily archive/decisions.csv archive/process_alerts.json docs/research/postmortems docs/research/desk archive/desk_log.csv archive/strategy_metrics.csv docs/factsheets archive/health.json docs/engineering; do
             if [ -e "$f" ]; then git add "$f"; fi
           done
           if ! git diff --cached --quiet; then

@@ -65,6 +65,18 @@ def pct(x: float, d: int = 1) -> str:
     return "n.d." if x is None or not np.isfinite(x) else f"{100 * x:+.{d}f} %".replace(".", ",")
 
 
+def monthly_change(s: pd.Series, months: int, annualise: bool = False) -> tuple[float, pd.Timestamp | None]:
+    """Change over `months` calendar months of a monthly series, on the latest month where both ends
+    exist: a missing month (e.g. October 2025, not collected by the BLS) is not silently bridged by
+    counting rows, which would turn a 12-month change into a 13-month one."""
+    m = s.dropna().resample("MS").last()
+    ch = m / m.shift(months) - 1
+    if annualise:
+        ch = (1 + ch) ** (12 / months) - 1
+    ch = ch.dropna()
+    return (float(ch.iloc[-1]), ch.index[-1]) if len(ch) else (float("nan"), None)
+
+
 def _last(s: pd.Series | None) -> tuple[float, pd.Timestamp] | None:
     if s is None or s.dropna().empty:
         return None
@@ -172,6 +184,9 @@ def macro_strategist(ctx: Context) -> Note:
 
     f, watch = [], []
     reg = pf.regime_series(ctx.get("INDPRO"), ctx.get("CPIAUCSL")).dropna()
+    reg = reg.loc[
+        : pd.Timestamp(ctx.b["as_of"])
+    ]  # the series is shifted by the publication lag: no future label
     if not reg.empty:
         since = reg[reg != reg.iloc[-1]].index[-1] if (reg != reg.iloc[-1]).any() else reg.index[0]
         f.append(f"Régime croissance/inflation : **{reg.iloc[-1]}** depuis {since:%m/%Y}.")
@@ -236,10 +251,17 @@ def us_economist(ctx: Context) -> Note:
             continue
         s = s.dropna()
         if yoy:
-            y = s.iloc[-1] / s.iloc[-13] - 1
-            m3 = (s.iloc[-1] / s.iloc[-4]) ** 4 - 1
-            f.append(f"{lab} : {pct(y)} sur un an, {pct(m3)} annualisé sur 3 mois ({s.index[-1]:%m/%Y}).")
-            if m3 > y + 0.005:
+            y, dy = monthly_change(s, 12)
+            m3, d3 = monthly_change(s, 3, annualise=True)
+            if dy is None:
+                continue
+            f.append(
+                f"{lab} : {pct(y)} sur un an ({dy:%m/%Y}), {pct(m3)} annualisé sur 3 mois"
+                + (f" ({d3:%m/%Y})" if d3 is not None else "")
+                + ("" if d3 == dy else " — mois manquant dans la série, 12 mois au dernier mois calculable")
+                + "."
+            )
+            if np.isfinite(m3) and m3 > y + 0.005:
                 watch.append(f"{lab} réaccélère (3 mois {pct(m3)} > 12 mois {pct(y)}).")
         elif sid == "PAYEMS":
             f.append(
@@ -703,10 +725,10 @@ EXTRAS: dict[str, list[tuple[str, str, str]]] = {
         ("EA_UNRATE", "unemployment", "level"),
         ("EA_DFR", "ECB deposit rate", "level"),
         ("EA_YC_2Y", "euro 2Y AAA", "level"),
-        ("DE_10Y", "Bund 10Y", "level"),
-        ("IT_10Y-DE_10Y", "BTP-Bund spread", "level"),
-        ("FR_10Y-DE_10Y", "OAT-Bund spread", "level"),
-        ("ES_10Y-DE_10Y", "Bono-Bund spread", "level"),
+        ("DE_10Y", "Bund 10Y (moyenne mensuelle BCE)", "level"),
+        ("IT_10Y-DE_10Y", "BTP-Bund spread (moyenne mensuelle BCE)", "level"),
+        ("FR_10Y-DE_10Y", "OAT-Bund spread (moyenne mensuelle BCE)", "level"),
+        ("ES_10Y-DE_10Y", "Bono-Bund spread (moyenne mensuelle BCE)", "level"),
         ("TFF_EUR_LEV", "EUR futures: leveraged funds net", "level"),
     ],
     "japan-asia-analyst": [
