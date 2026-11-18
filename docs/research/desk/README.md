@@ -1,4 +1,4 @@
-# Desk GitHub — 18/11/2026 22:10 UTC
+# Desk GitHub — 18/11/2026 23:22 UTC
 
 Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des familles de signaux sur tout l'univers, scans de tous les marchés suivis. Le comité du soir les débat.
 
@@ -14,8 +14,8 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 | `stress-testing-analyst` | [Stress tests prospectifs et crises rejouées (calcul GitHub)](stress-testing-analyst.md) | Pire scénario : Crise de crédit (2008 atténuée ; HY −20 %) (-15,7 %) ; 1 hors limite. |
 | `execution-trading-analyst` | [Ordres et coûts (calcul GitHub)](execution-trading-analyst.md) | 51 ordres papier, rotation +50,1 % ; coût estimé 0.05 % de la VL (5 pb). |
 | `data-quality-engineer` | [Fraîcheur et anomalies des données (calcul GitHub)](data-quality-engineer.md) | Dernière date de prix : 18/11/2026 ; instruments en retard de plus de 3 jours : aucun. |
-| `news-desk-analyst` | [News notées : pression par actif (calcul GitHub)](news-desk-analyst.md) | 451 titres notés (FinBERT) sur 3 jours. |
-| `research-librarian` | [Veille des publications (calcul GitHub)](research-librarian.md) | 1163 publications relevées sur 3 jours, 49 institutions. |
+| `news-desk-analyst` | [News notées : pression par actif (calcul GitHub)](news-desk-analyst.md) | 544 titres notés (FinBERT) sur 3 jours. |
+| `research-librarian` | [Veille des publications (calcul GitHub)](research-librarian.md) | 1348 publications relevées sur 3 jours, 50 institutions. |
 | `us-equity-analyst` | [Actions US : indices, styles, secteurs (calcul GitHub)](us-equity-analyst.md) | Préféré : US momentum factor (+2.9 pt/an) ; le moins attractif : US utilities sector (+0.2 pt/an). |
 | `europe-analyst` | [Europe : actions, euro, franc, obligations (calcul GitHub)](europe-analyst.md) | Préféré : European equities (+1.2 pt/an) ; le moins attractif : Swiss franc (-0.4 pt/an). 1 désaccord(s) avec les vues publiées. |
 | `japan-asia-analyst` | [Japon et Asie développée (calcul GitHub)](japan-asia-analyst.md) | Préféré : Korean equities (+4.0 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an). |
@@ -64,7 +64,7 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `energy-commodities-analyst` : Gold : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
 - `energy-commodities-analyst` : Mouvement anormal : Brent future : 89 (-20 sur un mois, z -2.3 ; percentile 5 ans 69 %) ⚠.
 - `energy-commodities-analyst` : Mouvement anormal : Brent spot : 93 (-24 sur un mois, z -2.2 ; percentile 5 ans 75 %) ⚠.
-- `energy-commodities-analyst` : Mouvement anormal : gold future : 3,726 (-416 sur un mois, z -2.2 ; percentile 5 ans 77 %) ⚠.
+- `energy-commodities-analyst` : Mouvement anormal : gold future : 3,732 (-411 sur un mois, z -2.1 ; percentile 5 ans 77 %) ⚠.
 - `energy-commodities-analyst` : Brent crude oil : corrélation au S&P 500 en rupture (-0.35 sur 3 mois).
 - `energy-commodities-analyst` : US energy sector : corrélation au S&P 500 en rupture (-0.30 sur 3 mois).
 - `energy-commodities-analyst` : Commodities (diversified) : corrélation au S&P 500 en rupture (-0.33 sur 3 mois).
@@ -77,7 +77,7 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `oil-gas-analyst` : Brent crude oil : corrélation au S&P 500 en rupture (-0.35 sur 3 mois).
 - `oil-gas-analyst` : US energy sector : corrélation au S&P 500 en rupture (-0.30 sur 3 mois).
 - `metals-analyst` : Gold : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
-- `metals-analyst` : Mouvement anormal : gold future : 3,726 (-416 sur un mois, z -2.2 ; percentile 5 ans 77 %) ⚠.
+- `metals-analyst` : Mouvement anormal : gold future : 3,732 (-411 sur un mois, z -2.1 ; percentile 5 ans 77 %) ⚠.
 - `metals-analyst` : Gold : mouvement d'un mois à z -2.1.
 - `metals-analyst` : Silver : mouvement d'un mois à z -2.1.
 - `metals-analyst` : Copper : mouvement d'un mois à z -2.4.
@@ -89,5 +89,5 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `macro-strategist` : [Commodities] Brent (front month) : 89 (-20 sur un mois, z -2.3 ; percentile 5 ans 69 %) ⚠.
 - `macro-strategist` : [Equities] Nikkei 225 : 58,860 (-6,056 sur un mois, z -2.3 ; percentile 5 ans 89 %) ⚠.
 - `macro-strategist` : [Equities] S&P 500 : 7,324 (-389 sur un mois, z -2.2 ; percentile 5 ans 89 %) ⚠.
-- `macro-strategist` : [Commodities] Gold (front month) : 3,726 (-416 sur un mois, z -2.2 ; percentile 5 ans 77 %) ⚠.
+- `macro-strategist` : [Commodities] Gold (front month) : 3,732 (-411 sur un mois, z -2.1 ; percentile 5 ans 77 %) ⚠.
 - `macro-strategist` : [Equities] Semiconductors (SOX) : 9,653 (-1,631 sur un mois, z -2.1 ; percentile 5 ans 89 %) ⚠.

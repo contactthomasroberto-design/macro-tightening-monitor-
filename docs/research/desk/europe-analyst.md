@@ -1,6 +1,6 @@
 # Europe : actions, euro, franc, obligations (calcul GitHub)
 
-*`europe-analyst` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`europe-analyst` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : European equities (+1.2 pt/an) ; le moins attractif : Swiss franc (-0.4 pt/an). 1 désaccord(s) avec les vues publiées.
 
@@ -9,7 +9,7 @@
 - International government bonds (unhedged) : 1 mois -1,2 %, 12 mois -4,3 %, -7 % du plus haut, vol 7 % ; familles trend -0.3, macro -0.2, regime -0.3, house +0.5 → **negative** (accord 75 %) ; vues publiées +0.5 (2) ; poids +0,0 % (+0,0 % vs 60/40).
 - Swiss franc : 1 mois -2,3 %, 12 mois -5,7 %, -10 % du plus haut, vol 6 % ; familles trend -0.4, macro -0.1, regime +0.0, value -0.3 → **negative** (accord 75 %) ; vues publiées +0.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
-- Euro Stoxx 50 : 6,154 (+33 sur un mois, z -0.1 ; percentile 5 ans 91 %).
+- Euro Stoxx 50 : 6,212 (+67 sur un mois, z +0.0 ; percentile 5 ans 93 %).
 - EUR/USD : 1.10 (-0.02 sur un mois, z -1.3 ; percentile 5 ans 54 %).
 - HICP : +4,0 % sur un an (précédent +3,8 %, au 10/2026).
 - HICP core : +2,6 % sur un an (précédent +2,5 %, au 10/2026).

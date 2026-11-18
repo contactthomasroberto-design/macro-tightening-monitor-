@@ -1,6 +1,6 @@
 # Synthèse du desk GitHub (calcul GitHub)
 
-*`chief-investment-officer` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`chief-investment-officer` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : 56 point(s) à arbitrer au comité de ce soir.
 
@@ -38,7 +38,7 @@
 - energy-commodities-analyst : Gold : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
 - energy-commodities-analyst : Mouvement anormal : Brent future : 89 (-20 sur un mois, z -2.3 ; percentile 5 ans 69 %) ⚠.
 - energy-commodities-analyst : Mouvement anormal : Brent spot : 93 (-24 sur un mois, z -2.2 ; percentile 5 ans 75 %) ⚠.
-- energy-commodities-analyst : Mouvement anormal : gold future : 3,726 (-416 sur un mois, z -2.2 ; percentile 5 ans 77 %) ⚠.
+- energy-commodities-analyst : Mouvement anormal : gold future : 3,732 (-411 sur un mois, z -2.1 ; percentile 5 ans 77 %) ⚠.
 - energy-commodities-analyst : Brent crude oil : corrélation au S&P 500 en rupture (-0.35 sur 3 mois).
 - energy-commodities-analyst : US energy sector : corrélation au S&P 500 en rupture (-0.30 sur 3 mois).
 - energy-commodities-analyst : Commodities (diversified) : corrélation au S&P 500 en rupture (-0.33 sur 3 mois).
@@ -51,7 +51,7 @@
 - oil-gas-analyst : Brent crude oil : corrélation au S&P 500 en rupture (-0.35 sur 3 mois).
 - oil-gas-analyst : US energy sector : corrélation au S&P 500 en rupture (-0.30 sur 3 mois).
 - metals-analyst : Gold : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
-- metals-analyst : Mouvement anormal : gold future : 3,726 (-416 sur un mois, z -2.2 ; percentile 5 ans 77 %) ⚠.
+- metals-analyst : Mouvement anormal : gold future : 3,732 (-411 sur un mois, z -2.1 ; percentile 5 ans 77 %) ⚠.
 - metals-analyst : Gold : mouvement d'un mois à z -2.1.
 - metals-analyst : Silver : mouvement d'un mois à z -2.1.
 - metals-analyst : Copper : mouvement d'un mois à z -2.4.
@@ -63,5 +63,5 @@
 - macro-strategist : [Commodities] Brent (front month) : 89 (-20 sur un mois, z -2.3 ; percentile 5 ans 69 %) ⚠.
 - macro-strategist : [Equities] Nikkei 225 : 58,860 (-6,056 sur un mois, z -2.3 ; percentile 5 ans 89 %) ⚠.
 - macro-strategist : [Equities] S&P 500 : 7,324 (-389 sur un mois, z -2.2 ; percentile 5 ans 89 %) ⚠.
-- macro-strategist : [Commodities] Gold (front month) : 3,726 (-416 sur un mois, z -2.2 ; percentile 5 ans 77 %) ⚠.
+- macro-strategist : [Commodities] Gold (front month) : 3,732 (-411 sur un mois, z -2.1 ; percentile 5 ans 77 %) ⚠.
 - macro-strategist : [Equities] Semiconductors (SOX) : 9,653 (-1,631 sur un mois, z -2.1 ; percentile 5 ans 89 %) ⚠.

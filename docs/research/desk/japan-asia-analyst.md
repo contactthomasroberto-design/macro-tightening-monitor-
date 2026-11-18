@@ -1,6 +1,6 @@
 # Japon et Asie développée (calcul GitHub)
 
-*`japan-asia-analyst` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`japan-asia-analyst` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Korean equities (+4.0 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an).
 
@@ -10,7 +10,7 @@
 - Japanese yen : 1 mois -0,7 %, 12 mois -2,8 %, -5 % du plus haut, vol 8 % ; familles trend -0.1, macro -0.3, regime -0.6, value +1.0, carry -0.9, house -1.0 → **negative** (accord 83 %) ; vues publiées -1.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
 - Nikkei 225 : 58,860 (-6,056 sur un mois, z -2.3 ; percentile 5 ans 89 %) ⚠.
-- USD/JPY : 159 (+1 sur un mois, z +0.1 ; percentile 5 ans 93 %).
+- USD/JPY : 159 (+1 sur un mois, z +0.2 ; percentile 5 ans 94 %).
 - USD/KRW : 1,333 (+3 sur un mois, z +0.1 ; percentile 5 ans 38 %).
 - Japan CPI : +2,1 % sur un an (précédent +1,9 %, au 09/2026).
 - BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.

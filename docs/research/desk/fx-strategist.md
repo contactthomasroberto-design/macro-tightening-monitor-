@@ -1,6 +1,6 @@
 # Changes (calcul GitHub)
 
-*`fx-strategist` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`fx-strategist` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US dollar index (long) (+0.2 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an).
 
@@ -9,10 +9,10 @@
 - Swiss franc : 1 mois -2,3 %, 12 mois -5,7 %, -10 % du plus haut, vol 6 % ; familles trend -0.4, macro -0.1, regime +0.0, value -0.3 → **negative** (accord 75 %) ; vues publiées +0.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - Japanese yen : 1 mois -0,7 %, 12 mois -2,8 %, -5 % du plus haut, vol 8 % ; familles trend -0.1, macro -0.3, regime -0.6, value +1.0, carry -0.9, house -1.0 → **negative** (accord 83 %) ; vues publiées -1.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
-- DXY : 104 (+2 sur un mois, z +1.2 ; percentile 5 ans 63 %).
+- DXY : 104 (+2 sur un mois, z +1.2 ; percentile 5 ans 64 %).
 - broad dollar : 123 (+1 sur un mois, z +0.4 ; percentile 5 ans 75 %).
 - EUR/USD : 1.10 (-0.02 sur un mois, z -1.3 ; percentile 5 ans 54 %).
-- USD/JPY : 159 (+1 sur un mois, z +0.1 ; percentile 5 ans 93 %).
+- USD/JPY : 159 (+1 sur un mois, z +0.2 ; percentile 5 ans 94 %).
 - USD/KRW : 1,333 (+3 sur un mois, z +0.1 ; percentile 5 ans 38 %).
 - US-euro 2Y differential : 1.71 (-0.00 sur un mois, z +0.0 ; percentile 5 ans 39 %).
 - US-Japan 2Y differential : 2.92 (+0.10 sur un mois, z +0.7 ; percentile 5 ans 36 %).

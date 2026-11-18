@@ -1,6 +1,6 @@
 # Énergie et matières premières (calcul GitHub)
 
-*`energy-commodities-analyst` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`energy-commodities-analyst` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Brent crude oil (+3.2 pt/an) ; le moins attractif : Gold (+0.1 pt/an). 2 désaccord(s) avec les vues publiées.
 
@@ -12,7 +12,7 @@
 - **Marché au sens large**
 - Brent future : 89 (-20 sur un mois, z -2.3 ; percentile 5 ans 69 %) ⚠.
 - Brent spot : 93 (-24 sur un mois, z -2.2 ; percentile 5 ans 75 %) ⚠.
-- gold future : 3,726 (-416 sur un mois, z -2.2 ; percentile 5 ans 77 %) ⚠.
+- gold future : 3,732 (-411 sur un mois, z -2.1 ; percentile 5 ans 77 %) ⚠.
 - US CPI energy : +21,2 % sur un an (précédent +22,1 %, au 10/2026).
 - supply-chain pressure : 1.26 (-0.10 sur un mois, z -0.4 ; percentile 5 ans 73 %).
 - Valeur relative candidate : long Brent crude oil / short Gold — écart de vues +3.2 pt/an, corrélation 1 an -0.15, ratio à z +1.3 sur un an .
@@ -23,7 +23,7 @@
 - Gold : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
 - Mouvement anormal : Brent future : 89 (-20 sur un mois, z -2.3 ; percentile 5 ans 69 %) ⚠.
 - Mouvement anormal : Brent spot : 93 (-24 sur un mois, z -2.2 ; percentile 5 ans 75 %) ⚠.
-- Mouvement anormal : gold future : 3,726 (-416 sur un mois, z -2.2 ; percentile 5 ans 77 %) ⚠.
+- Mouvement anormal : gold future : 3,732 (-411 sur un mois, z -2.1 ; percentile 5 ans 77 %) ⚠.
 - Brent crude oil : corrélation au S&P 500 en rupture (-0.35 sur 3 mois).
 - US energy sector : corrélation au S&P 500 en rupture (-0.30 sur 3 mois).
 - Commodities (diversified) : corrélation au S&P 500 en rupture (-0.33 sur 3 mois).

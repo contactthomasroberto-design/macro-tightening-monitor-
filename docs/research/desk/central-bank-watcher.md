@@ -1,6 +1,6 @@
 # Banques centrales : prix de marché vs taux (calcul GitHub)
 
-*`central-bank-watcher` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`central-bank-watcher` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Fed funds effectif : 3.88 %.
 

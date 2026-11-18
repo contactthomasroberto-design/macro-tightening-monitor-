@@ -1,6 +1,6 @@
 # Semi-conducteurs : noms et cycle (calcul GitHub)
 
-*`semis-tech-analyst` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`semis-tech-analyst` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Micron Technology (+8.8 pt/an) ; le moins attractif : NVIDIA (+3.4 pt/an).
 
@@ -31,7 +31,7 @@
 | MU | Micron Technology | -21.3% | -27.0% | +209.0% | -41.9% | +70.2% | +8.8 | positive | +80.0% | +1.0 | 1 | +0.7% | +0.7% | +271% | -1.42 | +90% | +2.47 | +0.58 | +0.09 |
 | HYNIX | SK Hynix | -7.1% | -27.0% | +114.9% | -54.7% | +79.5% | +7.4 | positive | +80.0% | +1.0 | 2 | +1.5% | +1.5% | +125% | -0.74 | +89% | +0.59 | +0.14 | +0.09 |
 | SOXX | Semiconductor index (hedge for the names) | -14.9% | -18.1% | +54.1% | -35.0% | +52.7% | +5.1 | positive | +75.0% |  | 0 | +0.2% | +0.2% | +77% | -1.69 | +89% | +2.10 | +0.78 | -0.00 |
-| SAMSUNG | Samsung Electronics | -8.5% | -21.8% | +121.6% | -37.4% | +64.6% | +5.1 | positive | +80.0% | +1.0 | 2 | +1.5% | +1.5% | +138% | -0.90 | +89% | +0.45 | +0.13 | +0.11 |
+| SAMSUNG | Samsung Electronics | -8.5% | -21.7% | +121.6% | -37.4% | +64.6% | +5.1 | positive | +80.0% | +1.0 | 2 | +1.5% | +1.5% | +138% | -0.90 | +89% | +0.45 | +0.13 | +0.11 |
 | ASML | ASML | -14.3% | -20.8% | +39.8% | -29.7% | +45.9% | +4.5 | positive | +100.0% |  | 0 | +0.0% | +0.0% | +61% | -1.56 | +86% | +1.79 | +0.63 | +0.00 |
 | TSM | TSMC (ADR) | -14.7% | -13.2% | +31.9% | -25.4% | +43.7% | +4.3 | positive | +100.0% |  | 0 | +1.5% | +1.5% | +52% | -2.01 | +87% | +1.74 | +0.66 | +0.09 |
 | NVDA | NVIDIA | -30.3% | -29.6% | -16.6% | -36.9% | +43.3% | +3.4 | positive | +75.0% | +0.0 | 1 | -0.1% | -0.1% | +16% | -2.75 | +72% | +2.02 | +0.66 | -0.10 |

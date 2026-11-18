@@ -1,6 +1,6 @@
 # Taux et crédit (calcul GitHub)
 
-*`rates-credit-analyst` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`rates-credit-analyst` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US high yield (+0.3 pt/an) ; le moins attractif : US Treasuries 20y+ (-0.6 pt/an). 3 désaccord(s) avec les vues publiées.
 
@@ -16,11 +16,11 @@
 - UST 2Y : 4.80 (+0.06 sur un mois, z +0.3 ; percentile 5 ans 88 %).
 - UST 10Y : 5.10 (+0.01 sur un mois, z +0.0 ; percentile 5 ans 98 %).
 - UST 30Y : 5.46 (+0.03 sur un mois, z +0.1 ; percentile 5 ans 99 %).
-- 2s10s : 0.30 (-0.05 sur un mois, z -0.6 ; percentile 5 ans 59 %).
-- 3m10Y : 0.77 (-0.06 sur un mois, z -0.5 ; percentile 5 ans 81 %).
+- 2s10s : 0.27 (-0.11 sur un mois, z -1.0 ; percentile 5 ans 57 %).
+- 3m10Y : 0.73 (-0.15 sur un mois, z -0.8 ; percentile 5 ans 79 %).
 - 10Y real : 2.89 (+0.15 sur un mois, z +0.8 ; percentile 5 ans 99 %).
-- 10Y breakeven : 2.21 (-0.14 sur un mois, z -1.5 ; percentile 5 ans 10 %).
-- 5y5y inflation : 2.16 (-0.17 sur un mois, z -1.9 ; percentile 5 ans 13 %).
+- 10Y breakeven : 2.19 (-0.16 sur un mois, z -1.8 ; percentile 5 ans 7 %).
+- 5y5y inflation : 2.15 (-0.17 sur un mois, z -1.9 ; percentile 5 ans 12 %).
 - ACM term premium 10Y : 0.68 (-0.21 sur un mois, z -1.2 ; percentile 5 ans 87 %).
 - Kim-Wright term premium 10Y : 0.99 (-0.06 sur un mois, z -0.6 ; percentile 5 ans 98 %).
 - MOVE : 98 (-4 sur un mois, z -0.2 ; percentile 5 ans 44 %).
