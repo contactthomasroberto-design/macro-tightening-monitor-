@@ -126,6 +126,7 @@ model:
     micro: 0.20
     house: 0.10                     # dated views published by banks and asset managers (not backtestable)
     news: 0.0                       # set each run by the pre-registered gate (H32)
+    committee: 0.05                 # CIO decisions of the nightly committee (H52); set each run by its Brier gate
     valuation: 0.0                  # candidate (H48): country valuation proxy, tested in the quant lab
     positioning: 0.0                # candidate (H49): CFTC contrarian positioning, tested in the quant lab
     earnings: 0.0                   # candidate (H50): SEC earnings momentum, tested in the quant lab

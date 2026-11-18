@@ -284,6 +284,33 @@ def main() -> int:
             for y, row in cal.head(10).iterrows():
                 L.append(f"| {y} | {pct(row['year'])} | {pct(row['benchmark'])} | {pct(row['excess'])} |")
 
+    L += ["", "## 1 bis. Le comité dans le portefeuille", ""]
+    acts = b.get("committee_actions") or {}
+    cv = b.get("committee_views")
+    L.append(
+        f"- Poids du comité dans le modèle : {100 * float(b.get('committee_confidence') or 0):.0f} % ; "
+        f"{0 if cv is None else len(cv)} vue(s) du CIO en vigueur"
+        + (
+            ": " + ", ".join(f"{name(a)} {v:+.2f}" for a, v in cv.items())
+            if cv is not None and len(cv)
+            else "."
+        )
+    )
+    for r in acts.get("rows", []):
+        what = (
+            f"réduction du risque à {100 * float(r['scale']):.0f} %"
+            if r["action"] == "derisk"
+            else f"gel de {name(r['target'])}"
+        )
+        L.append(f"- Action en vigueur jusqu'au {r['expires']:%d/%m} : {what} — {r['reason']}")
+    imp = b.get("committee_impact")
+    if imp is not None and not imp.empty:
+        L.append(
+            "- Effet sur les poids : "
+            + ", ".join(f"{name(a)} {pct(v, 2)}" for a, v in imp["change"].items())
+            + "."
+        )
+
     L += ["", "## 2 quinquies. Contrôles du process : stress tests, revues de pertes, paris notés", ""]
     from macro import fund_process as fp
 

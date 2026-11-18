@@ -1367,6 +1367,15 @@ PORTFOLIO_VARIANTS: dict[str, dict[str, Any]] = {
 }
 
 
+def _committee_decisions() -> pd.DataFrame:
+    from macro import fund_process as fp
+
+    try:
+        return fp.read_decisions()
+    except Exception:  # noqa: BLE001 - an unreadable registry must not stop the portfolio
+        return pd.DataFrame()
+
+
 def portfolio_inputs():
     """Weekly USD returns, macro factors, fundamentals and news tone for src/macro/portfolio.py."""
     from macro import portfolio as pf
@@ -1412,6 +1421,7 @@ def portfolio_inputs():
             regime=regime,
             carry=carry,
             house=pf.load_house_views(),
+            committee=_committee_decisions(),
             hedge=hedge,
             positioning={
                 sid: s for sid in set(pf.POSITIONING_OF.values()) if (s := try_series(sid)) is not None
@@ -1496,6 +1506,7 @@ def portfolio_bundle(force: bool = False) -> dict:
         r = inp.r
         news_h32 = pf.news_test(r, inp.tone)
         cfg["model"]["confidence"]["news"] = pf.news_confidence(news_h32)  # pre-registered gate (H32)
+        cfg["model"]["confidence"]["committee"] = pf.committee_confidence(inp.committee)  # Brier gate (H52)
         bench = pf.benchmark_returns(r, cfg)
         cash = r["BIL"]
         # The 20-year walk-forward (6 variants, weekly) takes minutes: it runs once a day; the other
@@ -1539,14 +1550,30 @@ def portfolio_bundle(force: bool = False) -> dict:
         state = pf.overlay_scale(dd, state, cfg)
         t = r.index[-1]
         cur = drifted  # empty before the first paper rebalance: the first trades build the book
-        tg = pf.target_at(
-            inp, t, cfg, vol_scale=pf.scale_of(state, cfg), w_prev=cur if not cur.empty else None
-        )
+        # committee powers (fund_process.add_action): de-risk the volatility budget, freeze instruments
+        from macro import fund_process as fpw
+        from macro.utils import is_demo as _demo
+
+        today_c = px.index[-1] if _demo() else pd.Timestamp.today().normalize()
+        acts = fpw.active_actions(fpw.read_actions(), today_c)
+        vol_scale = pf.scale_of(state, cfg) * acts["derisk"]
+        tg = pf.target_at(inp, t, cfg, vol_scale=vol_scale, w_prev=cur if not cur.empty else None)
         target = (
             pf.apply_band(tg["weights"], cur, cfg["model"]["no_trade_band"])
             if not drifted.empty
             else tg["weights"]
         )
+        target = fpw.apply_freeze(target, cur, [a for a in acts["frozen"] if a in target.index])
+        # what the committee's views change in the book: the same target without the committee family
+        no_c = pf.target_at(
+            inp,
+            t,
+            cfg,
+            families=tuple(f for f in pf.FAMILIES if f != "committee"),
+            vol_scale=vol_scale,
+            w_prev=cur if not cur.empty else None,
+        )["weights"]
+        committee_impact = fpw.committee_impact(tg["weights"], no_c)
         risk = pf.risk_report(target, tg["cov"], tg["w_eq"], r)
         # contribution of each view family to expected returns
         contrib = {}
@@ -1647,6 +1674,10 @@ def portfolio_bundle(force: bool = False) -> dict:
             "trials": len(trial_sr),
             "tests": _portfolio_tests(inp, cfg) | {"H32 company news tone (gate)": news_h32},
             "news_confidence": cfg["model"]["confidence"]["news"],
+            "committee_confidence": cfg["model"]["confidence"]["committee"],
+            "committee_actions": acts,
+            "committee_impact": committee_impact,
+            "committee_views": tg["views"].get("committee", pd.Series(dtype=float)),
             "target": target,
             "target_status": tg["status"],
             "views": tg["views"],

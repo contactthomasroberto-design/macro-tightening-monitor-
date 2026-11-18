@@ -112,3 +112,47 @@ def test_performance_tables():
     assert list(cal.index) == [2026, 2025, 2024]
     assert cal.loc[2025, "year"] == pytest.approx((1 + cal.loc[2025, "Jan":"Dec"]).prod() - 1)
     assert cal.loc[2026, "Dec"] != cal.loc[2026, "Dec"]  # no December yet (NaN)
+
+
+def test_committee_actions_only_reduce_risk(tmp_path):
+    p = tmp_path / "a.csv"
+    uni = {"SPY": {}, "HYNIX": {}, "BIL": {}}
+    with pytest.raises(ValueError):
+        fp.add_action({"date": "2026-11-18", "action": "derisk", "scale": 1.2, "reason": "x"}, uni, p)
+    with pytest.raises(ValueError):
+        fp.add_action({"date": "2026-11-18", "action": "derisk", "scale": 0.3, "reason": "x"}, uni, p)
+    with pytest.raises(ValueError):
+        fp.add_action({"date": "2026-11-18", "action": "freeze", "target": "HYNIX", "reason": ""}, uni, p)
+    a = fp.add_action(
+        {
+            "date": "2026-11-18",
+            "action": "derisk",
+            "scale": 0.7,
+            "reason": "NVDA results",
+            "expires": "2027-01-30",
+        },
+        uni,
+        p,
+    )
+    assert a["expires"] == "2026-12-02"  # capped at 14 days
+    fp.add_action(
+        {"date": "2026-11-18", "action": "freeze", "target": "HYNIX", "reason": "price jump"}, uni, p
+    )
+    act = fp.active_actions(fp.read_actions(p), pd.Timestamp("2026-11-20"))
+    assert act["derisk"] == 0.7 and act["frozen"] == ["HYNIX"]
+    assert fp.active_actions(fp.read_actions(p), pd.Timestamp("2026-12-10"))["derisk"] == 1.0  # lapsed
+    fp.add_action(
+        {"date": "2026-11-21", "action": "lift", "target": "HYNIX", "reason": "data checked"}, uni, p
+    )
+    assert fp.active_actions(fp.read_actions(p), pd.Timestamp("2026-11-22"))["frozen"] == []
+
+
+def test_freeze_holds_weight_and_impact():
+    tgt = pd.Series({"SPY": 0.5, "HYNIX": 0.08, "BIL": 0.02})
+    cur = pd.Series({"SPY": 0.45, "HYNIX": 0.05, "BIL": 0.10})
+    out = fp.apply_freeze(tgt, cur, ["HYNIX"])
+    assert (
+        out["HYNIX"] == 0.05 and out["BIL"] == pytest.approx(0.05) and out.sum() == pytest.approx(tgt.sum())
+    )
+    imp = fp.committee_impact(pd.Series({"SPY": 0.5, "TLT": 0.1}), pd.Series({"SPY": 0.45, "TLT": 0.1}))
+    assert list(imp.index) == ["SPY"] and imp.loc["SPY", "change"] == pytest.approx(0.05)

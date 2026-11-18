@@ -47,7 +47,7 @@ from macro.config import ROOT
 
 PATH = ROOT / "config" / "portfolio.yaml"
 WEEKS = 52
-FAMILIES = ("trend", "macro", "regime", "value", "carry", "micro", "house", "news")
+FAMILIES = ("trend", "macro", "regime", "value", "carry", "micro", "house", "news", "committee")
 # Candidate families (H48-H50): computed by views_at and audited by the quant lab, but outside the
 # families used by default, so the live book, its pages and reports are unchanged until a verdict.
 CANDIDATE_FAMILIES = ("valuation", "positioning", "earnings")
@@ -495,6 +495,45 @@ def house_scores(views: list[dict], t, assets: list[str], max_age_days: int = 18
     return pd.Series({a: float(np.clip(np.mean(x), -1, 1)) for a, x in acc.items()}, dtype=float)
 
 
+def committee_scores(
+    decisions: pd.DataFrame, t, assets: list[str], agent: str = "chief-investment-officer"
+) -> pd.Series:
+    """The investment committee's final views as stances (H52). A decision of the CIO on a universe
+    instrument's return counts from its date until its horizon: stance = direction x (2p - 1), so a 70%
+    "above" is +0.4 and a 70% "below" is -0.4; several live decisions on one asset are averaged. Only the
+    CIO's decisions count (the committee's arbitration), not individual analysts' bets."""
+    if decisions is None or decisions.empty:
+        return pd.Series(dtype=float)
+    t = pd.Timestamp(t)
+    d = decisions[(decisions["agent"] == agent) & (decisions["metric"] == "return")]
+    acc: dict[str, list[float]] = {}
+    for _, r in d.iterrows():
+        a = str(r["target"])
+        start, end = pd.Timestamp(r["date"]), pd.Timestamp(r["horizon"])
+        if a not in assets or not (start <= t < end):
+            continue
+        sign = 1.0 if r["direction"] == "above" else -1.0
+        acc.setdefault(a, []).append(sign * (2 * float(r["probability"]) - 1))
+    return pd.Series({a: float(np.clip(np.mean(x), -1, 1)) for a, x in acc.items()}, dtype=float)
+
+
+def committee_confidence(
+    decisions: pd.DataFrame, base: float = 0.05, cap: float = 0.15, min_resolved: int = 20
+) -> float:
+    """Weight of the committee's views (pre-registered, H52): `base` until the CIO has `min_resolved`
+    scored decisions; then base + 0.10 x Brier skill score if the skill is positive (capped), 0 if not.
+    The committee earns weight by being right, and loses it by being wrong."""
+    if decisions is None or decisions.empty:
+        return base
+    r = decisions[(decisions["agent"] == "chief-investment-officer") & (decisions["status"] == "resolved")]
+    if len(r) < min_resolved:
+        return base
+    p, o = r["probability"].astype(float), r["outcome"].astype(float)
+    ref = float(((o.mean() - o) ** 2).mean())
+    skill = 1 - float(((p - o) ** 2).mean()) / ref if ref > 0 else 0.0
+    return float(min(cap, base + 0.10 * skill)) if skill > 0 else 0.0
+
+
 # ------------------------------------------------------------------ tail hedge (synthetic puts)
 def bs_put(s: float, k: float, t: float, r: float, vol: float) -> float:
     """Black-Scholes European put price."""
@@ -938,6 +977,9 @@ class Inputs:
     hedge: pd.DataFrame = field(default_factory=pd.DataFrame)  # weekly SPY price, VIX, cash yield (%)
     positioning: dict[str, pd.Series] = field(default_factory=dict)  # CFTC TFF net positions (H49)
     events: pd.DataFrame = field(default_factory=pd.DataFrame)  # event calendar: date, kind (H51)
+    committee: pd.DataFrame = field(
+        default_factory=pd.DataFrame
+    )  # committee decisions (archive/decisions.csv)
     cache: dict = field(default_factory=dict, repr=False)  # covariance and views by date, shared by variants
 
 
@@ -955,6 +997,7 @@ def views_at(inp: Inputs, t, assets: list[str], cfg: dict) -> dict[str, pd.Serie
     if semis:
         v["micro"] = micro_scores(r, semis, inp.fundamentals, t)
     v["house"] = house_scores(inp.house, t, assets)
+    v["committee"] = committee_scores(inp.committee, t, assets)
     v["news"] = news_scores(inp.tone, t, assets, cfg)
     v["valuation"] = valuation_scores(r)
     v["positioning"] = positioning_scores(inp.positioning, t, assets)

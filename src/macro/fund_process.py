@@ -414,3 +414,118 @@ def calendar_table(ret: pd.Series, bench: pd.Series | None = None) -> pd.DataFra
         m["excess"] = m["year"] - m["benchmark"]
     m.index.name = None
     return m.sort_index(ascending=False)
+
+
+# ---------------------------------------------------------------------------- committee powers
+ACTIONS = ROOT / "archive" / "committee_actions.csv"
+ACTION_COLUMNS = ["date", "agent", "action", "target", "scale", "reason", "expires"]
+MAX_DAYS = 14  # every action lapses after two weeks unless the committee renews it with a new reason
+MIN_SCALE = 0.5  # de-risking can at most halve the risk budget
+
+
+def read_actions(path: Path = ACTIONS) -> pd.DataFrame:
+    if not Path(path).exists():
+        return pd.DataFrame(columns=ACTION_COLUMNS)
+    df = pd.read_csv(path)
+    for c in ("date", "expires"):
+        df[c] = pd.to_datetime(df[c], errors="coerce")
+    return df
+
+
+def add_action(row: dict, universe: dict, path: Path = ACTIONS) -> dict:
+    """Record a committee action. Two powers, both able only to reduce risk:
+    - "derisk": multiply the book's volatility budget by `scale` (0.5 to 1, target "ALL");
+    - "freeze": no trade on one instrument (target = a universe ticker) while data or news are in doubt.
+    "lift" ends an earlier action on the same target early. Each action needs a written reason and lapses
+    after at most 14 days."""
+    act = row["action"]
+    if act not in ("derisk", "freeze", "lift"):
+        raise ValueError("action must be derisk, freeze or lift")
+    if not str(row.get("reason", "")).strip():
+        raise ValueError("an action needs a written reason")
+    day = pd.Timestamp(row["date"]).normalize()
+    exp = pd.Timestamp(row.get("expires") or day + pd.Timedelta(days=MAX_DAYS)).normalize()
+    exp = min(exp, day + pd.Timedelta(days=MAX_DAYS))
+    scale = 1.0
+    if act == "derisk":
+        scale = float(row.get("scale", 0.75))
+        if not MIN_SCALE <= scale <= 1.0:
+            raise ValueError(f"de-risk scale must be between {MIN_SCALE} and 1 (never above: no added risk)")
+        target = "ALL"
+    else:
+        target = str(row["target"])
+        if target != "ALL" and target not in universe:
+            raise ValueError(f"unknown instrument {target}")
+    out = {
+        "date": day.date().isoformat(),
+        "agent": row.get("agent", "chief-investment-officer"),
+        "action": act,
+        "target": target,
+        "scale": scale,
+        "reason": str(row["reason"]).strip(),
+        "expires": exp.date().isoformat(),
+    }
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame([out], columns=ACTION_COLUMNS).to_csv(
+        path, mode="a", header=not Path(path).exists(), index=False
+    )
+    return out
+
+
+def active_actions(df: pd.DataFrame, today: pd.Timestamp) -> dict:
+    """Actions in force today: the de-risk scale (the strictest active one) and the frozen instruments.
+    A later "lift" on the same target cancels earlier actions on it."""
+    today = pd.Timestamp(today).normalize()
+    out: dict = {"derisk": 1.0, "frozen": [], "rows": []}
+    if df is None or df.empty:
+        return out
+    df = df.sort_values("date")
+    live: list[dict] = []
+    for _, r in df.iterrows():
+        if r["action"] == "lift":
+            live = [
+                x
+                for x in live
+                if x["target"] != r["target"] and not (r["target"] == "ALL" and x["action"] == "derisk")
+            ]
+            continue
+        if pd.Timestamp(r["date"]) <= today < pd.Timestamp(r["expires"]) + pd.Timedelta(days=1):
+            live.append(r.to_dict())
+    for r in live:
+        if r["action"] == "derisk":
+            out["derisk"] = min(out["derisk"], max(MIN_SCALE, float(r["scale"])))
+        elif r["action"] == "freeze":
+            out["frozen"].append(r["target"])
+    out["rows"] = live
+    return out
+
+
+def apply_freeze(target: pd.Series, current: pd.Series, frozen: list[str], cash: str = "BIL") -> pd.Series:
+    """Hold frozen instruments at their current weight; the difference goes to cash."""
+    if not frozen:
+        return target
+    t = target.copy()
+    for a in frozen:
+        cur = (
+            float(current.get(a, 0.0)) if current is not None and not current.empty else float(t.get(a, 0.0))
+        )
+        diff = float(t.get(a, 0.0)) - cur
+        t[a] = cur
+        t[cash] = float(t.get(cash, 0.0)) + diff
+    return t
+
+
+def committee_impact(with_c: pd.Series, without_c: pd.Series, n: int = 8) -> pd.DataFrame:
+    """Weight changes caused by the committee's views: target with them minus target without them."""
+    d = with_c.reindex(with_c.index.union(without_c.index)).fillna(0) - without_c.reindex(
+        with_c.index.union(without_c.index)
+    ).fillna(0)
+    d = d[d.abs() > 1e-4]
+    top = d.reindex(d.abs().sort_values(ascending=False).index).head(n)
+    return pd.DataFrame(
+        {
+            "with committee": with_c.reindex(top.index).fillna(0),
+            "without": without_c.reindex(top.index).fillna(0),
+            "change": top,
+        }
+    )

@@ -136,6 +136,38 @@ if breaches or pms or b["stale"]:
 
 # ------------------------------------------------------------------ 4. the team
 st.subheader("Comité d'investissement")
+acts = b.get("committee_actions") or {}
+cv = b.get("committee_views")
+imp = b.get("committee_impact")
+conf = b.get("committee_confidence")
+cc = st.columns(3)
+cc[0].metric(
+    "Poids du comité dans le modèle",
+    pct(conf, 0, sign=False) if conf is not None else "—",
+    help="5 % au départ ; jusqu'à 15 % si ses décisions notées battent le hasard, 0 % sinon (H52).",
+)
+cc[1].metric("Vues du comité en vigueur", str(len(cv)) if cv is not None else "0")
+cc[2].metric(
+    "Budget de risque",
+    pct(acts.get("derisk", 1.0), 0, sign=False),
+    "réduit par le comité" if acts.get("derisk", 1.0) < 1 else "normal",
+    delta_color="off",
+)
+for r in acts.get("rows", []):
+    what = (
+        f"réduction du risque à {100 * float(r['scale']):.0f} %"
+        if r["action"] == "derisk"
+        else f"gel de {cfg['universe'].get(r['target'], {}).get('name', r['target'])}"
+    )
+    st.warning(
+        f"**Action du comité** ({r['date']:%d/%m} → {r['expires']:%d/%m}) : {what}. Motif : {r['reason']}"
+    )
+if imp is not None and not imp.empty:
+    with st.expander("Ce que les décisions du comité changent dans le portefeuille"):
+        view = imp.copy()
+        view.index = [cfg["universe"].get(a, {}).get("name", a) for a in view.index]
+        st.dataframe(view.style.format("{:+.2%}"), use_container_width=True)
+        st.caption("Poids avec les vues du comité, comparés aux poids que le modèle choisirait sans elles.")
 note = latest("docs/research/daily")
 if note:
     day, md = note

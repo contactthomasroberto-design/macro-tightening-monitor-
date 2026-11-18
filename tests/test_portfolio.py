@@ -461,3 +461,58 @@ def test_regime_series_is_not_empty_on_monthly_data():
     reg = pf.regime_series(ip, cpi).dropna()
     assert len(reg) > 100 and reg.str.startswith("growth").all()
     assert reg.index[0] > idx[15]  # 12 months for y/y + 3 for the change + publication lag
+
+
+def test_committee_scores_and_brier_gate():
+    dec = pd.DataFrame(
+        [
+            dict(
+                agent="chief-investment-officer",
+                target="SPY",
+                metric="return",
+                direction="above",
+                probability=0.7,
+                date="2026-11-17",
+                horizon="2027-01-17",
+                status="open",
+                outcome=np.nan,
+            ),
+            dict(
+                agent="chief-investment-officer",
+                target="TLT",
+                metric="return",
+                direction="below",
+                probability=0.6,
+                date="2026-11-17",
+                horizon="2026-12-17",
+                status="open",
+                outcome=np.nan,
+            ),
+            dict(
+                agent="macro-strategist",
+                target="GLD",
+                metric="return",
+                direction="above",
+                probability=0.9,
+                date="2026-11-17",
+                horizon="2027-01-17",
+                status="open",
+                outcome=np.nan,
+            ),
+        ]
+    )
+    s = pf.committee_scores(dec, "2026-11-20", ["SPY", "TLT", "GLD"])
+    assert s["SPY"] == pytest.approx(0.4) and s["TLT"] == pytest.approx(-0.2) and "GLD" not in s
+    assert pf.committee_scores(dec, "2026-12-20", ["SPY", "TLT"]).index.tolist() == ["SPY"]  # TLT expired
+    assert pf.committee_scores(dec, "2026-11-10", ["SPY"]).empty  # not yet decided
+    assert pf.committee_confidence(dec) == 0.05  # fewer than 20 scored decisions
+    good = pd.DataFrame(
+        {
+            "agent": "chief-investment-officer",
+            "status": "resolved",
+            "probability": [0.8] * 10 + [0.2] * 10,
+            "outcome": [1] * 10 + [0] * 10,
+        }
+    )
+    bad = good.assign(outcome=[0] * 10 + [1] * 10)
+    assert 0.05 < pf.committee_confidence(good) <= 0.15 and pf.committee_confidence(bad) == 0.0
