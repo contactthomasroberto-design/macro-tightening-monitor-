@@ -1,6 +1,6 @@
 # Banques centrales : prix de marché vs taux (calcul GitHub)
 
-*`central-bank-watcher` — 18/11/2026 06:40 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`central-bank-watcher` — 18/11/2026 16:50 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Fed funds effectif : 3.88 %.
 
@@ -9,5 +9,5 @@
 - Repricing sur un mois : +5 pb.
 - BCE dépôt : 2.50 % au 18/11.
 - BoJ (taux directeur) : 1.23 % au 01/10.
-- SOFR : 3.93 % au 16/11.
-- €STR : 2.44 % au 16/11.
+- SOFR : 3.92 % au 17/11.
+- €STR : 2.44 % au 17/11.

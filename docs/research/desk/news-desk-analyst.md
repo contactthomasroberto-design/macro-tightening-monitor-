@@ -1,13 +1,13 @@
 # News notées : pression par actif (calcul GitHub)
 
-*`news-desk-analyst` — 18/11/2026 06:40 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`news-desk-analyst` — 18/11/2026 16:50 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
-**En bref** : 352 titres notés (FinBERT) sur 3 jours.
+**En bref** : 451 titres notés (FinBERT) sur 3 jours.
 
-- 352 titres notés (FinBERT) sur 3 jours.
-- NVIDIA : score -0.20 sur 151 titres.
-- TSMC (ADR) : score -0.18 sur 74 titres.
-- Micron Technology : score -0.16 sur 181 titres.
-- SK Hynix : score -0.06 sur 154 titres.
-- MARKET : score -0.05 sur 41 titres.
-- Samsung Electronics : score -0.03 sur 125 titres.
+- 451 titres notés (FinBERT) sur 3 jours.
+- NVIDIA : score -0.15 sur 188 titres.
+- MARKET : score -0.12 sur 47 titres.
+- TSMC (ADR) : score -0.08 sur 87 titres.
+- Micron Technology : score -0.06 sur 227 titres.
+- SK Hynix : score -0.02 sur 191 titres.
+- Samsung Electronics : score +0.02 sur 164 titres.
