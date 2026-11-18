@@ -24,5 +24,5 @@ MODEL_VERSIONS: dict[str, str] = {
     "stress_test": "0.3.0",
     "backtest": "0.2.1",
     "forecast_book": "0.1.0",
-    "portfolio": "0.3.1",
+    "portfolio": "0.3.2",
 }

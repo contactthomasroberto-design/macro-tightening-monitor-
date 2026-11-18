@@ -1367,6 +1367,15 @@ PORTFOLIO_VARIANTS: dict[str, dict[str, Any]] = {
 }
 
 
+def _committee_decisions() -> pd.DataFrame:
+    from macro import fund_process as fp
+
+    try:
+        return fp.read_decisions()
+    except Exception:  # noqa: BLE001 - an unreadable registry must not stop the portfolio
+        return pd.DataFrame()
+
+
 def portfolio_inputs():
     """Weekly USD returns, macro factors, fundamentals and news tone for src/macro/portfolio.py."""
     from macro import portfolio as pf
@@ -1412,6 +1421,7 @@ def portfolio_inputs():
             regime=regime,
             carry=carry,
             house=pf.load_house_views(),
+            committee=_committee_decisions(),
             hedge=hedge,
             positioning={
                 sid: s for sid in set(pf.POSITIONING_OF.values()) if (s := try_series(sid)) is not None
@@ -1496,6 +1506,7 @@ def portfolio_bundle(force: bool = False) -> dict:
         r = inp.r
         news_h32 = pf.news_test(r, inp.tone)
         cfg["model"]["confidence"]["news"] = pf.news_confidence(news_h32)  # pre-registered gate (H32)
+        cfg["model"]["confidence"]["committee"] = pf.committee_confidence(inp.committee)  # Brier gate (H52)
         bench = pf.benchmark_returns(r, cfg)
         cash = r["BIL"]
         # The 20-year walk-forward (6 variants, weekly) takes minutes: it runs once a day; the other
@@ -1647,6 +1658,7 @@ def portfolio_bundle(force: bool = False) -> dict:
             "trials": len(trial_sr),
             "tests": _portfolio_tests(inp, cfg) | {"H32 company news tone (gate)": news_h32},
             "news_confidence": cfg["model"]["confidence"]["news"],
+            "committee_confidence": cfg["model"]["confidence"]["committee"],
             "target": target,
             "target_status": tg["status"],
             "views": tg["views"],
