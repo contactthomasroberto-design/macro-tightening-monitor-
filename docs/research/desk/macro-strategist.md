@@ -1,10 +1,10 @@
 # Régime macro mondial et facteurs (calcul GitHub)
 
-*`macro-strategist` — 18/11/2026 19:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`macro-strategist` — 18/11/2026 20:52 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
-**En bref** : Régime growth up, inflation up ; recession -0.69, inflation +0.54, stress -0.29
+**En bref** : Régime growth down, inflation down ; recession -0.69, inflation +0.54, stress -0.29
 
-- Régime croissance/inflation : **growth up, inflation up** depuis 11/2026.
+- Régime croissance/inflation : **growth down, inflation down** depuis 09/2026.
 - Facteurs macro du modèle (−1 à +1) : recession -0.69, inflation +0.54, stress -0.29.
 - Variation sur 3 mois : recession -0.11, inflation +0.68, stress +0.25.
 - 10 ans US : 5.12% (-0.07 sur un mois, au 16/11).

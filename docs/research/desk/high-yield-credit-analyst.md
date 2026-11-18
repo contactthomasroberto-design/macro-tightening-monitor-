@@ -1,6 +1,6 @@
 # Haut rendement (calcul GitHub)
 
-*`high-yield-credit-analyst` — 18/11/2026 19:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`high-yield-credit-analyst` — 18/11/2026 20:52 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US high yield (+0.3 pt/an) ; le moins attractif : US investment-grade credit (-0.1 pt/an). 1 désaccord(s) avec les vues publiées.
 
@@ -21,5 +21,5 @@
 
 |  | name | 1 month | 3 months | 12 months | from 1y high | vol 3m | model tilt (pp/yr) | stance | agreement | house views | n views | weight | vs benchmark | 12-1 momentum | 1m z | 5y percentile | beta SPY | corr SPY | corr change 3m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| HYG | US high yield | +0.3% | -2.2% | +1.5% | -2.6% | +4.0% | +0.3 | positive | +80.0% | -0.8 | 2 | +0.0% | +0.0% | +1% | -0.28 | +84% | +0.24 | +0.76 | -0.14 |
-| LQD | US investment-grade credit | +0.3% | -1.4% | -2.1% | -4.3% | +6.4% | -0.1 | negative | +60.0% | -0.2 | 2 | +0.0% | +0.0% | -2% | -0.08 | +71% | +0.15 | +0.35 | -0.15 |
+| HYG | US high yield | +0.3% | -2.2% | +1.5% | -2.6% | +4.0% | +0.3 | positive | +80.0% | -0.8 | 2 | +0.0% | +0.0% | +1% | -0.29 | +84% | +0.24 | +0.76 | -0.14 |
+| LQD | US investment-grade credit | +0.3% | -1.4% | -2.1% | -4.4% | +6.4% | -0.1 | negative | +60.0% | -0.2 | 2 | +0.0% | +0.0% | -2% | -0.10 | +71% | +0.15 | +0.35 | -0.15 |

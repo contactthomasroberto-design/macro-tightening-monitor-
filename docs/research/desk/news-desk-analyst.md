@@ -1,6 +1,6 @@
 # News notées : pression par actif (calcul GitHub)
 
-*`news-desk-analyst` — 18/11/2026 19:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`news-desk-analyst` — 18/11/2026 20:52 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : 451 titres notés (FinBERT) sur 3 jours.
 

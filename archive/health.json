@@ -1,0 +1,74 @@
+{
+ "date": "2026-11-18T20:52:27.489340+00:00",
+ "failed": [
+  "no non-positive raw prices (masked in the model, to clean at the source)",
+  "monthly macro series without missing months (36 months)"
+ ],
+ "results": [
+  {
+   "check": "view family 'trend' produces views",
+   "ok": true,
+   "detail": "51 instruments"
+  },
+  {
+   "check": "view family 'macro' produces views",
+   "ok": true,
+   "detail": "50 instruments"
+  },
+  {
+   "check": "view family 'regime' produces views",
+   "ok": true,
+   "detail": "51 instruments"
+  },
+  {
+   "check": "view family 'value' produces views",
+   "ok": true,
+   "detail": "29 instruments"
+  },
+  {
+   "check": "view family 'carry' produces views",
+   "ok": true,
+   "detail": "10 instruments"
+  },
+  {
+   "check": "view family 'micro' produces views",
+   "ok": true,
+   "detail": "6 instruments"
+  },
+  {
+   "check": "view family 'house' produces views",
+   "ok": true,
+   "detail": "31 instruments"
+  },
+  {
+   "check": "regime series is computed",
+   "ok": true,
+   "detail": "4093 weeks"
+  },
+  {
+   "check": "regime used by the model is not dated after the as-of date",
+   "ok": true,
+   "detail": "label 'growth down, inflation down' at 2026-11-20"
+  },
+  {
+   "check": "no non-positive raw prices (masked in the model, to clean at the source)",
+   "ok": false,
+   "detail": "HYNIX"
+  },
+  {
+   "check": "universe prices less than a week old",
+   "ok": true,
+   "detail": "none"
+  },
+  {
+   "check": "monthly macro series without missing months (36 months)",
+   "ok": false,
+   "detail": "CPIAUCSL: 2025-10; CPILFESL: 2025-10; UNRATE: 2025-10 (changes must use calendar months, see desk.monthly_change)"
+  },
+  {
+   "check": "every desk note computed",
+   "ok": true,
+   "detail": "all"
+  }
+ ]
+}
