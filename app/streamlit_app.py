@@ -108,7 +108,7 @@ SECTIONS = [
             ("portfolio_research.py", "Research"),
             ("portfolio_news.py", "News"),
             ("portfolio_team.py", "Team"),
-            ("portfolio_desk.py", "Desk notes"),
+            ("portfolio_desk.py", "Research notes"),
         ],
     ),
     # Analytics kept internal (computed every run, archived in docs/ and the snapshot, not in the menu):
