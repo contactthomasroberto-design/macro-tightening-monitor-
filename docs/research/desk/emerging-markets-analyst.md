@@ -1,14 +1,14 @@
 # Émergents : actions et dette (calcul GitHub)
 
-*`emerging-markets-analyst` — 18/11/2026 20:52 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`emerging-markets-analyst` — 18/11/2026 22:10 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Brazilian equities (+2.2 pt/an) ; le moins attractif : Indian equities (+0.2 pt/an).
 
-- Brazilian equities : 1 mois -29,9 %, 12 mois -3,8 %, -31 % du plus haut, vol 54 % ; familles trend +0.8, macro +0.5, regime +0.1, value -1.0, house +1.0 → **positive** (accord 80 %) ; vues publiées +1.0 (1) ; poids +1,4 % (+1,0 % vs 60/40).
+- Brazilian equities : 1 mois -30,0 %, 12 mois -3,9 %, -31 % du plus haut, vol 54 % ; familles trend +0.8, macro +0.5, regime +0.1, value -1.0, house +1.0 → **positive** (accord 80 %) ; vues publiées +1.0 (1) ; poids +1,4 % (+1,0 % vs 60/40).
 - Emerging-market equities (broad) : 1 mois -8,6 %, 12 mois +9,2 %, -19 % du plus haut, vol 25 % ; familles trend +0.7, macro +0.5, regime +0.1, value +0.8, house +0.2 → **positive** (accord 100 %) ; vues publiées +0.2 (5) ; poids +4,0 % (+0,0 % vs 60/40).
-- Chinese equities : 1 mois -6,3 %, 12 mois -22,0 %, -25 % du plus haut, vol 18 % ; familles trend -0.8, macro +0.5, regime +0.1, value +1.0, house +0.4 → **positive** (accord 80 %) ; vues publiées +0.4 (4) ; poids +0,0 % (-1,7 % vs 60/40).
+- Chinese equities : 1 mois -6,2 %, 12 mois -22,0 %, -25 % du plus haut, vol 17 % ; familles trend -0.8, macro +0.5, regime +0.1, value +1.0, house +0.4 → **positive** (accord 80 %) ; vues publiées +0.4 (4) ; poids +0,0 % (-1,7 % vs 60/40).
 - EM sovereign debt (USD) : 1 mois -0,0 %, 12 mois -0,4 %, -4 % du plus haut, vol 6 % ; familles trend -0.0, macro +0.4, regime +0.0 → **positive** (accord 67 %) ; poids +0,0 % (+0,0 % vs 60/40).
-- EM local-currency debt : 1 mois -2,7 %, 12 mois +0,6 %, -5 % du plus haut, vol 7 % ; familles trend +0.4, macro +0.4, regime -0.2 → **positive** (accord 67 %) ; poids +0,0 % (+0,0 % vs 60/40).
+- EM local-currency debt : 1 mois -2,8 %, 12 mois +0,5 %, -5 % du plus haut, vol 7 % ; familles trend +0.4, macro +0.4, regime -0.2 → **positive** (accord 67 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - Indian equities : 1 mois +7,7 %, 12 mois -5,8 %, -6 % du plus haut, vol 15 % ; familles trend -0.7, macro +0.5, regime +0.2, value +0.5 → **positive** (accord 75 %) ; vues publiées +0.0 (3) ; poids +1,2 % (-0,0 % vs 60/40).
 - **Marché au sens large**
 - USD/KRW : 1,333 (+3 sur un mois, z +0.1 ; percentile 5 ans 38 %).
@@ -23,9 +23,9 @@
 
 |  | name | 1 month | 3 months | 12 months | from 1y high | vol 3m | model tilt (pp/yr) | stance | agreement | house views | n views | weight | vs benchmark | 12-1 momentum | 1m z | 5y percentile | beta SPY | corr SPY | corr change 3m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| EWZ | Brazilian equities | -29.9% | -14.1% | -3.8% | -30.9% | +53.5% | +2.2 | positive | +80.0% | +1.0 | 1 | +1.4% | +1.0% | +37% | -3.98 | +79% | +0.70 | +0.40 | -0.23 |
-| EEM | Emerging-market equities (broad) | -8.6% | -13.8% | +9.2% | -18.8% | +24.8% | +2.1 | positive | +100.0% | +0.2 | 5 | +4.0% | +0.0% | +19% | -2.10 | +85% | +0.92 | +0.69 | +0.16 |
-| MCHI | Chinese equities | -6.3% | -14.2% | -22.0% | -25.2% | +17.5% | +0.7 | positive | +80.0% | +0.4 | 4 | +0.0% | -1.7% | -17% | -0.97 | +52% | +0.62 | +0.37 | -0.10 |
-| EMB | EM sovereign debt (USD) | -0.0% | -2.8% | -0.4% | -4.1% | +6.4% | +0.2 | positive | +66.7% |  | 0 | +0.0% | +0.0% | -0% | -0.44 | +80% | +0.27 | +0.60 | -0.09 |
-| EMLC | EM local-currency debt | -2.7% | -5.0% | +0.6% | -5.3% | +6.7% | +0.2 | positive | +66.7% |  | 0 | +0.0% | +0.0% | +3% | -1.61 | +82% | +0.20 | +0.42 | +0.01 |
-| INDA | Indian equities | +7.7% | +3.6% | -5.8% | -6.2% | +15.4% | +0.2 | positive | +75.0% | +0.0 | 3 | +1.2% | -0.0% | -13% | +1.83 | +67% | +0.46 | +0.48 | -0.16 |
+| EWZ | Brazilian equities | -30.0% | -14.2% | -3.9% | -30.9% | +53.5% | +2.2 | positive | +80.0% | +1.0 | 1 | +1.4% | +1.0% | +37% | -3.99 | +79% | +0.70 | +0.40 | -0.23 |
+| EEM | Emerging-market equities (broad) | -8.6% | -13.8% | +9.2% | -18.7% | +24.8% | +2.1 | positive | +100.0% | +0.2 | 5 | +4.0% | +0.0% | +19% | -2.09 | +85% | +0.92 | +0.69 | +0.16 |
+| MCHI | Chinese equities | -6.2% | -14.1% | -22.0% | -25.1% | +17.5% | +0.7 | positive | +80.0% | +0.4 | 4 | +0.0% | -1.7% | -17% | -0.96 | +53% | +0.62 | +0.37 | -0.10 |
+| EMB | EM sovereign debt (USD) | -0.0% | -2.8% | -0.4% | -4.1% | +6.4% | +0.2 | positive | +66.7% |  | 0 | +0.0% | +0.0% | -0% | -0.43 | +80% | +0.27 | +0.60 | -0.09 |
+| EMLC | EM local-currency debt | -2.8% | -5.1% | +0.5% | -5.4% | +6.8% | +0.2 | positive | +66.7% |  | 0 | +0.0% | +0.0% | +3% | -1.66 | +81% | +0.20 | +0.42 | +0.01 |
+| INDA | Indian equities | +7.7% | +3.7% | -5.8% | -6.1% | +15.4% | +0.2 | positive | +75.0% | +0.0 | 3 | +1.2% | -0.0% | -13% | +1.84 | +67% | +0.46 | +0.48 | -0.16 |
