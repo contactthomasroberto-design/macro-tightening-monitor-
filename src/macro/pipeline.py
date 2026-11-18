@@ -1550,14 +1550,30 @@ def portfolio_bundle(force: bool = False) -> dict:
         state = pf.overlay_scale(dd, state, cfg)
         t = r.index[-1]
         cur = drifted  # empty before the first paper rebalance: the first trades build the book
-        tg = pf.target_at(
-            inp, t, cfg, vol_scale=pf.scale_of(state, cfg), w_prev=cur if not cur.empty else None
-        )
+        # committee powers (fund_process.add_action): de-risk the volatility budget, freeze instruments
+        from macro import fund_process as fpw
+        from macro.utils import is_demo as _demo
+
+        today_c = px.index[-1] if _demo() else pd.Timestamp.today().normalize()
+        acts = fpw.active_actions(fpw.read_actions(), today_c)
+        vol_scale = pf.scale_of(state, cfg) * acts["derisk"]
+        tg = pf.target_at(inp, t, cfg, vol_scale=vol_scale, w_prev=cur if not cur.empty else None)
         target = (
             pf.apply_band(tg["weights"], cur, cfg["model"]["no_trade_band"])
             if not drifted.empty
             else tg["weights"]
         )
+        target = fpw.apply_freeze(target, cur, [a for a in acts["frozen"] if a in target.index])
+        # what the committee's views change in the book: the same target without the committee family
+        no_c = pf.target_at(
+            inp,
+            t,
+            cfg,
+            families=tuple(f for f in pf.FAMILIES if f != "committee"),
+            vol_scale=vol_scale,
+            w_prev=cur if not cur.empty else None,
+        )["weights"]
+        committee_impact = fpw.committee_impact(tg["weights"], no_c)
         risk = pf.risk_report(target, tg["cov"], tg["w_eq"], r)
         # contribution of each view family to expected returns
         contrib = {}
@@ -1659,6 +1675,9 @@ def portfolio_bundle(force: bool = False) -> dict:
             "tests": _portfolio_tests(inp, cfg) | {"H32 company news tone (gate)": news_h32},
             "news_confidence": cfg["model"]["confidence"]["news"],
             "committee_confidence": cfg["model"]["confidence"]["committee"],
+            "committee_actions": acts,
+            "committee_impact": committee_impact,
+            "committee_views": tg["views"].get("committee", pd.Series(dtype=float)),
             "target": target,
             "target_status": tg["status"],
             "views": tg["views"],
