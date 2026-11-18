@@ -21,8 +21,10 @@ views:
     summary: >-
       Maximum overweight global equities, adding in every region (S&P 500 8,700, MSCI Europe 3,030,
       TOPIX 4,800); core bonds neutral, corporate credit equal weight; prefers Bunds and gilts; modest
-      dollar rally (DXY 105), yen weaker (162); gold top commodity pick ($5,250).
-    stances: {SPY: 1, VGK: 1, EWJ: 1, EEM: 0, AGG: 0, IEF: 0, LQD: 0, BWX: 0.5, UUP: 0.5, FXY: -1, GLD: 1}  # EEM corrected 2026-11-17: equal weight per CNBC
+      dollar rally (DXY 105), yen weaker (162); gold top commodity pick ($5,250). Asia/EM strategists
+      (same outlook, Investing.com 16 Nov): overweight Japan and Korea, equal weight China, Hong Kong,
+      India and Taiwan.
+    stances: {SPY: 1, VGK: 1, EWJ: 1, EEM: 0, EWY: 1, EWT: 0, MCHI: 0, INDA: 0, AGG: 0, IEF: 0, LQD: 0, BWX: 0.5, UUP: 0.5, FXY: -1, GLD: 1}  # EEM corrected 2026-11-17: equal weight per CNBC; EWY, EWT, MCHI, INDA merged 2026-11-18 (librarian)
   - institution: BlackRock Investment Institute
     title: "Weekly commentary: Midterms and AI in focus at 2027 Forum"
     date: 2026-11-09
@@ -75,7 +77,7 @@ views:
     date: 2026-11-15
     url: https://www.businesstoday.in/markets/story/earnings-growth-to-drive-19-asian-equity-rally-in-2027-despite-ai-volatility-risks-goldman-sachs-567505-2026-11-15
     summary: Overweight Korea and Japan; China H-shares and India raised to overweight; A-shares and Taiwan cut to neutral to balance AI exposure (secondary coverage).
-    stances: {EWY: 1, EWJ: 1, EWT: 0, INDA: 1}
+    stances: {EWY: 1, EWJ: 1, EWT: 0, INDA: 1, MCHI: 0.5}  # MCHI added 2026-11-18: H-shares overweight, A-shares market weight (MCHI holds both)
   - institution: Goldman Sachs Research (Korea memory)
     title: "Korea memory: selloff overdone, Buy reaffirmed on Samsung and SK hynix"
     date: 2026-11-10
@@ -105,7 +107,7 @@ views:
     date: 2026-11-04
     url: https://www.fxstreet.com/news/swiss-franc-franc-supported-by-hawkish-snb-risk-ing-202611040935
     summary: A more hawkish SNB supports the franc; downside risks to EUR/CHF forecasts.
-    stances: {FXF: 0.5}
+    stances: {FXF: 0}  # corrected 2026-11-18: the forecasts are on EUR/CHF only; FXF tracks CHF/USD, so no explicit stance (was +0.5)
   - institution: Commerzbank (FX strategy)
     title: "EUR/USD: political risks tilt against the euro"
     date: 2026-11-13
@@ -136,3 +138,18 @@ views:
     url: https://www.ogj.com/general-interest/economics-markets/news/55418180/eia-sees-brent-near-100-bbl-through-yearend-2026-as-middle-east-supply-constraints-persist
     summary: Inventories rebuild through 2027; Brent $97 in 2026 and $86 in 2027, $77 in 4Q27 (official forecast; secondary coverage).
     stances: {BNO: -0.5}
+
+  # ---- added 2026-11-18 by the research team after the librarian's check (docs/research/daily/2026-11-18.md);
+  # secondary coverage, as noted in each summary.
+  - institution: Citi Research (global equity strategy)
+    title: "US equities cut to neutral on AI concerns; global health care to overweight"
+    date: 2026-11-09
+    url: https://www.thestandard.com.hk/finance/article/347976/Citigroup-downgrades-US-equities-to-neutral-on-AI-concerns
+    summary: US equities cut to neutral from overweight; global and European tech to neutral; global health care and European food & beverage raised to overweight; more positive on Europe ex-UK without a stated rating (not encoded). XLV is a proxy for the global sector call (secondary coverage).
+    stances: {SPY: 0, XLV: 0.5}
+  - institution: HSBC Global Research (US semiconductors)
+    title: "Nvidia downgraded to Hold, target cut to $170"
+    date: 2026-11-14
+    url: https://247wallst.com/investing/2026/11/14/hsbc-just-downgraded-nvidia-and-cut-its-target-to-170/
+    summary: Downgrade to Hold from Buy, target cut to $170 from about $370 (date of coverage; the note's own date is not stated; secondary coverage).
+    stances: {NVDA: 0}

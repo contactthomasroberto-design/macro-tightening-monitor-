@@ -35,3 +35,6 @@ teams:
     data-quality-engineer: {title: "Ingénieur données", mandate: "Fraîcheur et qualité des séries, ajustements de cours, décalages de publication, biais du survivant."}
     news-desk-analyst: {title: "Desk news", mandate: "Revue des titres à fort impact, contrôle des scores FinBERT, synthèse des événements qui comptent."}
     research-librarian: {title: "Documentaliste recherche", mandate: "Vérifie chaque vue publiée (source, date, formulation) avant son entrée dans le fichier des vues de maison."}
+  Ingénierie:
+    software-engineer: {title: "Ingénieur logiciel", mandate: "Corrige les bugs du code, des données, du desk et des rapports, chaque correction avec un test de non-régression ; ne touche jamais aux paramètres du modèle."}
+    qa-engineer: {title: "Ingénieur qualité", mandate: "Chasse les bugs chaque nuit : familles de vues vides, dates dans le futur, chiffres qui ne se recalculent pas, unités ; documente chaque cas reproductible."}

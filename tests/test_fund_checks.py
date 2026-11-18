@@ -170,3 +170,20 @@ def test_paper_vs_backtest():
     assert out["weeks"] == 6
     assert out["tracking difference (annualised)"] == pytest.approx(0.0, abs=1e-12)
     assert fc.paper_vs_backtest(pd.Series(dtype=float), bt) == {}
+
+
+def test_jump_explained_by_next_day_proxy_is_not_an_anomaly():
+    # regression (committee of 17/11): Seoul closes before New York; a Korean jump shows in SOXX the next day
+    import numpy as np
+    import pandas as pd
+
+    from macro import fund_checks as fchk
+
+    idx = pd.bdate_range("2025-01-01", periods=300)
+    rng = np.random.default_rng(3)
+    kr = pd.Series(100 * np.exp(np.cumsum(rng.normal(0, 0.01, 300))), idx)
+    us = pd.Series(100 * np.exp(np.cumsum(rng.normal(0, 0.01, 300))), idx)
+    kr.iloc[-3:] *= 1.30  # +30% on day -3 in Seoul
+    us.iloc[-2:] *= 1.08  # SOXX follows the next session
+    out = fchk.price_jumps(pd.DataFrame({"HYNIX": kr, "SOXX": us}), {"HYNIX": "SOXX"})
+    assert out[out["asset"] == "HYNIX"].empty

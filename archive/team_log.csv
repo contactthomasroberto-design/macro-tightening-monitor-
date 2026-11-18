@@ -16,3 +16,29 @@ date,agent,status,task,summary,link
 2026-11-18,data-quality-engineer,en cours,Vérifier les séries coréennes (sauts du 31/07) et les nouvelles séries de l'univers v0.3,,
 2026-11-18,research-librarian,en cours,"Revérifier les vues écartées : Neuberger Berman, SSGA, MUFG, UBS matières premières",,
 2026-11-18,semis-tech-analyst,en cours,Lire les résultats de Nvidia et leur effet sur la poche mémoire,,
+2026-11-18,chief-investment-officer,terminé,"Comité du 17/11 au soir : 4 débats, revue de stratégie, 12 paris","Stratégie « à revoir » : sans biais du survivant, Sharpe 0,39 depuis 2019 < 60/40 et DBMF ; aucun paramètre changé.",docs/research/daily/2026-11-18.md
+2026-11-18,macro-strategist,terminé,Régime macro et poids actions/obligations,Surchauffe ; régime du modèle décalé d'un mois (bug d'affichage) ; AGG maillon faible.,docs/research/daily/2026-11-18.md
+2026-11-18,us-economist,terminé,"CPI, emploi, Fed du 9/12","Core 3 mois +3,75 % confirmé ; le 12 mois de 4,1 % est un 13 mois (octobre 2025 manquant).",docs/research/daily/2026-11-18.md
+2026-11-18,central-bank-watcher,terminé,"Fed, BoJ, BCE, BoE, BNS","Hausse Fed le 9/12 quasi acquise ; BoJ z +2,5 = artefact de moyenne mensuelle.",docs/research/daily/2026-11-18.md
+2026-11-18,us-equity-analyst,terminé,Actions US après le choc IA,"Prime de risque ≈ 0,54 pt ; c'est la concentration qui est punie, RSP +1,1 % vs SPY −4,4 %.",docs/research/daily/2026-11-18.md
+2026-11-18,europe-analyst,terminé,"Spreads souverains, franc, actions européennes","OAT-Bund en moyennes mensuelles ; vue franc mal encodée (EUR/CHF sur FXF), corrigée.",docs/research/daily/2026-11-18.md
+2026-11-18,japan-asia-analyst,terminé,"Japon, Corée, Taïwan, BoJ",Japon positif ; Corée sans renfort ; trend 12-1 en retard sur EWY/EWT.,docs/research/daily/2026-11-18.md
+2026-11-18,emerging-markets-analyst,terminé,"Brésil, Inde, Chine ; revue de perte EWZ","EWZ : choc électoral, cause principale la taille ; H55 pré-enregistrée.",docs/research/daily/2026-11-18.md
+2026-11-18,semis-tech-analyst,terminé,Résultats Nvidia et poche mémoire,Nvidia battu mais marge T4 en baisse ; poche gardée sans renfort.,docs/research/daily/2026-11-18.md
+2026-11-18,energy-commodities-analyst,terminé,"Pétrole, or, métaux",La baisse du Brent est surtout la fin de la prime physique ; pétrole neutre.,docs/research/daily/2026-11-18.md
+2026-11-18,oil-gas-analyst,terminé,Brent et OPEP+,"Future −15 % sur un mois ; BNO à 3 % plutôt que 4 % (minorité, sans test).",docs/research/daily/2026-11-18.md
+2026-11-18,rates-credit-analyst,terminé,"Courbe, duration, crédit",La corrélation dépend de la fenêtre ; IEF plutôt qu'AGG ; TIP rejeté.,docs/research/daily/2026-11-18.md
+2026-11-18,fx-strategist,terminé,"Dollar, yen, franc",Pas de plafond du yen à 162 (réfuté) ; UUP sans renfort.,docs/research/daily/2026-11-18.md
+2026-11-18,quant-researcher,terminé,"Labo relancé sur 0.3.1, vérification des débats","Stagnation : PBO 47 %, DSR 0,49, H46 rejetée (t 1,64) ; H52-H54 pré-enregistrées.",docs/research/daily/2026-11-18.md
+2026-11-18,signals-researcher,terminé,Audit de la famille regime,"IC 13 sem. +0,101 (t 1,30) ; date du régime affichée dans le futur.",docs/research/daily/2026-11-18.md
+2026-11-18,portfolio-construction-quant,terminé,"Construction, shorts, put","0 short par ancrage sur l'équilibre ; le put coûte −0,86 pt/an.",docs/research/daily/2026-11-18.md
+2026-11-18,data-quality-engineer,terminé,Contrôle hebdomadaire des données,Sauts coréens du 31/07 réels ; 14 séries en échec en local ; bugs régime et CPI.,docs/research/daily/2026-11-18.md
+2026-11-18,risk-manager,terminé,Contrôle indépendant du mandat,"Stress crédit −15,9 % hors limite ; exposition IA 28 à 65 % du risque.",docs/research/committee/2026-11-18/note-risk-manager.md
+2026-11-18,stress-testing-analyst,terminé,Stress prospectifs et nouveaux scénarios,"rates_poscorr_2022 ajouté : livre −14,4 % ; pire que le 60/40 dans 5 crises rejouées sur 8.",docs/research/committee/2026-11-18/note-stress-testing-analyst.md
+2026-11-18,research-librarian,terminé,Vérification de 11 vues candidates,"2 acceptées, 2 fusions, 1 correction (ING franc), 6 rejets.",docs/research/committee/2026-11-18/note-research-librarian.md
+2026-11-19,quant-researcher,en cours,"Tester H53 (SHY + IEF à la place de l'AGG), puis H54",,
+2026-11-19,data-quality-engineer,en cours,Proposer les correctifs du CPI 12 mois (13 mois) et de la date du régime affichée,,
+2026-11-19,semis-tech-analyst,en cours,Réaction de Nvidia après les résultats ; contrats DRAM du T1 2027,,
+2026-11-19,risk-manager,en cours,Suivre l'ordre initial du 20/11 et la liquidité de BNO,,
+2026-11-19,central-bank-watcher,en cours,Révision du PIB japonais (8/12) et préparation de la Fed du 9/12,,
+2026-11-19,research-librarian,en cours,Règle de conversion d'un objectif de prix sur une matière première en position,,

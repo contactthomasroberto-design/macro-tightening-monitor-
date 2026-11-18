@@ -134,8 +134,15 @@ def price_jumps(
             if p and p in lr and p != a:
                 y = lr[p].dropna()
                 psd = y.rolling(window, min_periods=window // 2).std().shift(1)
-                if d in y.index and psd.get(d, np.nan) == psd.get(d, np.nan) and psd[d] > 0:
-                    pz = float(y[d] / psd[d])
+                # the proxy's move on the same and the next session: Seoul or Tokyo close before New
+                # York, so a market move there shows in a US proxy the same or the next day
+                zs = []
+                for dd in [d, *y.index[y.index > d][:1]]:
+                    sd_ = psd.get(dd, np.nan)
+                    if dd in y.index and sd_ == sd_ and sd_ > 0:
+                        zs.append(float(y[dd] / sd_))
+                if zs:
+                    pz = max(zs, key=abs)
             if pz == pz and abs(pz) > proxy_k:
                 continue  # the proxy moved too: a market move, not a data error
             rows.append(

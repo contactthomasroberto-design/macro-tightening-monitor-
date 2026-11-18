@@ -69,6 +69,9 @@ def usd_prices(get: Callable[[str], pd.Series | None], cfg: dict) -> pd.DataFram
         if s is None or s.dropna().empty:
             continue
         s = s.dropna()
+        s = s[s > 0]  # a non-positive price is a data error (e.g. adjusted HYNIX 2000-2002)
+        if s.empty:
+            continue
         fx_id = cfg.get("fx", {}).get(i)
         if fx_id:
             fx = get(fx_id)

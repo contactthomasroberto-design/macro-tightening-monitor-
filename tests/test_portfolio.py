@@ -516,3 +516,11 @@ def test_committee_scores_and_brier_gate():
     )
     bad = good.assign(outcome=[0] * 10 + [1] * 10)
     assert 0.05 < pf.committee_confidence(good) <= 0.15 and pf.committee_confidence(bad) == 0.0
+
+
+def test_usd_prices_drop_non_positive_prices():
+    idx = pd.bdate_range("2001-01-01", periods=5)
+    s = pd.Series([-1.0, 0.0, 2.0, 3.0, 4.0], idx)
+    cfg = {"universe": {"HYNIX": {}}}
+    px = pf.usd_prices(lambda k: s if k == "HYNIX" else None, cfg)
+    assert (px["HYNIX"].dropna() > 0).all() and px["HYNIX"].notna().sum() == 3
