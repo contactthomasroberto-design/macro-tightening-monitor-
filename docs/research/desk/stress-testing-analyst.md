@@ -1,6 +1,6 @@
 # Stress tests prospectifs et crises rejouées (calcul GitHub)
 
-*`stress-testing-analyst` — 17/11/2026 23:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`stress-testing-analyst` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Pire scénario : Crise de crédit (2008 atténuée ; HY −20 %) (-15,7 %) ; 1 hors limite.
 

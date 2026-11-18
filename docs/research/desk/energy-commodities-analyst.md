@@ -1,6 +1,6 @@
 # Énergie et matières premières (calcul GitHub)
 
-*`energy-commodities-analyst` — 17/11/2026 23:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`energy-commodities-analyst` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Brent crude oil (+3.2 pt/an) ; le moins attractif : Gold (+0.0 pt/an). 2 désaccord(s) avec les vues publiées.
 
@@ -10,9 +10,9 @@
 - Commodities (diversified) : 1 mois -10,4 %, 12 mois +36,0 %, -11 % du plus haut, vol 19 % ; familles trend +1.0, macro +0.5, regime +0.2, value +0.5 → **positive** (accord 100 %) ; vues publiées +0.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - Gold : 1 mois -7,2 %, 12 mois -5,2 %, -29 % du plus haut, vol 24 % ; familles trend -0.1, macro +0.1, regime -0.1, value -1.0, house +0.5 → **negative** (accord 60 %) ; vues publiées +0.5 (3) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
-- Brent future : 93 (-16 sur un mois, z -1.8 ; percentile 5 ans 77 %).
+- Brent future : 93 (-16 sur un mois, z -1.9 ; percentile 5 ans 76 %).
 - Brent spot : 92 (-34 sur un mois, z -3.1 ; percentile 5 ans 74 %) ⚠.
-- gold future : 3,852 (-308 sur un mois, z -1.7 ; percentile 5 ans 77 %).
+- gold future : 3,802 (-341 sur un mois, z -1.8 ; percentile 5 ans 77 %).
 - US CPI energy : +21,2 % sur un an (précédent +22,1 %, au 10/2026).
 - supply-chain pressure : 1.26 (-0.10 sur un mois, z -0.4 ; percentile 5 ans 73 %).
 - Valeur relative candidate : long Brent crude oil / short Gold — écart de vues +3.2 pt/an, corrélation 1 an -0.15, ratio à z +1.3 sur un an .

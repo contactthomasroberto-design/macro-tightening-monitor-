@@ -1,13 +1,13 @@
 # Actions US : indices, styles, secteurs (calcul GitHub)
 
-*`us-equity-analyst` — 17/11/2026 23:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`us-equity-analyst` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US momentum factor (+2.9 pt/an) ; le moins attractif : US utilities sector (+0.2 pt/an).
 
 - US momentum factor : 1 mois -11,7 %, 12 mois +8,1 %, -24 % du plus haut, vol 32 % ; familles trend +0.7, macro +0.4, regime +0.1 → **positive** (accord 100 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - US energy sector : 1 mois -6,5 %, 12 mois +44,3 %, -10 % du plus haut, vol 24 % ; familles trend +1.0, macro +0.5, regime -0.3, value -0.6 → **positive** (accord 50 %) ; poids +4,3 % (+4,3 % vs 60/40).
 - US value factor : 1 mois -5,4 %, 12 mois +44,7 %, -11 % du plus haut, vol 20 % ; familles trend +1.0, macro +0.4, regime -0.2, value -0.5 → **positive** (accord 50 %) ; poids +0,0 % (+0,0 % vs 60/40).
-- US equities (S&P 500) : 1 mois -4,4 %, 12 mois +11,2 %, -6 % du plus haut, vol 15 % ; familles trend +0.9, macro +0.5, regime +0.2, value -0.8, house +0.6 → **positive** (accord 80 %) ; vues publiées +0.6 (7) ; poids +28,4 % (-10,0 % vs 60/40).
+- US equities (S&P 500) : 1 mois -4,4 %, 12 mois +11,2 %, -6 % du plus haut, vol 15 % ; familles trend +0.9, macro +0.5, regime +0.2, value -0.8, house +0.6 → **positive** (accord 80 %) ; vues publiées +0.6 (7) ; poids +28,3 % (-10,1 % vs 60/40).
 - US quality factor : 1 mois -3,2 %, 12 mois +14,4 %, -4 % du plus haut, vol 13 % ; familles trend +0.9, macro -0.1, regime +0.1, value -1.0, house +1.0 → **positive** (accord 60 %) ; vues publiées +1.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - US equal-weight S&P 500 : 1 mois +1,1 %, 12 mois +18,6 %, -3 % du plus haut, vol 13 % ; familles trend +0.9, macro +0.4, regime +0.1, value +1.0 → **positive** (accord 100 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - US financials sector : 1 mois +3,7 %, 12 mois +12,7 %, -4 % du plus haut, vol 17 % ; familles trend +0.6, macro +0.5, regime +0.2, value +0.6 → **positive** (accord 100 %) ; poids +0,0 % (+0,0 % vs 60/40).
@@ -42,7 +42,7 @@
 | MTUM | US momentum factor | -11.7% | -14.2% | +8.1% | -24.2% | +31.6% | +2.9 | positive | +100.0% |  | 0 | +0.0% | +0.0% | +21% | -2.24 | +88% | +1.30 | +0.84 | -0.03 |
 | XLE | US energy sector | -6.5% | -0.0% | +44.3% | -9.5% | +24.0% | +2.6 | positive | +50.0% |  | 0 | +4.3% | +4.3% | +52% | -1.40 | +97% | +0.43 | +0.31 | -0.31 |
 | VLUE | US value factor | -5.4% | -9.1% | +44.7% | -10.9% | +19.6% | +2.3 | positive | +50.0% |  | 0 | +0.0% | +0.0% | +50% | -1.50 | +90% | +0.93 | +0.79 | +0.07 |
-| SPY | US equities (S&P 500) | -4.4% | -3.7% | +11.2% | -6.0% | +15.2% | +1.8 | positive | +80.0% | +0.6 | 7 | +28.4% | -10.0% | +15% | -1.68 | +90% |  |  |  |
+| SPY | US equities (S&P 500) | -4.4% | -3.7% | +11.2% | -6.0% | +15.2% | +1.8 | positive | +80.0% | +0.6 | 7 | +28.3% | -10.1% | +15% | -1.68 | +90% |  |  |  |
 | QUAL | US quality factor | -3.2% | -1.7% | +14.4% | -4.3% | +13.1% | +1.5 | positive | +60.0% | +1.0 | 1 | +0.0% | +0.0% | +17% | -1.38 | +93% | +0.90 | +0.96 | -0.04 |
 | RSP | US equal-weight S&P 500 | +1.1% | -1.7% | +18.6% | -3.4% | +13.0% | +1.4 | positive | +100.0% |  | 0 | +0.0% | +0.0% | +16% | -0.11 | +96% | +0.77 | +0.85 | -0.09 |
 | XLF | US financials sector | +3.7% | +0.6% | +12.7% | -3.6% | +16.7% | +1.2 | positive | +100.0% |  | 0 | +0.0% | +0.0% | +7% | +0.45 | +97% | +0.75 | +0.71 | -0.14 |

@@ -1,13 +1,13 @@
 # Pétrole et gaz (calcul GitHub)
 
-*`oil-gas-analyst` — 17/11/2026 23:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`oil-gas-analyst` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Brent crude oil (+3.2 pt/an) ; le moins attractif : US energy sector (+2.6 pt/an). 1 désaccord(s) avec les vues publiées.
 
 - Brent crude oil : 1 mois -12,2 %, 12 mois +101,0 %, -17 % du plus haut, vol 45 % ; familles trend +1.0, macro +0.6, regime +0.2, house -0.5 → **positive** (accord 75 %) ; vues publiées -0.5 (2) ; poids +4,0 % (+4,0 % vs 60/40).
 - US energy sector : 1 mois -6,5 %, 12 mois +44,3 %, -10 % du plus haut, vol 24 % ; familles trend +1.0, macro +0.5, regime -0.3, value -0.6 → **positive** (accord 50 %) ; poids +4,3 % (+4,3 % vs 60/40).
 - **Marché au sens large**
-- Brent future : 93 (-16 sur un mois, z -1.8 ; percentile 5 ans 77 %).
+- Brent future : 93 (-16 sur un mois, z -1.9 ; percentile 5 ans 76 %).
 - Brent spot : 92 (-34 sur un mois, z -3.1 ; percentile 5 ans 74 %) ⚠.
 - US CPI energy : +21,2 % sur un an (précédent +22,1 %, au 10/2026).
 - Valeur relative candidate : long Brent crude oil / short US energy sector — écart de vues +0.6 pt/an, corrélation 1 an +0.63, ratio à z +0.8 sur un an .

@@ -1,4 +1,4 @@
-# Desk GitHub — 17/11/2026 23:20 UTC
+# Desk GitHub — 18/11/2026 03:25 UTC
 
 Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des familles de signaux sur tout l'univers, scans de tous les marchés suivis. Le comité du soir les débat.
 
@@ -13,7 +13,7 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 | `risk-manager` | [Risque du livre (calcul GitHub)](risk-manager.md) | Volatilité ex ante +8,4 % (60/40 +8,4 %), tracking error +3,3 %. |
 | `stress-testing-analyst` | [Stress tests prospectifs et crises rejouées (calcul GitHub)](stress-testing-analyst.md) | Pire scénario : Crise de crédit (2008 atténuée ; HY −20 %) (-15,7 %) ; 1 hors limite. |
 | `execution-trading-analyst` | [Ordres et coûts (calcul GitHub)](execution-trading-analyst.md) | 51 ordres papier, rotation +50,0 % ; coût estimé 0.05 % de la VL (5 pb). |
-| `data-quality-engineer` | [Fraîcheur et anomalies des données (calcul GitHub)](data-quality-engineer.md) | Dernière date de prix : 17/11/2026 ; instruments en retard de plus de 3 jours : aucun. |
+| `data-quality-engineer` | [Fraîcheur et anomalies des données (calcul GitHub)](data-quality-engineer.md) | Dernière date de prix : 18/11/2026 ; instruments en retard de plus de 3 jours : aucun. |
 | `news-desk-analyst` | [News notées : pression par actif (calcul GitHub)](news-desk-analyst.md) | 284 titres notés (FinBERT) sur 3 jours. |
 | `research-librarian` | [Veille des publications (calcul GitHub)](research-librarian.md) | 862 publications relevées sur 3 jours, 46 institutions. |
 | `us-equity-analyst` | [Actions US : indices, styles, secteurs (calcul GitHub)](us-equity-analyst.md) | Préféré : US momentum factor (+2.9 pt/an) ; le moins attractif : US utilities sector (+0.2 pt/an). |
@@ -50,7 +50,7 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `europe-analyst` : Mouvement anormal : BTP-Bund spread : 1.26 (+0.37 sur un mois, z +3.6 ; percentile 5 ans 40 %) ⚠.
 - `europe-analyst` : Mouvement anormal : OAT-Bund spread : 1.47 (+0.51 sur un mois, z +4.9 ; percentile 5 ans 100 %) ⚠.
 - `europe-analyst` : Mouvement anormal : Bono-Bund spread : 0.65 (+0.20 sur un mois, z +3.9 ; percentile 5 ans 32 %) ⚠.
-- `japan-asia-analyst` : Mouvement anormal : Nikkei 225 : 59,662 (-5,662 sur un mois, z -2.2 ; percentile 5 ans 89 %) ⚠.
+- `japan-asia-analyst` : Mouvement anormal : Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - `japan-asia-analyst` : Mouvement anormal : BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
 - `japan-asia-analyst` : Taiwanese equities : mouvement d'un mois à z -2.7.
 - `emerging-markets-analyst` : Indian equities : mouvement d'un mois à z +2.3.
@@ -75,6 +75,6 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `rates-credit-analyst` : International government bonds (unhedged) : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
 - `high-yield-credit-analyst` : US high yield : nos signaux (positive) contredisent les vues publiées (-0.8) — à débattre.
 - `fx-strategist` : Swiss franc : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
-- `macro-strategist` : [Equities] Nikkei 225 : 59,662 (-5,662 sur un mois, z -2.2 ; percentile 5 ans 89 %) ⚠.
 - `macro-strategist` : [Equities] Semiconductors (SOX) : 9,643 (-1,673 sur un mois, z -2.1 ; percentile 5 ans 89 %) ⚠.
+- `macro-strategist` : [Equities] Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - `macro-strategist` : [Equities] S&P 500 : 7,341 (-350 sur un mois, z -2.0 ; percentile 5 ans 89 %) ⚠.

@@ -1,6 +1,6 @@
 # Japon et Asie développée (calcul GitHub)
 
-*`japan-asia-analyst` — 17/11/2026 23:20 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`japan-asia-analyst` — 18/11/2026 03:25 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Korean equities (+4.0 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an).
 
@@ -9,20 +9,20 @@
 - Japanese equities : 1 mois -6,6 %, 12 mois +12,2 %, -11 % du plus haut, vol 21 % ; familles trend +0.8, macro +0.5, regime +0.3, house +1.0 → **positive** (accord 100 %) ; vues publiées +1.0 (4) ; poids +3,3 % (+0,0 % vs 60/40).
 - Japanese yen : 1 mois -0,5 %, 12 mois -2,9 %, -5 % du plus haut, vol 8 % ; familles trend -0.1, macro -0.3, regime -0.6, value +1.0, carry -0.9, house -1.0 → **negative** (accord 83 %) ; vues publiées -1.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
-- Nikkei 225 : 59,662 (-5,662 sur un mois, z -2.2 ; percentile 5 ans 89 %) ⚠.
-- USD/JPY : 159 (+2 sur un mois, z +0.4 ; percentile 5 ans 94 %).
-- USD/KRW : 1,335 (+2 sur un mois, z +0.0 ; percentile 5 ans 41 %).
+- Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
+- USD/JPY : 159 (+1 sur un mois, z +0.2 ; percentile 5 ans 94 %).
+- USD/KRW : 1,329 (-1 sur un mois, z -0.0 ; percentile 5 ans 36 %).
 - Japan CPI : +2,1 % sur un an (précédent +1,9 %, au 09/2026).
 - BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
-- JGB 2Y : 1.88 (-0.04 sur un mois, z -1.1 ; percentile 5 ans 98 %).
-- JGB 10Y : 2.93 (-0.03 sur un mois, z -0.7 ; percentile 5 ans 98 %).
+- JGB 2Y : 1.88 (-0.03 sur un mois, z -0.9 ; percentile 5 ans 98 %).
+- JGB 10Y : 2.92 (-0.01 sur un mois, z -0.5 ; percentile 5 ans 97 %).
 - US-Japan 10Y differential : 2.19 (+0.04 sur un mois, z +0.4 ; percentile 5 ans 25 %).
 - JPY futures: leveraged funds net : -16,855 (+16,818 sur un mois, z +0.6 ; percentile 5 ans 81 %).
 - Valeur relative candidate : long Korean equities / short Japanese yen — écart de vues +4.5 pt/an, corrélation 1 an +0.19, ratio à z -0.3 sur un an (pas encore dans les prix).
 
 **À surveiller / à débattre**
 
-- Mouvement anormal : Nikkei 225 : 59,662 (-5,662 sur un mois, z -2.2 ; percentile 5 ans 89 %) ⚠.
+- Mouvement anormal : Nikkei 225 : 58,697 (-5,379 sur un mois, z -2.1 ; percentile 5 ans 88 %) ⚠.
 - Mouvement anormal : BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
 - Taiwanese equities : mouvement d'un mois à z -2.7.
 
