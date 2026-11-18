@@ -35,3 +35,8 @@ scenarios:
   china_taiwan:
     label: "Tension Chine-Taïwan (blocus, choc géopolitique)"
     shocks: {EWT: -35, TSM: -40, MCHI: -25, EWY: -20, HYNIX: -30, SAMSUNG: -25, SPY: -12, GLD: 8}
+  rates_poscorr_2022:
+    label: "Taux et actions ensemble (2022 rejoué ; 03/01-14/10/2022, corrélation actions-obligations positive)"
+    # added 2026-11-18 (stress-testing analyst): moves read from the repository's prices over 3 Jan-14 Oct 2022;
+    # unlike rates_shock it shocks AGG directly (27.6% of the book). 1994 not used: TLT starts in 2002.
+    shocks: {SPY: -24, TLT: -32, IEF: -17, AGG: -16, TIP: -13, VNQ: -33, UUP: 19}
