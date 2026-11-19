@@ -1,13 +1,13 @@
 # Contribution et cohérence des familles de signaux (calcul GitHub)
 
-*`signals-researcher` — 19/11/2026 16:50 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`signals-researcher` — 19/11/2026 19:23 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
-**En bref** : Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.4, regime 13.0, value 7.5, macro 5.5, house 3.5, micro 3.4, carry 2.2, committee 0.0, news 0.0.
+**En bref** : Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.5, regime 13.2, value 7.6, macro 5.5, house 3.5, micro 3.4, carry 2.2, committee 0.0, news 0.0.
 
-- Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.4, regime 13.0, value 7.5, macro 5.5, house 3.5, micro 3.4, carry 2.2, committee 0.0, news 0.0.
-- trend : 51 instruments notés, moyenne +0.44, top BIL +1.00, bas TAIL -0.92.
+- Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.5, regime 13.2, value 7.6, macro 5.5, house 3.5, micro 3.4, carry 2.2, committee 0.0, news 0.0.
+- trend : 51 instruments notés, moyenne +0.44, top BIL +1.00, bas TAIL -0.90.
 - macro : 50 instruments notés, moyenne +0.19, top HYG +0.59, bas TLT -0.62.
-- regime : 51 instruments notés, moyenne -0.01, top SOXX +0.60, bas TLT -0.56.
+- regime : 51 instruments notés, moyenne -0.02, top SOXX +0.59, bas TLT -0.56.
 - value : 29 instruments notés, moyenne -0.00, top CPER +1.00, bas EWZ -1.00.
 - carry : 10 instruments notés, moyenne +0.20, top TIP +0.85, bas FXY -0.94.
 - micro : 6 instruments notés, moyenne +0.19, top MU +0.60, bas NVDA -0.20.
