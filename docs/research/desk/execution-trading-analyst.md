@@ -1,6 +1,6 @@
 # Ordres et coûts (calcul GitHub)
 
-*`execution-trading-analyst` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`execution-trading-analyst` — 19/11/2026 03:03 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : 51 ordres papier, rotation +50,1 % ; coût estimé 0.05 % de la VL (5 pb).
 

@@ -1,6 +1,6 @@
 # Émergents : actions et dette (calcul GitHub)
 
-*`emerging-markets-analyst` — 18/11/2026 23:22 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`emerging-markets-analyst` — 19/11/2026 03:03 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Brazilian equities (+2.2 pt/an) ; le moins attractif : Indian equities (+0.2 pt/an).
 
@@ -11,7 +11,7 @@
 - EM local-currency debt : 1 mois -2,8 %, 12 mois +0,5 %, -5 % du plus haut, vol 7 % ; familles trend +0.4, macro +0.4, regime -0.2 → **positive** (accord 67 %) ; poids +0,0 % (+0,0 % vs 60/40).
 - Indian equities : 1 mois +7,7 %, 12 mois -5,8 %, -6 % du plus haut, vol 15 % ; familles trend -0.7, macro +0.5, regime +0.2, value +0.5 → **positive** (accord 75 %) ; vues publiées +0.0 (3) ; poids +1,2 % (-0,0 % vs 60/40).
 - **Marché au sens large**
-- USD/KRW : 1,333 (+3 sur un mois, z +0.1 ; percentile 5 ans 38 %).
+- USD/KRW : 1,330 (+6 sur un mois, z +0.2 ; percentile 5 ans 36 %).
 - broad dollar : 123 (+1 sur un mois, z +0.4 ; percentile 5 ans 75 %).
 - supply-chain pressure : 1.26 (-0.10 sur un mois, z -0.4 ; percentile 5 ans 73 %).
 - Valeur relative candidate : long Brazilian equities / short Indian equities — écart de vues +2.0 pt/an, corrélation 1 an +0.22, ratio à z -1.7 sur un an (pas encore dans les prix).
