@@ -1,6 +1,6 @@
 # Risque du livre (calcul GitHub)
 
-*`risk-manager` — 19/11/2026 03:03 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`risk-manager` — 19/11/2026 16:50 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Volatilité ex ante +8,4 % (60/40 +8,4 %), tracking error +3,3 %.
 
@@ -11,4 +11,4 @@
 
 **À surveiller / à débattre**
 
-- Stress « Crise de crédit (2008 atténuée ; HY −20 %) » hors limite : -15,7 % (perte > 15 %).
+- Stress « Crise de crédit (2008 atténuée ; HY −20 %) » hors limite : -15,6 % (perte > 15 %).
