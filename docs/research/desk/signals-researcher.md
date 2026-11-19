@@ -1,11 +1,11 @@
 # Contribution et cohérence des familles de signaux (calcul GitHub)
 
-*`signals-researcher` — 19/11/2026 19:23 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`signals-researcher` — 19/11/2026 23:34 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
-**En bref** : Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.5, regime 13.2, value 7.6, macro 5.5, house 3.5, micro 3.4, carry 2.2, committee 0.0, news 0.0.
+**En bref** : Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.5, regime 13.3, value 7.6, macro 5.4, house 3.5, micro 3.4, carry 2.2, committee 0.0, news 0.0.
 
-- Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.5, regime 13.2, value 7.6, macro 5.5, house 3.5, micro 3.4, carry 2.2, committee 0.0, news 0.0.
-- trend : 51 instruments notés, moyenne +0.44, top BIL +1.00, bas TAIL -0.90.
+- Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.5, regime 13.3, value 7.6, macro 5.4, house 3.5, micro 3.4, carry 2.2, committee 0.0, news 0.0.
+- trend : 51 instruments notés, moyenne +0.44, top BIL +1.00, bas TAIL -0.89.
 - macro : 50 instruments notés, moyenne +0.19, top HYG +0.59, bas TLT -0.62.
 - regime : 51 instruments notés, moyenne -0.02, top SOXX +0.59, bas TLT -0.56.
 - value : 29 instruments notés, moyenne -0.00, top CPER +1.00, bas EWZ -1.00.

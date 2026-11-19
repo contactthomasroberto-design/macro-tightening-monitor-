@@ -1,6 +1,6 @@
 # Fraîcheur et anomalies des données (calcul GitHub)
 
-*`data-quality-engineer` — 19/11/2026 19:23 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`data-quality-engineer` — 19/11/2026 23:34 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Dernière date de prix : 19/11/2026 ; instruments en retard de plus de 3 jours : aucun.
 

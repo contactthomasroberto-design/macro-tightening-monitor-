@@ -1,6 +1,6 @@
 # Robustesse du modèle et tests pré-enregistrés (calcul GitHub)
 
-*`quant-researcher` — 19/11/2026 19:23 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`quant-researcher` — 19/11/2026 23:34 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Deflated Sharpe 0.01 sur 10 configurations (< 0,95 : pas de preuve d'alpha au-delà de la chance).
 
