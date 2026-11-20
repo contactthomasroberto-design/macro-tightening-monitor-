@@ -1,4 +1,4 @@
-# Santé du système — 20/11/2026 16:28 UTC
+# Santé du système — 20/11/2026 19:06 UTC
 
 11 contrôles OK sur 13. Généré par scripts/health_check.py à chaque rafraîchissement ; l'équipe ingénierie corrige chaque échec avec un test (docs/engineering/bugs.md).
 

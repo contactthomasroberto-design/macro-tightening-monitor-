@@ -1,5 +1,5 @@
 {
- "date": "2026-11-20T16:28:21.913994+00:00",
+ "date": "2026-11-20T19:06:12.381209+00:00",
  "failed": [
   "no non-positive raw prices (masked in the model, to clean at the source)",
   "monthly macro series without missing months (36 months)"
