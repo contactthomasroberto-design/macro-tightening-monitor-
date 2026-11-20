@@ -1,0 +1,22 @@
+date,asset,weight,status,overlay,reason,version
+2026-11-20,SPY,0.276866,optimal,0,first paper rebalance,0.3.2
+2026-11-20,VGK,0.087944,optimal,0,first paper rebalance,0.3.2
+2026-11-20,EWJ,0.033,optimal,0,first paper rebalance,0.3.2
+2026-11-20,INDA,0.012,optimal,0,first paper rebalance,0.3.2
+2026-11-20,EWT,0.012,optimal,0,first paper rebalance,0.3.2
+2026-11-20,EWY,0.008,optimal,0,first paper rebalance,0.3.2
+2026-11-20,EWZ,0.011973,optimal,0,first paper rebalance,0.3.2
+2026-11-20,EEM,0.04,optimal,0,first paper rebalance,0.3.2
+2026-11-20,XLE,0.04383,optimal,0,first paper rebalance,0.3.2
+2026-11-20,XLV,0.019901,optimal,0,first paper rebalance,0.3.2
+2026-11-20,SOXX,0.002976,optimal,0,first paper rebalance,0.3.2
+2026-11-20,HYNIX,0.015,optimal,0,first paper rebalance,0.3.2
+2026-11-20,SAMSUNG,0.015,optimal,0,first paper rebalance,0.3.2
+2026-11-20,MU,0.007566,optimal,0,first paper rebalance,0.3.2
+2026-11-20,TSM,0.013974,optimal,0,first paper rebalance,0.3.2
+2026-11-20,NVDA,-0.001541,optimal,0,first paper rebalance,0.3.2
+2026-11-20,AGG,0.295639,optimal,0,first paper rebalance,0.3.2
+2026-11-20,CPER,0.003166,optimal,0,first paper rebalance,0.3.2
+2026-11-20,BNO,0.04,optimal,0,first paper rebalance,0.3.2
+2026-11-20,KMLM,0.003083,optimal,0,first paper rebalance,0.3.2
+2026-11-20,UUP,0.059621,optimal,0,first paper rebalance,0.3.2

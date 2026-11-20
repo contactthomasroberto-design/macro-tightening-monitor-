@@ -1,6 +1,6 @@
 # Activité, emploi et inflation US (calcul GitHub)
 
-*`us-economist` — 19/11/2026 23:34 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`us-economist` — 20/11/2026 16:28 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Nowcast du PIB (2026Q4) : 2.5 % annualisé (68 % : 0.2 à 4.8).
 
