@@ -1,0 +1,345 @@
+{
+ "date": "2026-11-21",
+ "signal_audit": [
+  {
+   "family": "carry",
+   "horizon (weeks)": 4,
+   "IC": 0.059,
+   "t (dates)": 1.0072,
+   "obs": 1681
+  },
+  {
+   "family": "carry",
+   "horizon (weeks)": 13,
+   "IC": 0.1144,
+   "t (dates)": 1.1263,
+   "obs": 561
+  },
+  {
+   "family": "earnings",
+   "horizon (weeks)": 4,
+   "IC": -0.0474,
+   "t (dates)": -0.3577,
+   "obs": 57
+  },
+  {
+   "family": "macro",
+   "horizon (weeks)": 4,
+   "IC": 0.0117,
+   "t (dates)": 0.2621,
+   "obs": 12894
+  },
+  {
+   "family": "macro",
+   "horizon (weeks)": 13,
+   "IC": 0.0105,
+   "t (dates)": 0.1361,
+   "obs": 4312
+  },
+  {
+   "family": "micro",
+   "horizon (weeks)": 4,
+   "IC": -0.0069,
+   "t (dates)": -0.1549,
+   "obs": 2126
+  },
+  {
+   "family": "micro",
+   "horizon (weeks)": 13,
+   "IC": -0.0131,
+   "t (dates)": -0.1694,
+   "obs": 710
+  },
+  {
+   "family": "positioning",
+   "horizon (weeks)": 4,
+   "IC": -0.0028,
+   "t (dates)": -0.0422,
+   "obs": 1554
+  },
+  {
+   "family": "positioning",
+   "horizon (weeks)": 13,
+   "IC": -0.009,
+   "t (dates)": -0.0777,
+   "obs": 518
+  },
+  {
+   "family": "regime",
+   "horizon (weeks)": 4,
+   "IC": 0.0304,
+   "t (dates)": 0.6677,
+   "obs": 11425
+  },
+  {
+   "family": "regime",
+   "horizon (weeks)": 13,
+   "IC": 0.1014,
+   "t (dates)": 1.295,
+   "obs": 3835
+  },
+  {
+   "family": "trend",
+   "horizon (weeks)": 4,
+   "IC": 0.0182,
+   "t (dates)": 0.4088,
+   "obs": 13396
+  },
+  {
+   "family": "trend",
+   "horizon (weeks)": 13,
+   "IC": -0.0035,
+   "t (dates)": -0.0447,
+   "obs": 4480
+  },
+  {
+   "family": "valuation",
+   "horizon (weeks)": 4,
+   "IC": 0.0066,
+   "t (dates)": 0.1084,
+   "obs": 2012
+  },
+  {
+   "family": "valuation",
+   "horizon (weeks)": 13,
+   "IC": -0.001,
+   "t (dates)": -0.0093,
+   "obs": 675
+  },
+  {
+   "family": "value",
+   "horizon (weeks)": 4,
+   "IC": -0.007,
+   "t (dates)": -0.1196,
+   "obs": 5818
+  },
+  {
+   "family": "value",
+   "horizon (weeks)": 13,
+   "IC": -0.0297,
+   "t (dates)": -0.2939,
+   "obs": 1952
+  }
+ ],
+ "variants": {
+  "v0.3": {
+   "annual return": 0.082,
+   "volatility": 0.0944,
+   "Sharpe": 0.7032,
+   "max drawdown": -0.1858,
+   "worst 52 weeks": -0.1724,
+   "Calmar": 0.4414,
+   "tracking error": 0.0614,
+   "information ratio": 0.2476,
+   "beta to benchmark": 0.701
+  },
+  "EWMA vol (H36)": {
+   "annual return": 0.0805,
+   "volatility": 0.0933,
+   "Sharpe": 0.6956,
+   "max drawdown": -0.2261,
+   "worst 52 weeks": -0.2046,
+   "Calmar": 0.3562,
+   "tracking error": 0.0575,
+   "information ratio": 0.2384,
+   "beta to benchmark": 0.7108
+  },
+  "multi-horizon trend (H37)": {
+   "annual return": 0.08,
+   "volatility": 0.0887,
+   "Sharpe": 0.7216,
+   "max drawdown": -0.1649,
+   "worst 52 weeks": -0.1516,
+   "Calmar": 0.4853,
+   "tracking error": 0.0624,
+   "information ratio": 0.2055,
+   "beta to benchmark": 0.6554
+  },
+  "no trend": {
+   "annual return": 0.0705,
+   "volatility": 0.0893,
+   "Sharpe": 0.6185,
+   "max drawdown": -0.2059,
+   "worst 52 weeks": -0.204,
+   "Calmar": 0.3425,
+   "tracking error": 0.0475,
+   "information ratio": 0.0848,
+   "beta to benchmark": 0.7233
+  },
+  "correlated omega (H38)": {
+   "annual return": 0.072,
+   "volatility": 0.0915,
+   "Sharpe": 0.621,
+   "max drawdown": -0.2373,
+   "worst 52 weeks": -0.2117,
+   "Calmar": 0.3034,
+   "tracking error": 0.0598,
+   "information ratio": 0.0935,
+   "beta to benchmark": 0.6872
+  },
+  "survivorship-free (H39)": {
+   "annual return": 0.0641,
+   "volatility": 0.093,
+   "Sharpe": 0.5333,
+   "max drawdown": -0.1894,
+   "worst 52 weeks": -0.1647,
+   "Calmar": 0.3386,
+   "tracking error": 0.0588,
+   "information ratio": -0.0277,
+   "beta to benchmark": 0.7024
+  },
+  "semis floor 0 (H41)": {
+   "annual return": 0.0796,
+   "volatility": 0.0948,
+   "Sharpe": 0.6773,
+   "max drawdown": -0.1799,
+   "worst 52 weeks": -0.1565,
+   "Calmar": 0.4424,
+   "tracking error": 0.0618,
+   "information ratio": 0.2101,
+   "beta to benchmark": 0.7014
+  },
+  "SOX put hedge (H42)": {
+   "annual return": 0.0875,
+   "volatility": 0.0948,
+   "Sharpe": 0.7536,
+   "max drawdown": -0.1794,
+   "worst 52 weeks": -0.167,
+   "Calmar": 0.4876,
+   "tracking error": 0.0609,
+   "information ratio": 0.3325,
+   "beta to benchmark": 0.7061
+  },
+  "forced cash (H44)": {
+   "annual return": 0.082,
+   "volatility": 0.0944,
+   "Sharpe": 0.7032,
+   "max drawdown": -0.1858,
+   "worst 52 weeks": -0.1724,
+   "Calmar": 0.4414,
+   "tracking error": 0.0614,
+   "information ratio": 0.2476,
+   "beta to benchmark": 0.701
+  },
+  "resampled weights (H47)": {
+   "annual return": 0.056,
+   "volatility": 0.0792,
+   "Sharpe": 0.5136,
+   "max drawdown": -0.2006,
+   "worst 52 weeks": -0.1773,
+   "Calmar": 0.2791,
+   "tracking error": 0.0541,
+   "information ratio": -0.1943,
+   "beta to benchmark": 0.6307
+  },
+  "valuation (H48)": {
+   "annual return": 0.0835,
+   "volatility": 0.094,
+   "Sharpe": 0.7201,
+   "max drawdown": -0.1835,
+   "worst 52 weeks": -0.171,
+   "Calmar": 0.4548,
+   "tracking error": 0.0611,
+   "information ratio": 0.2697,
+   "beta to benchmark": 0.6991
+  },
+  "positioning (H49)": {
+   "annual return": 0.0817,
+   "volatility": 0.0938,
+   "Sharpe": 0.7044,
+   "max drawdown": -0.1825,
+   "worst 52 weeks": -0.1724,
+   "Calmar": 0.448,
+   "tracking error": 0.0612,
+   "information ratio": 0.2432,
+   "beta to benchmark": 0.6975
+  },
+  "earnings (H50)": {
+   "annual return": 0.0819,
+   "volatility": 0.0941,
+   "Sharpe": 0.7044,
+   "max drawdown": -0.1858,
+   "worst 52 weeks": -0.1724,
+   "Calmar": 0.4407,
+   "tracking error": 0.0614,
+   "information ratio": 0.2451,
+   "beta to benchmark": 0.6982
+  },
+  "event de-risk (H51)": {
+   "annual return": 0.0763,
+   "volatility": 0.0886,
+   "Sharpe": 0.6839,
+   "max drawdown": -0.1942,
+   "worst 52 weeks": -0.1818,
+   "Calmar": 0.3931,
+   "tracking error": 0.0631,
+   "information ratio": 0.1488,
+   "beta to benchmark": 0.6509
+  },
+  "benchmark 60/40": {
+   "annual return": 0.0636,
+   "volatility": 0.1132,
+   "Sharpe": 0.4524,
+   "max drawdown": -0.3818,
+   "worst 52 weeks": -0.3301,
+   "Calmar": 0.1666,
+   "tracking error": NaN,
+   "information ratio": NaN,
+   "beta to benchmark": NaN
+  }
+ },
+ "H46": {
+  "alpha (annual)": 0.020476057070938226,
+  "alpha t": 1.5662396842802444,
+  "R2": 0.2845129414409304,
+  "loadings": {
+   "market": -0.097,
+   "value": 0.07,
+   "momentum": 0.193,
+   "quality": -0.041,
+   "size (equal weight)": -0.251,
+   "min vol": 0.082
+  }
+ },
+ "verdicts": {
+  "H36": "False",
+  "H37": false,
+  "H38": false,
+  "H39": "True",
+  "H41": "False",
+  "H44": "False",
+  "H46": false,
+  "H47": false,
+  "H48": false,
+  "H49": false,
+  "H50": false,
+  "H51": false
+ },
+ "H40": {
+  "DSR (model variants)": 0.5102913693710573,
+  "PBO": 0.4846930846930847,
+  "beta": 0.701011647141216,
+  "MinTRL weeks": 297.82902263614915
+ },
+ "relaxed share": {
+  "v0.3": 0.025416301489921123,
+  "EWMA vol (H36)": 0.06397896581945661,
+  "multi-horizon trend (H37)": 0.021034180543382998,
+  "no trend": 0.025416301489921123,
+  "correlated omega (H38)": 0.0736196319018405,
+  "survivorship-free (H39)": 0.025416301489921123,
+  "semis floor 0 (H41)": 0.02366345311130587,
+  "SOX put hedge (H42)": 0.025416301489921123,
+  "forced cash (H44)": 0.025416301489921123,
+  "resampled weights (H47)": 1.0,
+  "valuation (H48)": 0.024539877300613498,
+  "positioning (H49)": 0.024539877300613498,
+  "earnings (H50)": 0.025416301489921123,
+  "event de-risk (H51)": 0.03593339176161262
+ },
+ "stock_bond": {
+  "hot": NaN,
+  "calm": -0.38677242532118833,
+  "now": -0.45865277125002374
+ }
+}
