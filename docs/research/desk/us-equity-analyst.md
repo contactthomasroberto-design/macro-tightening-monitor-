@@ -1,6 +1,6 @@
 # Actions US : indices, styles, secteurs (calcul GitHub)
 
-*`us-equity-analyst` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`us-equity-analyst` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US momentum factor (+2.9 pt/an) ; le moins attractif : US utilities sector (+0.2 pt/an).
 
@@ -53,5 +53,5 @@
 | XLF | US financials sector | -3.7% | -6.1% | +8.5% | -7.8% | +17.1% | +1.2 | positive | +100.0% |  | 0 | +0.0% | +0.0% | +12% | -1.29 | +92% | +0.74 | +0.71 | -0.10 |
 | XLV | US health-care sector | -2.2% | +1.5% | +19.0% | -6.5% | +18.3% | +0.9 | positive | +60.0% | +0.5 | 1 | +2.0% | +2.0% | +21% | -0.90 | +98% | +0.43 | +0.44 | -0.07 |
 | ITA | US aerospace and defence | -2.9% | -15.2% | +0.1% | -21.5% | +22.3% | +0.9 | negative | +75.0% |  | 0 | +0.0% | +0.0% | +1% | -0.89 | +76% | +0.84 | +0.64 | -0.04 |
-| USMV | US minimum volatility factor | -5.1% | -2.9% | +7.6% | -6.0% | +11.9% | +0.9 | positive | +50.0% |  | 0 | +0.0% | +0.0% | +13% | -2.64 | +94% | +0.47 | +0.70 | +0.07 |
+| USMV | US minimum volatility factor | -5.1% | -2.9% | +7.6% | -6.0% | +11.9% | +0.8 | positive | +50.0% |  | 0 | +0.0% | +0.0% | +13% | -2.64 | +94% | +0.47 | +0.70 | +0.07 |
 | XLU | US utilities sector | -0.4% | -0.7% | -0.2% | -8.7% | +15.3% | +0.2 | negative | +75.0% |  | 0 | +0.0% | +0.0% | -0% | -0.43 | +84% | +0.31 | +0.30 | -0.06 |

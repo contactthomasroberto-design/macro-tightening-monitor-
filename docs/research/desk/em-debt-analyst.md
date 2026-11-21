@@ -1,6 +1,6 @@
 # Dette émergente (calcul GitHub)
 
-*`em-debt-analyst` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`em-debt-analyst` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : EM sovereign debt (USD) (+0.3 pt/an) ; le moins attractif : EM local-currency debt (+0.2 pt/an).
 

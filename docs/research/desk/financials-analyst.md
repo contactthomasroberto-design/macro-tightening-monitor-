@@ -1,6 +1,6 @@
 # Financières et immobilier (calcul GitHub)
 
-*`financials-analyst` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`financials-analyst` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US financials sector (+1.2 pt/an) ; le moins attractif : US investment-grade credit (-0.1 pt/an).
 
@@ -12,7 +12,7 @@
 - St Louis financial stress : -0.87 (-0.23 sur un mois, z -0.9 ; percentile 5 ans 5 %).
 - 30Y mortgage rate : 7.28 (-0.04 sur un mois, z -0.1 ; percentile 5 ans 95 %).
 - Case-Shiller house prices : +2,1 % sur un an (précédent +1,9 %, au 08/2026).
-- 3m-10Y slope (bank margins) : 0.70 (-0.16 sur un mois, z -0.9 ; percentile 5 ans 78 %).
+- 3m-10Y slope (bank margins) : 0.60 (-0.28 sur un mois, z -1.4 ; percentile 5 ans 75 %).
 - excess bond premium : -0.27 (+0.12 sur un mois, z +1.1 ; percentile 5 ans 22 %).
 - Valeur relative candidate : long US financials sector / short US investment-grade credit — écart de vues +1.3 pt/an, corrélation 1 an +0.30, ratio à z +0.6 sur un an .
 

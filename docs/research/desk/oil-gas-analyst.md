@@ -1,6 +1,6 @@
 # Pétrole et gaz (calcul GitHub)
 
-*`oil-gas-analyst` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`oil-gas-analyst` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Brent crude oil (+3.2 pt/an) ; le moins attractif : US energy sector (+2.6 pt/an). 1 désaccord(s) avec les vues publiées.
 

@@ -1,6 +1,6 @@
 # Taux et crédit (calcul GitHub)
 
-*`rates-credit-analyst` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`rates-credit-analyst` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US high yield (+0.3 pt/an) ; le moins attractif : US Treasuries 20y+ (-0.6 pt/an). 3 désaccord(s) avec les vues publiées.
 
@@ -16,11 +16,11 @@
 - UST 2Y : 4.76 (-0.03 sur un mois, z -0.1 ; percentile 5 ans 86 %).
 - UST 10Y : 5.04 (-0.08 sur un mois, z -0.4 ; percentile 5 ans 98 %).
 - UST 30Y : 5.40 (-0.02 sur un mois, z -0.2 ; percentile 5 ans 98 %).
-- 2s10s : 0.28 (-0.05 sur un mois, z -0.5 ; percentile 5 ans 58 %).
-- 3m10Y : 0.70 (-0.16 sur un mois, z -0.9 ; percentile 5 ans 78 %).
+- 2s10s : 0.29 (-0.03 sur un mois, z -0.4 ; percentile 5 ans 59 %).
+- 3m10Y : 0.60 (-0.28 sur un mois, z -1.4 ; percentile 5 ans 75 %).
 - 10Y real : 2.88 (+0.11 sur un mois, z +0.5 ; percentile 5 ans 99 %).
-- 10Y breakeven : 2.16 (-0.19 sur un mois, z -2.1 ; percentile 5 ans 4 %) ⚠.
-- 5y5y inflation : 2.10 (-0.21 sur un mois, z -2.4 ; percentile 5 ans 5 %) ⚠.
+- 10Y breakeven : 2.15 (-0.22 sur un mois, z -2.4 ; percentile 5 ans 3 %) ⚠.
+- 5y5y inflation : 2.12 (-0.22 sur un mois, z -2.5 ; percentile 5 ans 8 %) ⚠.
 - ACM term premium 10Y : 0.68 (-0.21 sur un mois, z -1.2 ; percentile 5 ans 87 %).
 - Kim-Wright term premium 10Y : 0.99 (-0.06 sur un mois, z -0.6 ; percentile 5 ans 98 %).
 - MOVE : 106 (-1 sur un mois, z +0.0 ; percentile 5 ans 56 %).
@@ -36,8 +36,8 @@
 - US high yield : nos signaux (positive) contredisent les vues publiées (-0.8) — à débattre.
 - US Treasuries 7-10y : nos signaux (negative) contredisent les vues publiées (+0.2) — à débattre.
 - International government bonds (unhedged) : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
-- Mouvement anormal : 10Y breakeven : 2.16 (-0.19 sur un mois, z -2.1 ; percentile 5 ans 4 %) ⚠.
-- Mouvement anormal : 5y5y inflation : 2.10 (-0.21 sur un mois, z -2.4 ; percentile 5 ans 5 %) ⚠.
+- Mouvement anormal : 10Y breakeven : 2.15 (-0.22 sur un mois, z -2.4 ; percentile 5 ans 3 %) ⚠.
+- Mouvement anormal : 5y5y inflation : 2.12 (-0.22 sur un mois, z -2.5 ; percentile 5 ans 8 %) ⚠.
 - US inflation-linked Treasuries : corrélation au S&P 500 en rupture (-0.31 sur 3 mois).
 
 |  | name | 1 month | 3 months | 12 months | from 1y high | vol 3m | model tilt (pp/yr) | stance | agreement | house views | n views | weight | vs benchmark | 12-1 momentum | 1m z | 5y percentile | beta SPY | corr SPY | corr change 3m |

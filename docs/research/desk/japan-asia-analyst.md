@@ -1,6 +1,6 @@
 # Japon et Asie développée (calcul GitHub)
 
-*`japan-asia-analyst` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`japan-asia-analyst` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Korean equities (+4.0 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an).
 
@@ -9,9 +9,9 @@
 - Japanese equities : 1 mois -11,8 %, 12 mois +9,5 %, -16 % du plus haut, vol 22 % ; familles trend +0.7, macro +0.5, regime +0.3, house +1.0 → **positive** (accord 100 %) ; vues publiées +1.0 (4) ; poids +3,3 % (-0,0 % vs 60/40).
 - Japanese yen : 1 mois -1,0 %, 12 mois -0,8 %, -4 % du plus haut, vol 8 % ; familles trend -0.1, macro -0.3, regime -0.5, value +1.0, carry -0.9, house -1.0 → **negative** (accord 83 %) ; vues publiées -1.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
-- Nikkei 225 : 59,444 (-5,177 sur un mois, z -2.0 ; percentile 5 ans 89 %).
-- USD/JPY : 159 (+0 sur un mois, z +0.0 ; percentile 5 ans 90 %).
-- USD/KRW : 1,346 (+20 sur un mois, z +0.6 ; percentile 5 ans 47 %).
+- Nikkei 225 : 56,437 (-6,471 sur un mois, z -2.4 ; percentile 5 ans 87 %) ⚠.
+- USD/JPY : 160 (+2 sur un mois, z +0.3 ; percentile 5 ans 95 %).
+- USD/KRW : 1,335 (+9 sur un mois, z +0.3 ; percentile 5 ans 40 %).
 - Japan CPI : +2,1 % sur un an (précédent +1,9 %, au 09/2026).
 - BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
 - JGB 2Y : 1.85 (-0.06 sur un mois, z -1.3 ; percentile 5 ans 97 %).
@@ -22,6 +22,7 @@
 
 **À surveiller / à débattre**
 
+- Mouvement anormal : Nikkei 225 : 56,437 (-6,471 sur un mois, z -2.4 ; percentile 5 ans 87 %) ⚠.
 - Mouvement anormal : BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
 - Japanese equities : mouvement d'un mois à z -3.1.
 - Taiwanese equities : mouvement d'un mois à z -4.1.

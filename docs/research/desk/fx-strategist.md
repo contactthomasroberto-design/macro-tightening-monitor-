@@ -1,6 +1,6 @@
 # Changes (calcul GitHub)
 
-*`fx-strategist` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`fx-strategist` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : US dollar index (long) (+0.2 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an).
 
@@ -9,11 +9,11 @@
 - Swiss franc : 1 mois -2,3 %, 12 mois -4,6 %, -10 % du plus haut, vol 6 % ; familles trend -0.4, macro -0.1, regime +0.0, value -0.3 → **negative** (accord 75 %) ; vues publiées +0.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - Japanese yen : 1 mois -1,0 %, 12 mois -0,8 %, -4 % du plus haut, vol 8 % ; familles trend -0.1, macro -0.3, regime -0.5, value +1.0, carry -0.9, house -1.0 → **negative** (accord 83 %) ; vues publiées -1.0 (1) ; poids +0,0 % (+0,0 % vs 60/40).
 - **Marché au sens large**
-- DXY : 104 (+2 sur un mois, z +1.3 ; percentile 5 ans 65 %).
+- DXY : 104 (+2 sur un mois, z +1.3 ; percentile 5 ans 64 %).
 - broad dollar : 123 (+1 sur un mois, z +0.4 ; percentile 5 ans 75 %).
 - EUR/USD : 1.10 (-0.03 sur un mois, z -1.4 ; percentile 5 ans 53 %).
-- USD/JPY : 159 (+0 sur un mois, z +0.0 ; percentile 5 ans 90 %).
-- USD/KRW : 1,346 (+20 sur un mois, z +0.6 ; percentile 5 ans 47 %).
+- USD/JPY : 160 (+2 sur un mois, z +0.3 ; percentile 5 ans 95 %).
+- USD/KRW : 1,335 (+9 sur un mois, z +0.3 ; percentile 5 ans 40 %).
 - US-euro 2Y differential : 1.63 (-0.13 sur un mois, z -0.7 ; percentile 5 ans 32 %).
 - US-Japan 2Y differential : 2.91 (+0.03 sur un mois, z +0.4 ; percentile 5 ans 35 %).
 - EUR futures: leveraged net : -76,587 (-7,747 sur un mois, z -0.3 ; percentile 5 ans 1 %).

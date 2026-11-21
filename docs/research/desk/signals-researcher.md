@@ -1,6 +1,6 @@
 # Contribution et cohérence des familles de signaux (calcul GitHub)
 
-*`signals-researcher` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`signals-researcher` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Poids de chaque famille dans les rendements attendus (somme des |contributions|, pt/an) : trend 46.7, regime 14.0, value 7.7, macro 5.3, house 3.6, micro 3.4, carry 2.2, committee 0.0, news 0.0.
 

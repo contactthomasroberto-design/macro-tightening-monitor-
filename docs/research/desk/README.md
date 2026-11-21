@@ -1,4 +1,4 @@
-# Desk GitHub — 20/11/2026 22:02 UTC
+# Desk GitHub — 21/11/2026 02:59 UTC
 
 Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des familles de signaux sur tout l'univers, scans de tous les marchés suivis. Le comité du soir les débat.
 
@@ -12,10 +12,10 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 | `portfolio-construction-quant` | [Construction : contraintes, brut, rotation (calcul GitHub)](portfolio-construction-quant.md) | Statut de l'optimiseur : optimal. Brut +100 % (plafond +160 %), actions nettes +60 %, 21 lignes, 1 shorts. |
 | `risk-manager` | [Risque du livre (calcul GitHub)](risk-manager.md) | Volatilité ex ante +8,8 % (60/40 +8,8 %), tracking error +3,3 %. |
 | `stress-testing-analyst` | [Stress tests prospectifs et crises rejouées (calcul GitHub)](stress-testing-analyst.md) | Pire scénario : Crise de crédit (2008 atténuée ; HY −20 %) (-15,7 %) ; 1 hors limite. |
-| `execution-trading-analyst` | [Ordres et coûts (calcul GitHub)](execution-trading-analyst.md) | 51 ordres papier, rotation +0,3 % ; coût estimé 0.00 % de la VL (0 pb). |
+| `execution-trading-analyst` | [Ordres et coûts (calcul GitHub)](execution-trading-analyst.md) | 51 ordres papier, rotation +0,2 % ; coût estimé 0.00 % de la VL (0 pb). |
 | `data-quality-engineer` | [Fraîcheur et anomalies des données (calcul GitHub)](data-quality-engineer.md) | Dernière date de prix : 20/11/2026 ; instruments en retard de plus de 3 jours : aucun. |
-| `news-desk-analyst` | [News notées : pression par actif (calcul GitHub)](news-desk-analyst.md) | 708 titres notés (FinBERT) sur 3 jours. |
-| `research-librarian` | [Veille des publications (calcul GitHub)](research-librarian.md) | 1474 publications relevées sur 3 jours, 45 institutions. |
+| `news-desk-analyst` | [News notées : pression par actif (calcul GitHub)](news-desk-analyst.md) | 691 titres notés (FinBERT) sur 3 jours. |
+| `research-librarian` | [Veille des publications (calcul GitHub)](research-librarian.md) | 1455 publications relevées sur 3 jours, 46 institutions. |
 | `us-equity-analyst` | [Actions US : indices, styles, secteurs (calcul GitHub)](us-equity-analyst.md) | Préféré : US momentum factor (+2.9 pt/an) ; le moins attractif : US utilities sector (+0.2 pt/an). |
 | `europe-analyst` | [Europe : actions, euro, franc, obligations (calcul GitHub)](europe-analyst.md) | Préféré : European equities (+1.1 pt/an) ; le moins attractif : Swiss franc (-0.4 pt/an). 1 désaccord(s) avec les vues publiées. |
 | `japan-asia-analyst` | [Japon et Asie développée (calcul GitHub)](japan-asia-analyst.md) | Préféré : Korean equities (+4.0 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an). |
@@ -30,10 +30,10 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 | `high-yield-credit-analyst` | [Haut rendement (calcul GitHub)](high-yield-credit-analyst.md) | Préféré : US high yield (+0.3 pt/an) ; le moins attractif : US investment-grade credit (-0.1 pt/an). 1 désaccord(s) avec les vues publiées. |
 | `em-debt-analyst` | [Dette émergente (calcul GitHub)](em-debt-analyst.md) | Préféré : EM sovereign debt (USD) (+0.3 pt/an) ; le moins attractif : EM local-currency debt (+0.2 pt/an). |
 | `fx-strategist` | [Changes (calcul GitHub)](fx-strategist.md) | Préféré : US dollar index (long) (+0.2 pt/an) ; le moins attractif : Japanese yen (-0.5 pt/an). |
-| `macro-strategist` | [Tour d'horizon cross-asset : tous les marchés suivis (calcul GitHub)](macro-strategist-2.md) | 23 marchés ; 6 mouvement(s) d'un mois au-delà de 2 écarts-types. |
-| `chief-investment-officer` | [Synthèse du desk GitHub (calcul GitHub)](chief-investment-officer.md) | 66 point(s) à arbitrer au comité de ce soir. |
+| `macro-strategist` | [Tour d'horizon cross-asset : tous les marchés suivis (calcul GitHub)](macro-strategist-2.md) | 23 marchés ; 7 mouvement(s) d'un mois au-delà de 2 écarts-types. |
+| `chief-investment-officer` | [Synthèse du desk GitHub (calcul GitHub)](chief-investment-officer.md) | 68 point(s) à arbitrer au comité de ce soir. |
 
-## Points à débattre (66)
+## Points à débattre (68)
 
 - `macro-strategist` : VIX à 28 : régime de stress, surveiller les corrélations actions-obligations.
 - `us-economist` : CPI réaccélère (3 mois +5,7 % > 12 mois +3,7 %).
@@ -56,6 +56,7 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `europe-analyst` : Mouvement anormal : BTP-Bund spread (moyenne mensuelle BCE) : 1.26 (+0.37 sur un mois, z +3.6 ; percentile 5 ans 40 %) ⚠.
 - `europe-analyst` : Mouvement anormal : OAT-Bund spread (moyenne mensuelle BCE) : 1.47 (+0.51 sur un mois, z +4.9 ; percentile 5 ans 100 %) ⚠.
 - `europe-analyst` : Mouvement anormal : Bono-Bund spread (moyenne mensuelle BCE) : 0.65 (+0.20 sur un mois, z +3.9 ; percentile 5 ans 32 %) ⚠.
+- `japan-asia-analyst` : Mouvement anormal : Nikkei 225 : 56,437 (-6,471 sur un mois, z -2.4 ; percentile 5 ans 87 %) ⚠.
 - `japan-asia-analyst` : Mouvement anormal : BoJ policy rate : 1.23 (+0.18 sur un mois, z +2.5 ; percentile 5 ans 100 %) ⚠.
 - `japan-asia-analyst` : Japanese equities : mouvement d'un mois à z -3.1.
 - `japan-asia-analyst` : Taiwanese equities : mouvement d'un mois à z -4.1.
@@ -71,7 +72,7 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `energy-commodities-analyst` : Gold : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
 - `energy-commodities-analyst` : Mouvement anormal : Brent future : 90 (-27 sur un mois, z -3.0 ; percentile 5 ans 71 %) ⚠.
 - `energy-commodities-analyst` : Mouvement anormal : Brent spot : 93 (-24 sur un mois, z -2.2 ; percentile 5 ans 75 %) ⚠.
-- `energy-commodities-analyst` : Mouvement anormal : gold future : 3,527 (-534 sur un mois, z -2.7 ; percentile 5 ans 76 %) ⚠.
+- `energy-commodities-analyst` : Mouvement anormal : gold future : 3,539 (-521 sur un mois, z -2.6 ; percentile 5 ans 76 %) ⚠.
 - `energy-commodities-analyst` : Brent crude oil : corrélation au S&P 500 en rupture (-0.32 sur 3 mois).
 - `energy-commodities-analyst` : US energy sector : mouvement d'un mois à z -2.1.
 - `energy-commodities-analyst` : Commodities (diversified) : mouvement d'un mois à z -2.7.
@@ -83,7 +84,7 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `oil-gas-analyst` : Brent crude oil : corrélation au S&P 500 en rupture (-0.32 sur 3 mois).
 - `oil-gas-analyst` : US energy sector : mouvement d'un mois à z -2.1.
 - `metals-analyst` : Gold : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
-- `metals-analyst` : Mouvement anormal : gold future : 3,527 (-534 sur un mois, z -2.7 ; percentile 5 ans 76 %) ⚠.
+- `metals-analyst` : Mouvement anormal : gold future : 3,539 (-521 sur un mois, z -2.6 ; percentile 5 ans 76 %) ⚠.
 - `metals-analyst` : Gold : mouvement d'un mois à z -2.6.
 - `metals-analyst` : Silver : mouvement d'un mois à z -2.3.
 - `metals-analyst` : Copper : mouvement d'un mois à z -2.4.
@@ -91,13 +92,14 @@ Notes calculées à chaque rafraîchissement, sans IA : chiffres, scores des fam
 - `rates-credit-analyst` : US high yield : nos signaux (positive) contredisent les vues publiées (-0.8) — à débattre.
 - `rates-credit-analyst` : US Treasuries 7-10y : nos signaux (negative) contredisent les vues publiées (+0.2) — à débattre.
 - `rates-credit-analyst` : International government bonds (unhedged) : nos signaux (negative) contredisent les vues publiées (+0.5) — à débattre.
-- `rates-credit-analyst` : Mouvement anormal : 10Y breakeven : 2.16 (-0.19 sur un mois, z -2.1 ; percentile 5 ans 4 %) ⚠.
-- `rates-credit-analyst` : Mouvement anormal : 5y5y inflation : 2.10 (-0.21 sur un mois, z -2.4 ; percentile 5 ans 5 %) ⚠.
+- `rates-credit-analyst` : Mouvement anormal : 10Y breakeven : 2.15 (-0.22 sur un mois, z -2.4 ; percentile 5 ans 3 %) ⚠.
+- `rates-credit-analyst` : Mouvement anormal : 5y5y inflation : 2.12 (-0.22 sur un mois, z -2.5 ; percentile 5 ans 8 %) ⚠.
 - `rates-credit-analyst` : US inflation-linked Treasuries : corrélation au S&P 500 en rupture (-0.31 sur 3 mois).
 - `high-yield-credit-analyst` : US high yield : nos signaux (positive) contredisent les vues publiées (-0.8) — à débattre.
 - `macro-strategist` : [Equities] S&P 500 : 6,910 (-753 sur un mois, z -3.8 ; percentile 5 ans 86 %) ⚠.
 - `macro-strategist` : [Volatility] VIX (equity vol) : 35.89 (+16.86 sur un mois, z +3.3 ; percentile 5 ans 99 %) ⚠.
 - `macro-strategist` : [Commodities] Brent (front month) : 90 (-27 sur un mois, z -3.0 ; percentile 5 ans 71 %) ⚠.
 - `macro-strategist` : [Equities] Semiconductors (SOX) : 8,409 (-2,323 sur un mois, z -2.8 ; percentile 5 ans 87 %) ⚠.
-- `macro-strategist` : [Commodities] Gold (front month) : 3,527 (-534 sur un mois, z -2.7 ; percentile 5 ans 76 %) ⚠.
-- `macro-strategist` : [Rates] US 10Y breakeven : 2.16 (-0.19 sur un mois, z -2.1 ; percentile 5 ans 4 %) ⚠.
+- `macro-strategist` : [Commodities] Gold (front month) : 3,539 (-521 sur un mois, z -2.6 ; percentile 5 ans 76 %) ⚠.
+- `macro-strategist` : [Rates] US 10Y breakeven : 2.15 (-0.22 sur un mois, z -2.4 ; percentile 5 ans 3 %) ⚠.
+- `macro-strategist` : [Equities] Nikkei 225 : 56,437 (-6,471 sur un mois, z -2.4 ; percentile 5 ans 87 %) ⚠.

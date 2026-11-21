@@ -1,6 +1,6 @@
 # Stress tests prospectifs et crises rejouées (calcul GitHub)
 
-*`stress-testing-analyst` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`stress-testing-analyst` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Pire scénario : Crise de crédit (2008 atténuée ; HY −20 %) (-15,7 %) ; 1 hors limite.
 
@@ -12,6 +12,6 @@
 - Stagflation (1970s compressée ; CPI 6 %, Fed en retard) : livre -6,9 % (dont couverture +2,2 %), 60/40 -11,7 % ; pertes : SPY -5.5%, AGG -1.6%, VGK -0.6%.
 - Envolée du dollar (2014-15, DXY +12 %) : livre -6,0 % (dont couverture +0,5 %), 60/40 -8,8 % ; pertes : SPY -2.4%, VGK -1.7%, AGG -1.1%.
 - Débouclage du carry yen (août 2024, ×1,5) : livre -4,5 % (dont couverture +0,4 %), 60/40 -3,8 % ; pertes : SPY -2.2%, EWJ -0.6%, VGK -0.5%.
-- Retournement du cycle mémoire (2018-19 ; DRAM −50 %) : livre -3,9 % (dont couverture +0,0 %), 60/40 -2,7 % ; pertes : SPY -1.2%, HYNIX -0.6%, SAMSUNG -0.4%.
+- Retournement du cycle mémoire (2018-19 ; DRAM −50 %) : livre -3,9 % (dont couverture +0,0 %), 60/40 -2,6 % ; pertes : SPY -1.2%, HYNIX -0.6%, SAMSUNG -0.4%.
 - Choc pétrolier (Brent +50 %, 2022) : livre -3,5 % (dont couverture +0,7 %), 60/40 -7,9 % ; pertes : SPY -2.8%, AGG -1.3%, VGK -0.9%.
 - Crises passées rejouées : le livre actuel fait pire que le 60/40 dans 5 sur 8 (2015 renminbi devaluation, 2018 Q4 sell-off, 2020 Covid crash, 2023 regional banks, 2024 yen carry unwind).

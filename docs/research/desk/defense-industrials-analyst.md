@@ -1,6 +1,6 @@
 # Défense et infrastructures (calcul GitHub)
 
-*`defense-industrials-analyst` — 20/11/2026 22:02 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
+*`defense-industrials-analyst` — 21/11/2026 02:59 UTC. Note calculée par GitHub Actions à partir des données et des modèles du dépôt : aucune opinion, les positions viennent des règles. Le comité du soir la discute.*
 
 **En bref** : Préféré : Copper (+2.3 pt/an) ; le moins attractif : Global infrastructure (+0.7 pt/an).
 
