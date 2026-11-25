@@ -4,8 +4,9 @@ name: portfolio-monitor
 # in refresh.yml. Every two hours rather than hourly to stay inside the free Actions minutes of a
 # private repository (about 360 runs a month of 2-3 minutes).
 on:
-  schedule:
-    - cron: "23 */2 * * *"
+  # PAUSED 2026-11-25 by the owner; uncomment to resume.
+  # schedule:
+  #   - cron: "23 */2 * * *"
   workflow_dispatch:
 permissions:
   contents: write
