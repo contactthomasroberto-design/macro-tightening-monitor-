@@ -1,9 +1,9 @@
 {
-  "created": "2026-11-25T01:15:09Z",
-  "git_hash": "c5ff00c",
-  "data_version": 192,
-  "series": 181,
-  "observations": 756631,
+  "created": "2026-11-25T04:47:11Z",
+  "git_hash": "3037df7",
+  "data_version": 193,
+  "series": 182,
+  "observations": 756693,
   "results": 20,
   "gmd_version": "2026_09"
 }
